@@ -1,0 +1,53 @@
+import { Link } from "@/i18n/navigation";
+import Image from "next/image";
+import { Button } from "@/components/ui";
+
+export function PromoBanner() {
+  return (
+    <section className="">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Promo 1 */}
+        <div className="relative h-64 md:h-80 rounded-r1 overflow-hidden group">
+          <Image
+            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800"
+            alt="Summer Collection"
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent" />
+          <div className="absolute inset-0 flex items-center p-8">
+            <div className="text-white">
+              <p className="text-sm uppercase tracking-wider mb-2">Limited Time Offer</p>
+              <h3 className="text-2xl md:text-3xl font-bold mb-3">Summer Collection</h3>
+              <p className="text-white/80 mb-4">Up to 40% off on selected items</p>
+              <Link href="/deals">
+                <Button color="white">Shop Now</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Promo 2 */}
+        <div className="relative h-64 md:h-80 rounded-r1 overflow-hidden group">
+          <Image
+            src="https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800"
+            alt="New Arrivals"
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-linear-to-r from-primary/80 to-transparent" />
+          <div className="absolute inset-0 flex items-center p-8">
+            <div className="text-white">
+              <p className="text-sm uppercase tracking-wider mb-2">Just Arrived</p>
+              <h3 className="text-2xl md:text-3xl font-bold mb-3">New Arrivals</h3>
+              <p className="text-white/80 mb-4">Discover the latest trends</p>
+              <Link href="/products?filter=new">
+                <Button color="white">Explore</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

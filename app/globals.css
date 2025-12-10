@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --color-primary: #092143;
+  --color-primary2: #1a488a;
+
+  --color-secondary: #4388e9;
+
+  --color-success: #86da4e;
+  --color-success2: #80ff2b;
+
+  --color-danger: #F8595F;
+  --color-danger2: #cc3232;
+
+  --shadow1: 0 0 2rem 0 rgba(136, 152, 170, .15);
+  
+  /* Unified Border Radius System */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  --border1: #694dc52d;
+}
+
+@theme inline {
+
+  --color-primary: var(--color-primary);
+  --color-primary2: var(--color-primary2);
+  --color-primary3: var(--color-primary3);
+
+  --color-secondary: var(--color-secondary);
+
+  --color-success: var(--color-success);
+  --color-success2: var(--color-success2);
+
+  --color-danger: var(--color-danger);
+  --color-danger2: var(--color-danger2);
+
+  --color-b1: var(--border1);
+
+  --shadow-s1: var(--shadow1);
+
+  /* Unified Border Radius - use with rounded-* classes */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+}
+
+@layer base {
+  * {
+    outline: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-figtree), 'Almarai', sans-serif;
+  }
+
+  [disabled] {
+    cursor: not-allowed;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #dddddd;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #9c9c9c;
+    border-radius: 33px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-primary);
+  }
+
+  /* Prefer Almarai for Arabic text and RTL content */
+  :lang(ar),
+  [lang^="ar"],
+  [dir="rtl"] {
+    font-family: 'Almarai', var(--font-figtree), sans-serif;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
