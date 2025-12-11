@@ -51,33 +51,18 @@ export default function HomePage() {
     sortOrder: 'DESC'
   });
 
-  console.log('Home data:', homeData);
-  console.log('Featured data:', featuredData);
-  console.log('New data:', newData);
-  console.log('Errors:', { homeError, featuredError, newError });
-
   // Transform home data (categories, vendors, banners) with locale
   const { categories, vendors, banners, brands } = homeData 
     ? transformHomeData(homeData, locale) 
     : { categories: [], vendors: [], banners: [], brands: [] };
 
   // Transform and filter out of stock products with locale
-  // Note: apiClient already unwraps the 'data' field, so featuredData IS the array
-  const featuredProducts = featuredData
-    ? transformProducts(featuredData, locale).filter(p => {
-        console.log('Featured product:', p.name, 'stock:', p.stock);
-        return p.stock > 0;
-      }) 
+  const featuredProducts = featuredData?.data
+    ? transformProducts(featuredData.data, locale).filter(p => p.stock > 0) 
     : [];
-  const newProducts = newData
-    ? transformProducts(newData, locale).filter(p => {
-        console.log('New product:', p.name, 'stock:', p.stock);
-        return p.stock > 0;
-      }) 
+  const newProducts = newData?.data
+    ? transformProducts(newData.data, locale).filter(p => p.stock > 0) 
     : [];
-  
-  console.log('Transformed featured products:', featuredProducts);
-  console.log('Transformed new products:', newProducts);
 
   return (
     <div className="flex flex-col gap-10 py-10">

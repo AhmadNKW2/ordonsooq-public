@@ -78,14 +78,14 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     images = ['/placeholder.svg'];
   }
 
-  // Get price from prices array or stock object
+  // Get price from prices array or direct property
   const priceData = apiProduct.prices?.[0];
   const regularPrice = priceData?.price ? parseFloat(String(priceData.price)) : 
     (apiProduct as { price?: string }).price ? parseFloat((apiProduct as { price?: string }).price!) : 0;
   
-  // Get sale price if available - from prices array or separate field
-  const salePrice = priceData?.sale_price ? parseFloat(String(priceData.sale_price)) :
-    (apiProduct as { sale_price?: string }).sale_price ? parseFloat((apiProduct as { sale_price?: string }).sale_price!) : undefined;
+  // Get sale price if available - from direct field only (not in prices array)
+  const salePrice = (apiProduct as { sale_price?: string }).sale_price ? 
+    parseFloat((apiProduct as { sale_price?: string }).sale_price!) : undefined;
   
   // Determine actual price and compareAtPrice
   const actualPrice = salePrice && salePrice < regularPrice ? salePrice : regularPrice;

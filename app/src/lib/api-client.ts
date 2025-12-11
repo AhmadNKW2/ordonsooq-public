@@ -51,8 +51,9 @@ class ApiClient {
 
     const jsonResponse = await response.json();
     
-    // Unwrap the response if it has a 'data' property (common API pattern)
-    if (jsonResponse && typeof jsonResponse === 'object' && 'data' in jsonResponse) {
+    // Unwrap the response if it has a 'data' property BUT NOT 'meta' (common API pattern)
+    // If it has both 'data' and 'meta', keep the structure for pagination
+    if (jsonResponse && typeof jsonResponse === 'object' && 'data' in jsonResponse && !('meta' in jsonResponse)) {
       return jsonResponse.data as T;
     }
 
