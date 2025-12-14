@@ -322,10 +322,16 @@ export function transformHomeData(homeData: HomeData, locale: Locale = 'en'): {
   banners: FrontendBanner[];
   brands: FrontendBrand[];
 } {
+  // Filter banners by language and sort by sort_order
+  const filteredBanners = (homeData?.banners ?? [])
+    .filter(b => b.language === locale)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(b => transformBanner(b, locale));
+
   return {
     categories: (homeData?.categories ?? []).map(c => transformHomeCategory(c, locale)),
     vendors: (homeData?.vendors ?? []).map(v => transformHomeVendor(v, locale)),
-    banners: (homeData?.banners ?? []).map(b => transformBanner(b, locale)),
+    banners: filteredBanners,
     brands: (homeData?.brands ?? []).map(b => transformHomeBrand(b, locale)),
   };
 }

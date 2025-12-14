@@ -72,7 +72,7 @@ export function CategoriesGrid({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h2>
-          <p className="text-gray-500 mt-1">{subtitle}</p>
+          <p className="text-secondary mt-1">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Scroll Arrows */}

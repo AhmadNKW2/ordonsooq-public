@@ -291,6 +291,7 @@ export type HomeBanner = {
   description_ar?: string | null;
   image: string;
   link: string | null;
+  language: 'en' | 'ar';
   sort_order: number;
 };
 

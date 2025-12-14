@@ -297,37 +297,6 @@ export function NavigationBar() {
                   ))}
                 </div>
 
-                {/* Featured Section */}
-                <div 
-                  className="mt-8 pt-6 border-t border-gray-100 transition-all duration-300"
-                  style={{
-                    transitionDelay: activeDropdown === menuKey ? "160ms" : "0ms",
-                    opacity: activeDropdown === menuKey ? 1 : 0,
-                    transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(12px)",
-                  }}
-                >
-                  <div className="flex items-center justify-between p-6 bg-linear-to-r from-primary/5 via-primary/10 to-secondary/5 rounded-2xl">
-                    <div>
-                      <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-                        Limited Time
-                      </p>
-                      <h4 className="text-xl font-bold text-gray-900">
-                        Save up to 50% on selected items
-                      </h4>
-                      <p className="text-gray-600 mt-1">
-                        Shop our exclusive deals before they're gone
-                      </p>
-                    </div>
-                    <Link
-                      href="/products?filter=sale"
-                      onClick={handleLinkClick}
-                      className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-full hover:bg-primary/90 transition-all duration-300 shadow-s1 shadow-primary/25 hover:shadow-s1 hover:shadow-primary/30 hover:scale-105"
-                    >
-                      Shop Now
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
