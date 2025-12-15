@@ -92,7 +92,12 @@ export default function CheckoutPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/products">
-              <Button color="white">Continue Shopping</Button>
+              <Button
+                variant="solid"
+                className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+              >
+                Continue Shopping
+              </Button>
             </Link>
             <Button>Track Order</Button>
           </div>
@@ -350,7 +355,12 @@ export default function CheckoutPage() {
                   )}
 
                   <div className="flex gap-4">
-                    <Button color="white" size="lg" onClick={() => setCurrentStep("shipping")}>
+                    <Button
+                      variant="solid"
+                      size="lg"
+                      onClick={() => setCurrentStep("shipping")}
+                      className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                    >
                       <ArrowLeft className="w-5 h-5" />
                       Back
                     </Button>
@@ -435,7 +445,12 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button color="white" size="lg" onClick={() => setCurrentStep("payment")}>
+                    <Button
+                      variant="solid"
+                      size="lg"
+                      onClick={() => setCurrentStep("payment")}
+                      className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                    >
                       <ArrowLeft className="w-5 h-5" />
                       Back
                     </Button>

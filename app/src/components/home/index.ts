@@ -6,3 +6,6 @@ export { PromoBanner } from "./promo-banner";
 export { Newsletter } from "./newsletter";
 export { VendorsSection } from "./vendors-section";
 export { BrandsSection } from "./brands-section";
+export { ViewAllLink } from "./view-all-link";
+export { ShopByCarousel, useCarouselScroll } from "./shop-by-carousel";
+export { ShopBySection } from "./shop-by-section";

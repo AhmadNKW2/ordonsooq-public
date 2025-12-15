@@ -195,7 +195,7 @@ export function ProductCard({
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col grow">
+      <div className="p-2 flex flex-col grow gap-2">
         {/* Name */}
         <h3 className="font-medium text-sm text-gray-900 group-hover:text-primary transition-colors line-clamp-2 text-center">
           {product.name}
@@ -203,7 +203,7 @@ export function ProductCard({
 
         {/* Brand/Vendor - if available */}
         {(product.brand?.name || product.vendor?.name) && (
-          <p className="text-xs text-gray-500 mt-1 text-center line-clamp-1">
+          <p className="text-xs text-gray-500 text-center line-clamp-1">
             {product.brand?.name || product.vendor?.name}
           </p>
         )}
@@ -220,7 +220,7 @@ export function ProductCard({
         )}
 
         {/* Price - Always at bottom */}
-        <div className="flex items-center justify-center gap-2 mt-auto pt-2">
+        <div className="flex items-center justify-center gap-2 mt-auto">
           <span className="text-lg font-bold text-primary">
             {formatPrice(product.price)}
           </span>

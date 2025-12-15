@@ -15,14 +15,7 @@
 
   --shadow1: 0 0 2rem 0 rgba(136, 152, 170, .15);
   
-  /* Unified Border Radius System */
-  --radius-none: 0;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
+  --radius-r1: 12px;
 
   --border1: #694dc52d;
 }
@@ -45,13 +38,7 @@
 
   --shadow-s1: var(--shadow1);
 
-  /* Unified Border Radius - use with rounded-* classes */
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-2xl: var(--radius-2xl);
-  --radius-full: var(--radius-full);
+  --radius-r1: var(--radius-r1);
 }
 
 @layer base {

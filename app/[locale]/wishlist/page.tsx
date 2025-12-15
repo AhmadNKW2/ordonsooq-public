@@ -42,7 +42,11 @@ export default function WishlistPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Wishlist</h1>
           <p className="text-gray-500">{items.length} items saved</p>
         </div>
-        <Button color="gray" onClick={clearWishlist} className="text-danger hover:text-danger">
+        <Button
+          variant="solid"
+          onClick={clearWishlist}
+          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-danger hover:text-danger"
+        >
           <Trash2 className="w-4 h-4" />
           Clear Wishlist
         </Button>

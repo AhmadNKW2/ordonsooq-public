@@ -21,7 +21,12 @@ export function PromoBanner() {
               <h3 className="text-2xl md:text-3xl font-bold mb-3">Summer Collection</h3>
               <p className="text-white/80 mb-4">Up to 40% off on selected items</p>
               <Link href="/deals">
-                <Button color="white">Shop Now</Button>
+                <Button
+                  variant="solid"
+                  className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                >
+                  Shop Now
+                </Button>
               </Link>
             </div>
           </div>
@@ -42,7 +47,12 @@ export function PromoBanner() {
               <h3 className="text-2xl md:text-3xl font-bold mb-3">New Arrivals</h3>
               <p className="text-white/80 mb-4">Discover the latest trends</p>
               <Link href="/products?filter=new">
-                <Button color="white">Explore</Button>
+                <Button
+                  variant="solid"
+                  className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                >
+                  Explore
+                </Button>
               </Link>
             </div>
           </div>

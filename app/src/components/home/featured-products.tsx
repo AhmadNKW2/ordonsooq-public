@@ -7,7 +7,7 @@ import { Product } from "@/types";
 import { ProductCard } from "@/components/products";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { ViewAllLink } from "@/components/home/view-all-link";
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -30,7 +30,6 @@ export function FeaturedProducts({
   onLoadMore,
   isLoading = false
 }: FeaturedProductsProps) {
-  const t = useTranslations('common');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -99,13 +98,9 @@ export function FeaturedProducts({
               </button>
             </div>
           )}
-          <Link 
+          <ViewAllLink
             href={viewAllLink}
-            className="flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
-          >
-            {t('viewAll')}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          />
         </div>
       </div>
 
@@ -135,11 +130,11 @@ export function FeaturedProducts({
       {showLoadMore && !showNavArrows && (
         <div className="flex justify-center pt-10">
           <Button
-            color="white"
+            variant="pill"
             size="lg"
             onClick={onLoadMore}
             disabled={isLoading}
-            className="min-w-[200px] shadow-s1 rounded-full"
+            className="min-w-[200px] bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
           >
             {isLoading ? "Loading..." : "Load More Products"}
           </Button>

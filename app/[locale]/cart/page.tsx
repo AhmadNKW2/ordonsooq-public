@@ -44,7 +44,11 @@ export default function CartPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
           <p className="text-gray-500">{totalItems} items in your cart</p>
         </div>
-        <Button color="gray" onClick={clearCart} className="text-danger hover:text-danger">
+        <Button
+          variant="solid"
+          onClick={clearCart}
+          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-danger hover:text-danger"
+        >
           <Trash2 className="w-4 h-4" />
           Clear Cart
         </Button>
@@ -145,7 +149,12 @@ export default function CartPage() {
               {/* Coupon Code */}
               <div className="flex gap-2 mb-6">
                 <Input placeholder="Coupon code" icon={Tag} />
-                <Button color="white">Apply</Button>
+                <Button
+                  variant="solid"
+                  className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                >
+                  Apply
+                </Button>
               </div>
 
               {/* Summary Items */}
