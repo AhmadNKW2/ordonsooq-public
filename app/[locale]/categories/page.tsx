@@ -24,7 +24,7 @@ export default function CategoriesPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <p className="text-red-500">Error loading categories. Please try again.</p>
+          <p className="text-secondary">Error loading categories. Please try again.</p>
         </div>
       </div>
     );
@@ -34,8 +34,8 @@ export default function CategoriesPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop by Category</h1>
-        <p className="text-gray-500">
+        <h1 className="text-3xl font-bold text-primary mb-2">Shop by Category</h1>
+        <p className="text-third">
           Browse our wide selection of categories to find what you need
         </p>
       </div>
@@ -49,7 +49,7 @@ export default function CategoriesPage() {
         </div>
       ) : categories.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500">No categories found.</p>
+          <p className="text-third">No categories found.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -74,11 +74,11 @@ export default function CategoriesPage() {
                   
                   {/* Category Name on Image */}
                   <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-xl font-bold text-white mb-1">
+                    <h3 className="text-xl font-bold text-third mb-1">
                       {category.name}
                     </h3>
                     {category.productCount !== undefined && (
-                      <p className="text-sm text-white/80">
+                      <p className="text-sm text-third opacity-80">
                         {category.productCount} products
                       </p>
                     )}
@@ -88,12 +88,12 @@ export default function CategoriesPage() {
                 {/* Subcategories */}
                 {subcategories.length > 0 && (
                   <div className="p-4">
-                    <p className="text-sm font-medium text-gray-700 mb-3">Popular in {category.name}</p>
+                    <p className="text-sm font-medium text-primary mb-3">Popular in {category.name}</p>
                     <div className="flex flex-wrap gap-2">
                       {subcategories.slice(0, 4).map((sub) => (
                         <span
                           key={sub.id}
-                          className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full hover:bg-primary hover:text-white transition-colors"
+                          className="px-3 py-1 bg-gray-100 text-third text-sm rounded-full hover:bg-primary hover:text-third transition-colors"
                         >
                           {sub.name}
                         </span>

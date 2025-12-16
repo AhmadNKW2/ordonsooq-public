@@ -52,7 +52,7 @@ export default function CategoryPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-6">
+      <nav className="text-sm text-third mb-6">
         <ol className="flex items-center gap-2">
           <li><Link href="/" className="hover:text-primary">Home</Link></li>
           <li><ChevronRight className="w-4 h-4" /></li>
@@ -68,7 +68,7 @@ export default function CategoryPage() {
             </>
           )}
           <li><ChevronRight className="w-4 h-4" /></li>
-          <li className="text-gray-900 font-medium">{category.name}</li>
+          <li className="text-primary font-medium">{category.name}</li>
         </ol>
       </nav>
 
@@ -82,10 +82,10 @@ export default function CategoryPage() {
         />
         <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/30" />
         <div className="absolute inset-0 flex flex-col justify-center p-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-third mb-2">
             {category.name}
           </h1>
-          <p className="text-white/80">
+          <p className="text-third opacity-80">
             {products.length > 0 ? `${products.length} products available` : 'Browse products'}
           </p>
         </div>
@@ -94,7 +94,7 @@ export default function CategoryPage() {
       {/* Subcategories */}
       {subcategories.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Shop by Subcategory</h2>
+          <h2 className="text-xl font-bold text-primary mb-4">Shop by Subcategory</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {subcategories.map((sub) => (
               <Link
@@ -103,11 +103,11 @@ export default function CategoryPage() {
                 className="group flex flex-col items-center p-4 bg-white rounded-r1 border border-gray-100 shadow-s1 hover:shadow-s1 hover:border-primary/20 transition-all duration-300"
               >
                 <div className="relative w-16 h-16 mb-3 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-400">
+                  <span className="text-2xl font-bold text-third">
                     {sub.name.charAt(0)}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-700 text-center group-hover:text-primary transition-colors">
+                <span className="text-sm font-medium text-primary text-center group-hover:text-primary transition-colors">
                   {sub.name}
                 </span>
               </Link>
@@ -119,10 +119,10 @@ export default function CategoryPage() {
       {/* Products */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-xl font-bold text-primary">
             All {category.name} Products
           </h2>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-third">
             {productsLoading ? 'Loading...' : `${products.length} products found`}
           </span>
         </div>
@@ -133,7 +133,7 @@ export default function CategoryPage() {
           <ProductGrid products={products} columns={4} />
         ) : (
           <div className="text-center py-16">
-            <p className="text-gray-500 mb-4">No products found in this category yet.</p>
+            <p className="text-third mb-4">No products found in this category yet.</p>
             <Link href="/products" className="text-primary hover:underline">
               Browse all products
             </Link>

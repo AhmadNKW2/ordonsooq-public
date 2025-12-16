@@ -194,8 +194,8 @@ export function NavigationBar() {
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300",
                   (activeDropdown === link.href || hoveredLink === link.href)
-                    ? "text-gray-900" 
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-primary" 
+                    : "text-third hover:text-primary"
                 )}
               >
                 {link.label}
@@ -267,7 +267,7 @@ export function NavigationBar() {
                         transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(12px)",
                       }}
                     >
-                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                      <h3 className="text-xs font-semibold text-third uppercase tracking-wider mb-4">
                         {section.title}
                       </h3>
                       <ul className="space-y-1">
@@ -279,16 +279,16 @@ export function NavigationBar() {
                               onClick={handleLinkClick}
                             >
                               <div className="flex-1">
-                                <span className="block text-gray-900 font-medium group-hover:text-primary transition-colors duration-300">
+                                <span className="block text-primary font-medium group-hover:text-primary transition-colors duration-300">
                                   {link.label}
                                 </span>
                                 {link.description && (
-                                  <span className="block text-sm text-gray-500 mt-0.5">
+                                  <span className="block text-sm text-third mt-0.5">
                                     {link.description}
                                   </span>
                                 )}
                               </div>
-                              <ArrowRight className="w-4 h-4 text-gray-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 mt-1" />
+                              <ArrowRight className="w-4 h-4 text-third opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 mt-1" />
                             </Link>
                           </li>
                         ))}

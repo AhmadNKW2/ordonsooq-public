@@ -7,6 +7,9 @@
 
   --color-secondary: #4388e9;
 
+  --color-third: #59657c;
+  --color-third2: #99a1af;
+
   --color-success: #86da4e;
   --color-success2: #80ff2b;
 
@@ -27,6 +30,9 @@
   --color-primary3: var(--color-primary3);
 
   --color-secondary: var(--color-secondary);
+
+  --color-third: var(--color-third);
+  --color-third2: var(--color-third2);
 
   --color-success: var(--color-success);
   --color-success2: var(--color-success2);

@@ -4,16 +4,14 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   HeroBanner,
   ShopBySection,
-  FeaturedProducts,
+  ProductsSection,
   FeaturesSection,
   Newsletter,
 } from "@/components/home";
+import type { ShopByItem } from "@/components/home/shop-by-section";
 import { useProducts, useHome } from "@/hooks";
 import { transformProducts, transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
-import { Link } from "@/i18n/navigation";
-import Image from "next/image";
-import { Store, Tag } from "lucide-react";
 
 export default function HomePage() {
   const locale = useLocale() as Locale;
@@ -57,6 +55,29 @@ export default function HomePage() {
     ? transformHomeData(homeData, locale) 
     : { categories: [], vendors: [], banners: [], brands: [] };
 
+  const categoryItems: ShopByItem[] = categories.map((category) => ({
+    id: category.id,
+    href: `/categories/${category.slug}`,
+    name: category.name,
+    image: category.image,
+    isCategory: true,
+  }));
+
+  const brandItems: ShopByItem[] = brands.map((brand) => ({
+    id: brand.id,
+    href: `/brands/${brand.slug}`,
+    name: brand.name,
+    image: brand.logo,
+    isCategory: false,
+  }));
+
+  const vendorItems: ShopByItem[] = vendors.map((vendor) => ({
+    id: vendor.id,
+    href: `/vendors/${vendor.slug}`,
+    name: vendor.name,
+    image: vendor.logo,
+    isCategory: false,
+  }));
   // Transform and filter out of stock products with locale
   const featuredProducts = featuredData?.data
     ? transformProducts(featuredData.data, locale).filter(p => p.stock > 0) 
@@ -87,38 +108,9 @@ export default function HomePage() {
         ) : (
           <ShopBySection
             title={t('shopByCategory')}
-            subtitle={<span className="text-secondary">{t('exploreCategories')}</span>}
-            items={categories}
-            viewAllHref="/categories"
-            arrowBackgroundColor="black/20"
-            fadeClassName="bg-linear-to-r from-white to-transparent"
-            fadePositionClassName="top-0 bottom-4"
-            renderItem={(category) => (
-              <Link
-                key={category.id}
-                href={`/categories/${category.slug}`}
-                className="group/category flex flex-col items-center shrink-0"
-              >
-                <div className="relative w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden border-4 border-white shadow-s1 group-hover/category:shadow-s1 group-hover/category:border-primary/20 transition-all duration-300 group-hover/category:scale-105">
-                  {category.image ? (
-                    <Image src={category.image} alt={category.name} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                      <span className="text-3xl font-bold text-primary">{category.name.charAt(0)}</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/category:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                <h3 className="mt-4 text-sm md:text-base font-medium text-gray-700 group-hover/category:text-primary transition-colors text-center max-w-[140px] line-clamp-2">
-                  {category.name}
-                </h3>
-
-                {category.productCount !== undefined && (
-                  <p className="text-xs text-gray-400 mt-1">{category.productCount} items</p>
-                )}
-              </Link>
-            )}
+            subtitle={t('exploreCategories')}
+              items={categoryItems}
+              viewAllHref="/categories"
           />
         )}
       </section>
@@ -128,7 +120,7 @@ export default function HomePage() {
         {featuredLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
-          <FeaturedProducts
+          <ProductsSection
             products={featuredProducts}
             title={t('featuredProducts')}
             subtitle={t('featuredSubtitle')}
@@ -153,30 +145,8 @@ export default function HomePage() {
           <ShopBySection
             title={t('shopByBrand')}
             subtitle={t('trustedBrands')}
-            items={brands}
-            viewAllHref="/brands"
-            renderItem={(brand) => (
-              <Link
-                key={brand.id}
-                href={`/brands/${brand.slug}`}
-                className="group/brand flex flex-col items-center shrink-0"
-              >
-                <div className="relative w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-r1 overflow-hidden bg-white border border-gray-100 shadow-s1 group-hover/brand:shadow-s1 group-hover/brand:border-primary/20 transition-all duration-300 group-hover/brand:scale-105 flex items-center justify-center p-4">
-                  {brand.logo ? (
-                    <Image src={brand.logo} alt={brand.name} fill className="object-contain p-4" />
-                  ) : (
-                    <div className="w-full h-full bg-linear-to-br from-primary/10 to-secondary/10 flex items-center justify-center rounded-lg">
-                      <Tag className="w-12 h-12 text-primary/60" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/brand:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                <h3 className="mt-3 text-sm md:text-base font-medium text-gray-700 group-hover/brand:text-primary transition-colors text-center max-w-[140px] line-clamp-2">
-                  {brand.name}
-                </h3>
-              </Link>
-            )}
+              items={brandItems}
+              viewAllHref="/brands"
           />
         )}
       </section>
@@ -193,37 +163,8 @@ export default function HomePage() {
           <ShopBySection
             title={t('shopByVendor')}
             subtitle={t('trustedVendors')}
-            items={vendors}
-            viewAllHref="/vendors"
-            renderItem={(vendor) => (
-              <Link
-                key={vendor.id}
-                href={`/vendors/${vendor.slug}`}
-                className="group/vendor flex flex-col items-center shrink-0"
-              >
-                <div className="relative w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-r1 overflow-hidden bg-white border border-gray-100 shadow-s1 group-hover/vendor:shadow-s1 group-hover/vendor:border-primary/20 transition-all duration-300 group-hover/vendor:scale-105 flex items-center justify-center p-4">
-                  {vendor.logo ? (
-                    <Image src={vendor.logo} alt={vendor.name} fill className="object-contain p-4" />
-                  ) : (
-                    <div className="w-full h-full bg-linear-to-br from-primary/10 to-secondary/10 flex items-center justify-center rounded-lg">
-                      <Store className="w-12 h-12 text-primary/60" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/vendor:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                <h3 className="mt-3 text-sm md:text-base font-medium text-gray-700 group-hover/vendor:text-primary transition-colors text-center max-w-[140px] line-clamp-2">
-                  {vendor.name}
-                </h3>
-
-                {vendor.rating > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-yellow-500">★</span>
-                    <span className="text-xs text-gray-500">{vendor.rating.toFixed(1)}</span>
-                  </div>
-                )}
-              </Link>
-            )}
+              items={vendorItems}
+              viewAllHref="/vendors"
           />
         )}
       </section>
@@ -233,7 +174,7 @@ export default function HomePage() {
         {newLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
-          <FeaturedProducts
+          <ProductsSection
             products={newProducts}
             title={t('newArrivals')}
             subtitle={t('newArrivalsSubtitle')}

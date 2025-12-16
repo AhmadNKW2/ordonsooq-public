@@ -23,7 +23,7 @@ export function WishlistButton({ product, variant = "default" }: WishlistButtonP
         color={inWishlist ? "var(--color-danger)" : "var(--color-gray-700)"}
         className={cn(
           "shadow-lg hover:scale-110",
-          !inWishlist && "bg-white/90 backdrop-blur-sm hover:bg-danger hover:text-white"
+          !inWishlist && "bg-white/90 backdrop-blur-sm hover:bg-danger hover:text-third"
         )}
         aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
       >
@@ -39,7 +39,7 @@ export function WishlistButton({ product, variant = "default" }: WishlistButtonP
       onClick={() => toggleItem(product)}
       className={cn(
         "transition-all duration-300",
-        inWishlist && "border-danger text-danger hover:bg-danger/10"
+        inWishlist && "border-danger text-secondary hover:bg-danger/10"
       )}
     >
       <Heart className={cn("w-5 h-5", inWishlist && "fill-danger")} />

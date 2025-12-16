@@ -86,13 +86,13 @@ export const RATING_OPTIONS = [
 
 // Order Status
 export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
-  confirmed: { label: "Confirmed", color: "bg-blue-100 text-blue-800" },
-  processing: { label: "Processing", color: "bg-purple-100 text-purple-800" },
-  shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-800" },
-  delivered: { label: "Delivered", color: "bg-green-100 text-green-800" },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800" },
-  refunded: { label: "Refunded", color: "bg-gray-100 text-gray-800" },
+  pending: { label: "Pending", color: "bg-yellow-100 text-primary" },
+  confirmed: { label: "Confirmed", color: "bg-blue-100 text-primary" },
+  processing: { label: "Processing", color: "bg-purple-100 text-primary" },
+  shipped: { label: "Shipped", color: "bg-indigo-100 text-primary" },
+  delivered: { label: "Delivered", color: "bg-green-100 text-primary" },
+  cancelled: { label: "Cancelled", color: "bg-red-100 text-secondary" },
+  refunded: { label: "Refunded", color: "bg-gray-100 text-primary" },
 };
 
 // Payment Methods

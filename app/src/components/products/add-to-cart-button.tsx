@@ -70,7 +70,7 @@ export function AddToCartButton({ product, onAddToCart, onStatusChange, color }:
                   status === "success" && "bg-green-500! hover:bg-green-600!"
                 )
               : status === "idle"
-                ? "bg-white/80 text-primary hover:bg-gray-50"
+                ? "bg-white/80 text-primary hover:bg-white hover:scale-103"
                 : status === "loading"
                   ? "bg-secondary cursor-wait text-white"
                   : "bg-green-500 text-white hover:bg-green-600"

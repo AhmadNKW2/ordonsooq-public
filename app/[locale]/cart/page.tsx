@@ -19,10 +19,10 @@ export default function CartPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShoppingBag className="w-12 h-12 text-gray-400" />
+            <ShoppingBag className="w-12 h-12 text-third" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Cart is Empty</h1>
-          <p className="text-gray-500 mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-4">Your Cart is Empty</h1>
+          <p className="text-third mb-8">
             Looks like you haven&apos;t added anything to your cart yet. Start shopping and find something you love!
           </p>
           <Link href="/products">
@@ -41,13 +41,13 @@ export default function CartPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
-          <p className="text-gray-500">{totalItems} items in your cart</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">Shopping Cart</h1>
+          <p className="text-third">{totalItems} items in your cart</p>
         </div>
         <Button
           variant="solid"
           onClick={clearCart}
-          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-danger hover:text-danger"
+          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-secondary hover:text-secondary"
         >
           <Trash2 className="w-4 h-4" />
           Clear Cart
@@ -75,12 +75,12 @@ export default function CartPage() {
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <Link href={`/products/${item.product.slug}`}>
-                        <h3 className="font-semibold text-gray-900 hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-primary hover:text-primary transition-colors">
                           {item.product.name}
                         </h3>
                       </Link>
                       {item.product.brand && (
-                        <p className="text-sm text-gray-500">{item.product.brand.name}</p>
+                        <p className="text-sm text-third">{item.product.brand.name}</p>
                       )}
                       {item.variant && (
                         <p className="text-sm text-primary mt-1">{item.variant.name}</p>
@@ -110,18 +110,18 @@ export default function CartPage() {
                       {/* Price & Remove */}
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-primary">
                             {formatPrice(item.product.price * item.quantity)}
                           </p>
                           {item.quantity > 1 && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-third">
                               {formatPrice(item.product.price)} each
                             </p>
                           )}
                         </div>
                         <button
                           onClick={() => removeItem(item.product.id)}
-                          className="p-2 text-gray-400 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                          className="p-2 text-third hover:text-secondary hover:bg-danger/10 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -144,7 +144,7 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <Card className="sticky top-24">
             <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+              <h2 className="text-xl font-bold text-primary mb-6">Order Summary</h2>
 
               {/* Coupon Code */}
               <div className="flex gap-2 mb-6">
@@ -159,24 +159,24 @@ export default function CartPage() {
 
               {/* Summary Items */}
               <div className="space-y-4 pb-6 border-b border-gray-100">
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Subtotal ({totalItems} items)</span>
                   <span>{formatPrice(totalPrice)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Shipping</span>
-                  <span className={shipping === 0 ? "text-success font-medium" : ""}>
+                  <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
                     {shipping === 0 ? "FREE" : formatPrice(shipping)}
                   </span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Tax (10%)</span>
                   <span>{formatPrice(tax)}</span>
                 </div>
               </div>
 
               {/* Total */}
-              <div className="flex justify-between py-6 text-lg font-bold text-gray-900">
+              <div className="flex justify-between py-6 text-lg font-bold text-primary">
                 <span>Total</span>
                 <span className="text-primary">{formatPrice(finalTotal)}</span>
               </div>
@@ -184,9 +184,9 @@ export default function CartPage() {
               {/* Free Shipping Notice */}
               {totalPrice < 50 && (
                 <div className="mb-6 p-4 bg-secondary/10 rounded-lg">
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-third">
                     Add <span className="font-bold text-primary">{formatPrice(50 - totalPrice)}</span> more to get{" "}
-                    <span className="font-bold text-success">FREE shipping!</span>
+                    <span className="font-bold text-secondary">FREE shipping!</span>
                   </p>
                   <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -206,7 +206,7 @@ export default function CartPage() {
               </Link>
 
               {/* Secure Checkout Notice */}
-              <p className="text-center text-sm text-gray-500 mt-4">
+              <p className="text-center text-sm text-third mt-4">
                 🔒 Secure checkout powered by Stripe
               </p>
             </CardContent>

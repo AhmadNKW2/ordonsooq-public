@@ -67,16 +67,16 @@ export function ProductCard({
           />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="font-medium text-primary group-hover:text-primary transition-colors line-clamp-1">
             {product.name}
           </h3>
-          <p className="text-sm text-gray-500 line-clamp-2 mt-1">
+          <p className="text-sm text-third line-clamp-2 mt-1">
             {product.description}
           </p>
           <div className="flex items-center gap-1 mt-2">
             <Star className="w-4 h-4 fill-secondary text-secondary" />
             <span className="text-sm font-medium">{product.rating}</span>
-            <span className="text-sm text-gray-400">({product.reviewCount})</span>
+            <span className="text-sm text-third">({product.reviewCount})</span>
           </div>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export function ProductCard({
                 {formatPrice(product.price)}
               </span>
               {product.compareAtPrice && (
-                <span className="text-sm text-gray-400 line-through">
+                <span className="text-sm text-third line-through">
                   {formatPrice(product.compareAtPrice)}
                 </span>
               )}
@@ -110,7 +110,7 @@ export function ProductCard({
           />
         </div>
         <div className="mt-2">
-          <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
+          <h3 className="text-sm font-medium text-primary line-clamp-1">
             {product.name}
           </h3>
           <p className="text-sm font-bold text-primary mt-1">
@@ -159,7 +159,7 @@ export function ProductCard({
               variant={inWishlist ? "filled" : "default"}
               color={inWishlist ? "var(--color-danger)" : "var(--color-gray-700)"}
               className={cn(
-                !inWishlist && "hover:bg-danger hover:text-white"
+                !inWishlist && "hover:bg-danger hover:text-third"
               )}
               aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
             >
@@ -197,13 +197,13 @@ export function ProductCard({
       {/* Content */}
       <div className="p-2 flex flex-col grow gap-2">
         {/* Name */}
-        <h3 className="font-medium text-sm text-gray-900 group-hover:text-primary transition-colors line-clamp-2 text-center">
+        <h3 className="font-medium text-sm text-primary group-hover:text-primary transition-colors line-clamp-2 text-center">
           {product.name}
         </h3>
 
         {/* Brand/Vendor - if available */}
         {(product.brand?.name || product.vendor?.name) && (
-          <p className="text-xs text-gray-500 text-center line-clamp-1">
+          <p className="text-xs text-third text-center line-clamp-1">
             {product.brand?.name || product.vendor?.name}
           </p>
         )}
@@ -212,9 +212,9 @@ export function ProductCard({
         {product.rating > 0 && (
           <div className="flex items-center justify-center gap-1 mt-1">
             <Star className="w-3 h-3 fill-secondary text-secondary" />
-            <span className="text-xs text-gray-600">{product.rating.toFixed(1)}</span>
+            <span className="text-xs text-third">{product.rating.toFixed(1)}</span>
             {product.reviewCount > 0 && (
-              <span className="text-xs text-gray-400">({product.reviewCount})</span>
+              <span className="text-xs text-third">({product.reviewCount})</span>
             )}
           </div>
         )}
@@ -225,7 +225,7 @@ export function ProductCard({
             {formatPrice(product.price)}
           </span>
           {product.compareAtPrice && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-sm text-third line-through">
               {formatPrice(product.compareAtPrice)}
             </span>
           )}
@@ -233,12 +233,12 @@ export function ProductCard({
 
         {/* Stock Status */}
         {product.stock <= 5 && product.stock > 0 && (
-          <p className="text-xs text-danger mt-2 text-center">
+          <p className="text-xs text-secondary mt-2 text-center">
             {t('product.lowStock')} - {product.stock} {t('product.itemsLeft', { count: product.stock })}
           </p>
         )}
         {product.stock === 0 && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-xs text-third mt-2 text-center">
             {t('product.outOfStock')}
           </p>
         )}

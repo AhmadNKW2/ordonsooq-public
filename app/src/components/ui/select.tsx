@@ -156,14 +156,14 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           <span
             className={cn(
               "truncate",
-              !selectedOption && "text-gray-400"
+              !selectedOption && "text-third"
             )}
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <ChevronDown
             className={cn(
-              "w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ease-out",
+              "w-4 h-4 text-third shrink-0 transition-transform duration-300 ease-out",
               isOpen && "rotate-180 text-primary"
             )}
           />
@@ -201,7 +201,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
                   "transition-colors duration-150",
                   option.value === value
                     ? "text-primary font-medium"
-                    : "text-gray-700",
+                    : "text-primary",
                   highlightedIndex === index && "bg-gray-50",
                   option.value === value && highlightedIndex === index && "bg-primary/5"
                 )}

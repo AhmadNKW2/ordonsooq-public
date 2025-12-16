@@ -22,8 +22,8 @@ export function ProductGrid({
   if (products.length === 0) {
     return (
       <div className="text-center">
-        <p className="text-gray-500 text-lg">No products found</p>
-        <p className="text-gray-400 text-sm mt-2">
+        <p className="text-third text-lg">No products found</p>
+        <p className="text-third text-sm mt-2">
           Try adjusting your search or filter criteria
         </p>
       </div>

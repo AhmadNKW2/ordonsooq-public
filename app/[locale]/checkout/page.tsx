@@ -63,8 +63,8 @@ export default function CheckoutPage() {
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Items in Cart</h1>
-          <p className="text-gray-500 mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-4">No Items in Cart</h1>
+          <p className="text-third mb-8">
             Please add some items to your cart before checking out.
           </p>
           <Link href="/products">
@@ -80,14 +80,14 @@ export default function CheckoutPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-success" />
+            <Check className="w-10 h-10 text-secondary" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Order Confirmed!</h1>
-          <p className="text-gray-500 mb-2">
+          <h1 className="text-2xl font-bold text-primary mb-4">Order Confirmed!</h1>
+          <p className="text-third mb-2">
             Thank you for your purchase. Your order number is:
           </p>
           <p className="text-xl font-bold text-primary mb-6">#ORD-{Date.now().toString().slice(-8)}</p>
-          <p className="text-gray-500 mb-8">
+          <p className="text-third mb-8">
             We&apos;ve sent a confirmation email to {formData.email || "your email"}.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -109,13 +109,13 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back Link */}
-      <Link href="/cart" className="inline-flex items-center gap-2 text-gray-500 hover:text-primary mb-6">
+      <Link href="/cart" className="inline-flex items-center gap-2 text-third hover:text-primary mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Cart
       </Link>
 
       {/* Page Header */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+      <h1 className="text-3xl font-bold text-primary mb-8">Checkout</h1>
 
       {/* Progress Steps */}
       <div className="flex items-center justify-center mb-8">
@@ -130,17 +130,17 @@ export default function CheckoutPage() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
                 currentStep === step.id
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-third"
                   : steps.findIndex((s) => s.id === currentStep) > index
-                  ? "bg-success/10 text-success cursor-pointer"
-                  : "bg-gray-100 text-gray-400"
+                  ? "bg-success/10 text-secondary cursor-pointer"
+                  : "bg-gray-100 text-third"
               )}
             >
               <step.icon className="w-5 h-5" />
               <span className="hidden sm:inline">{step.label}</span>
             </button>
             {index < steps.length - 1 && (
-              <ChevronRight className="w-5 h-5 text-gray-300 mx-2" />
+              <ChevronRight className="w-5 h-5 text-third mx-2" />
             )}
           </div>
         ))}
@@ -154,7 +154,7 @@ export default function CheckoutPage() {
               {/* Shipping Step */}
               {currentStep === "shipping" && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-primary flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-primary" />
                     Shipping Information
                   </h2>
@@ -236,7 +236,7 @@ export default function CheckoutPage() {
 
                   {/* Shipping Method */}
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <h3 className="font-semibold text-primary mb-3 flex items-center gap-2">
                       <Truck className="w-5 h-5 text-primary" />
                       Shipping Method
                     </h3>
@@ -261,11 +261,11 @@ export default function CheckoutPage() {
                               className="w-4 h-4 text-primary"
                             />
                             <div>
-                              <p className="font-medium text-gray-900">{option.name}</p>
-                              <p className="text-sm text-gray-500">{option.description}</p>
+                              <p className="font-medium text-primary">{option.name}</p>
+                              <p className="text-sm text-third">{option.description}</p>
                             </div>
                           </div>
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-semibold text-primary">
                             {option.price === 0 ? "FREE" : formatPrice(option.price)}
                           </span>
                         </label>
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
               {/* Payment Step */}
               {currentStep === "payment" && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-primary flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
                     Payment Information
                   </h2>
@@ -309,7 +309,7 @@ export default function CheckoutPage() {
                           className="w-4 h-4 text-primary"
                         />
                         <span className="text-2xl">{method.icon}</span>
-                        <span className="font-medium text-gray-900">{method.name}</span>
+                        <span className="font-medium text-primary">{method.name}</span>
                       </label>
                     ))}
                   </div>
@@ -375,7 +375,7 @@ export default function CheckoutPage() {
               {/* Review Step */}
               {currentStep === "review" && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-primary flex items-center gap-2">
                     <Check className="w-5 h-5 text-primary" />
                     Review Your Order
                   </h2>
@@ -383,7 +383,7 @@ export default function CheckoutPage() {
                   {/* Shipping Summary */}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">Shipping Address</h3>
+                      <h3 className="font-semibold text-primary">Shipping Address</h3>
                       <button
                         onClick={() => setCurrentStep("shipping")}
                         className="text-sm text-primary hover:underline"
@@ -391,7 +391,7 @@ export default function CheckoutPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-gray-600">
+                    <p className="text-third">
                       {formData.firstName} {formData.lastName}<br />
                       {formData.address}<br />
                       {formData.city}, {formData.state} {formData.zipCode}<br />
@@ -402,7 +402,7 @@ export default function CheckoutPage() {
                   {/* Payment Summary */}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">Payment Method</h3>
+                      <h3 className="font-semibold text-primary">Payment Method</h3>
                       <button
                         onClick={() => setCurrentStep("payment")}
                         className="text-sm text-primary hover:underline"
@@ -410,7 +410,7 @@ export default function CheckoutPage() {
                         Edit
                       </button>
                     </div>
-                    <p className="text-gray-600">
+                    <p className="text-third">
                       {PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.name}
                       {paymentMethod === "card" && formData.cardNumber && (
                         <span> ending in {formData.cardNumber.slice(-4)}</span>
@@ -420,7 +420,7 @@ export default function CheckoutPage() {
 
                   {/* Order Items */}
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Order Items</h3>
+                    <h3 className="font-semibold text-primary mb-3">Order Items</h3>
                     <div className="space-y-3">
                       {items.map((item) => (
                         <div key={item.product.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
@@ -433,10 +433,10 @@ export default function CheckoutPage() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{item.product.name}</p>
-                            <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                            <p className="font-medium text-primary truncate">{item.product.name}</p>
+                            <p className="text-sm text-third">Qty: {item.quantity}</p>
                           </div>
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-primary">
                             {formatPrice(item.product.price * item.quantity)}
                           </p>
                         </div>
@@ -474,7 +474,7 @@ export default function CheckoutPage() {
         <div className="lg:col-span-1">
           <Card className="sticky top-24">
             <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+              <h2 className="text-xl font-bold text-primary mb-6">Order Summary</h2>
 
               {/* Items Preview */}
               <div className="space-y-3 pb-4 border-b border-gray-100">
@@ -487,20 +487,20 @@ export default function CheckoutPage() {
                         fill
                         className="object-cover rounded"
                       />
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-primary text-third text-xs rounded-full flex items-center justify-center">
                         {item.quantity}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>
+                      <p className="text-sm font-medium text-primary truncate">{item.product.name}</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-primary">
                       {formatPrice(item.product.price * item.quantity)}
                     </p>
                   </div>
                 ))}
                 {items.length > 3 && (
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-third text-center">
                     +{items.length - 3} more items
                   </p>
                 )}
@@ -508,30 +508,30 @@ export default function CheckoutPage() {
 
               {/* Summary */}
               <div className="space-y-3 py-4 border-b border-gray-100">
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Subtotal ({totalItems} items)</span>
                   <span>{formatPrice(totalPrice)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Shipping</span>
-                  <span className={shipping === 0 ? "text-success font-medium" : ""}>
+                  <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
                     {shipping === 0 ? "FREE" : formatPrice(shipping)}
                   </span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-third">
                   <span>Tax (10%)</span>
                   <span>{formatPrice(tax)}</span>
                 </div>
               </div>
 
               {/* Total */}
-              <div className="flex justify-between py-4 text-lg font-bold text-gray-900">
+              <div className="flex justify-between py-4 text-lg font-bold text-primary">
                 <span>Total</span>
                 <span className="text-primary">{formatPrice(finalTotal)}</span>
               </div>
 
               {/* Security Badge */}
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-2 text-sm text-third pt-4 border-t border-gray-100">
                 <Lock className="w-4 h-4" />
                 <span>Secure checkout</span>
               </div>

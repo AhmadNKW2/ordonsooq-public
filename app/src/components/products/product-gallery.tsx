@@ -216,7 +216,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
           )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-white text-sm z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-primary text-sm z-10">
             {selectedIndex + 1} / {images.length}
           </div>
         </div>
@@ -229,7 +229,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
         className="max-w-5xl h-[90vh] bg-transparent shadow-none"
         showCloseButton={true}
         animation="zoom"
-        closeButtonClassName="text-white hover:text-gray-300 hover:bg-white/10"
+        closeButtonClassName="text-primary hover:text-third hover:bg-white/10"
       >
         <div className="relative w-full h-full flex flex-col items-center justify-center">
           <div className="relative w-full flex-1">

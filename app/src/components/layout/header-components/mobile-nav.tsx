@@ -23,7 +23,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           <Link
             key={link.href}
             href={link.href}
-            className="block px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
+            className="block px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
             onClick={onClose}
           >
             {link.label}
@@ -32,7 +32,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         <hr className="my-4" />
         <Link
           href="/wishlist"
-          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
+          className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
           onClick={onClose}
         >
           <Heart size={20} />
@@ -40,7 +40,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         </Link>
         <Link
           href="/account"
-          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
+          className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
           onClick={onClose}
         >
           <User size={20} />

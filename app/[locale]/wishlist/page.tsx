@@ -17,10 +17,10 @@ export default function WishlistPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Heart className="w-12 h-12 text-gray-400" />
+            <Heart className="w-12 h-12 text-third" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Wishlist is Empty</h1>
-          <p className="text-gray-500 mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-4">Your Wishlist is Empty</h1>
+          <p className="text-third mb-8">
             Save items you love by clicking the heart icon on any product. Your wishlist will be waiting for you!
           </p>
           <Link href="/products">
@@ -39,13 +39,13 @@ export default function WishlistPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Wishlist</h1>
-          <p className="text-gray-500">{items.length} items saved</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">My Wishlist</h1>
+          <p className="text-third">{items.length} items saved</p>
         </div>
         <Button
           variant="solid"
           onClick={clearWishlist}
-          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-danger hover:text-danger"
+          className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-secondary hover:text-secondary"
         >
           <Trash2 className="w-4 h-4" />
           Clear Wishlist

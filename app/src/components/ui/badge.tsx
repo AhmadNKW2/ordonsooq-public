@@ -10,17 +10,17 @@ const badgeVariants = cva(
         default:
           "bg-primary text-white",
         secondary:
-          "bg-secondary text-gray-900",
+          "bg-secondary text-primary",
         success:
-          "bg-success/10 text-success border border-success/20",
+          "bg-success/10 text-secondary border border-success/20",
         destructive:
-          "bg-danger/10 text-danger border border-danger/20",
+          "bg-danger/10 text-secondary border border-danger/20",
         warning:
-          "bg-yellow-100 text-yellow-800 border border-yellow-200",
+          "bg-yellow-100 text-primary border border-yellow-200",
         info:
-          "bg-blue-100 text-blue-800 border border-blue-200",
+          "bg-blue-100 text-primary border border-blue-200",
         outline:
-          "border border-gray-200 text-gray-700 bg-white",
+          "border border-gray-200 text-primary bg-white",
         new:
           "bg-gradient-to-r from-primary to-primary2 text-white",
         sale:

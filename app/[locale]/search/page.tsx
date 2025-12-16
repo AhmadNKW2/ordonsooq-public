@@ -97,7 +97,7 @@ function SearchPageContent() {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-third hover:text-primary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -107,10 +107,10 @@ function SearchPageContent() {
 
         {/* Search Info */}
         {query && (
-          <p className="text-center text-gray-500 mt-4">
+          <p className="text-center text-third mt-4">
             {searchResults.length > 0 ? (
               <>
-                Found <span className="font-semibold text-gray-900">{searchResults.length}</span> results for{" "}
+                Found <span className="font-semibold text-primary">{searchResults.length}</span> results for{" "}
                 <span className="font-semibold text-primary">&quot;{query}&quot;</span>
               </>
             ) : (
@@ -126,19 +126,19 @@ function SearchPageContent() {
       {!query && (
         <div className="text-center py-16">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <SearchIcon className="w-12 h-12 text-gray-400" />
+            <SearchIcon className="w-12 h-12 text-third" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Start Searching</h2>
-          <p className="text-gray-500 mb-6">
+          <h2 className="text-xl font-bold text-primary mb-2">Start Searching</h2>
+          <p className="text-third mb-6">
             Enter a search term to find products, brands, and more
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <span className="text-sm text-gray-500">Popular searches:</span>
+            <span className="text-sm text-third">Popular searches:</span>
             {["Electronics", "Laptop", "Headphones", "Camera", "Watch"].map((term) => (
               <button
                 key={term}
                 onClick={() => setQuery(term)}
-                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-primary hover:text-white transition-colors"
+                className="px-3 py-1 bg-gray-100 text-primary rounded-full text-sm hover:bg-primary hover:text-third transition-colors"
               >
                 {term}
               </button>
@@ -169,7 +169,7 @@ function SearchPageContent() {
               </Button>
 
               {/* Results Count */}
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-third">
                 {searchResults.length} products found
               </span>
             </div>
@@ -177,7 +177,7 @@ function SearchPageContent() {
             <div className="flex items-center gap-4">
               {/* Sort */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 hidden sm:inline">
+                <span className="text-sm text-third hidden sm:inline">
                   Sort by:
                 </span>
                 <Select
@@ -251,7 +251,7 @@ function SearchPageContent() {
                 <ProductGrid products={searchResults} columns={4} />
               ) : (
                 <div className="text-center py-16">
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-third mb-4">
                     No products match your search criteria.
                   </p>
                   <Button

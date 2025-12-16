@@ -61,9 +61,9 @@ const sizeClasses = {
 
 const variantClasses = {
   // Banner style: translucent white with backdrop blur, appears on hover
-  banner: "bg-white/50 backdrop-blur-sm hover:bg-white shadow-s1 text-gray-800",
+  banner: "bg-white/50 backdrop-blur-sm hover:bg-white shadow-s1 text-primary",
   // Gallery style: filled with custom color (uses IconButton filled style)
-  gallery: "bg-secondary text-white hover:opacity-90 shadow-s1",
+  gallery: "bg-secondary text-third hover:opacity-90 shadow-s1",
 };
 
 const disabledClasses = {

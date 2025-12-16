@@ -3,12 +3,24 @@ import { cn } from "@/lib/utils";
 
 type ButtonVariant = "solid" | "outline" | "pill";
 
+type ButtonColorValue = `#${string}` | `var(--${string})`;
+
+function isButtonColorValue(value: unknown): value is ButtonColorValue {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(trimmed) || /^var\(--[a-zA-Z0-9-_]+\)$/.test(trimmed);
+}
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   size?: "default" | "sm" | "lg" | "xl" | "icon";
   /** Visual style variant (defaults to `solid`). */
   variant?: ButtonVariant;
+  /** Custom button background color (e.g. `#ffffff` or `var(--color-secondary)`). */
+  backgroundColor?: ButtonColorValue;
+  /** Custom button text color (e.g. `#ffffff` or `var(--color-secondary)`). */
+  textColor?: ButtonColorValue;
 }
 
 const sizeClasses = {
@@ -32,6 +44,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size = "default",
       variant,
       isLoading,
+      backgroundColor,
+      textColor,
       children,
       disabled,
       ...props
@@ -39,6 +53,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const resolvedVariant: ButtonVariant = variant ?? "solid";
+
+    const colorStyle: React.CSSProperties = {
+      ...(isButtonColorValue(backgroundColor)
+        ? {
+            backgroundColor,
+            ...(resolvedVariant === "outline" ? { borderColor: backgroundColor } : null),
+          }
+        : null),
+      ...(isButtonColorValue(textColor) ? { color: textColor } : null),
+      ...(props.style ?? null),
+    };
     
     return (
       <button
@@ -50,6 +75,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         ref={ref}
         disabled={disabled || isLoading}
+        style={colorStyle}
         {...props}
       >
         {isLoading ? (

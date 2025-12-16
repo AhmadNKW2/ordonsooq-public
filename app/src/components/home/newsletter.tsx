@@ -58,7 +58,7 @@ export function Newsletter() {
                 />
                 <Button 
                   type="submit"
-                  color="secondary"
+                  backgroundColor="var(--color-secondary)"
                   isLoading={isLoading}
                   className="sm:w-auto"
                 >

@@ -85,7 +85,7 @@ export function QuantitySelector({
         onClick={handleDecrease}
         disabled={value <= min}
         className={cn(
-          "text-gray-600 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-full hover:bg-gray-100",
+          "text-third hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-full hover:bg-gray-100",
           buttonSizeClasses[size]
         )}
         whileTap={{ scale: 0.9 }}
@@ -111,7 +111,7 @@ export function QuantitySelector({
               damping: 30,
               mass: 0.8
             }}
-            className="block text-gray-900"
+            className="block text-primary"
           >
             {value}
           </motion.span>
@@ -131,7 +131,7 @@ export function QuantitySelector({
         onClick={handleIncrease}
         disabled={value >= max}
         className={cn(
-          "text-gray-600 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-full hover:bg-gray-100",
+          "text-third hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-full hover:bg-gray-100",
           buttonSizeClasses[size]
         )}
         whileTap={{ scale: 0.9 }}

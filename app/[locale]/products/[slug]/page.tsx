@@ -7,9 +7,8 @@ import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-reac
 import { useProduct, useProductsByCategory } from "@/hooks";
 import { transformProduct, transformProducts, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
-import { ProductGallery, FeaturedProducts, AddToCartButton, ProductOptions } from "@/components";
-import { Button, Badge, Card } from "@/components/ui";
-import { ProductCardSkeleton } from "@/components/ui/skeleton";
+import { ProductGallery, ProductsSection, ProductOptions } from "@/components";
+import { Badge, Card } from "@/components/ui";
 import { WishlistButton } from "./wishlist-button";
 import { ProductActions } from "./product-actions";
 
@@ -68,7 +67,7 @@ export default function ProductPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-6">
+      <nav className="text-sm text-third mb-6">
         <ol className="flex items-center gap-2">
           <li><a href="/" className="hover:text-primary">Home</a></li>
           <li>/</li>
@@ -76,7 +75,7 @@ export default function ProductPage() {
           <li>/</li>
           <li><a href={`/categories/${product.category.slug}`} className="hover:text-primary">{product.category.name}</a></li>
           <li>/</li>
-          <li className="text-gray-900 font-medium truncate max-w-[200px]">{product.name}</li>
+          <li className="text-primary font-medium truncate max-w-50">{product.name}</li>
         </ol>
       </nav>
 
@@ -107,7 +106,7 @@ export default function ProductPage() {
             {product.brand && (
               <p className="text-sm text-primary font-medium mb-1">{product.brand.name}</p>
             )}
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">
               {product.name}
             </h1>
           </div>
@@ -120,12 +119,12 @@ export default function ProductPage() {
                   key={i}
                   className={`w-5 h-5 ${i < Math.floor(product.rating)
                       ? "fill-secondary text-secondary"
-                      : "fill-gray-200 text-gray-200"
+                      : "fill-gray-200 text-third"
                     }`}
                 />
               ))}
             </div>
-            <span className="text-gray-600">
+            <span className="text-third">
               {product.rating} ({product.reviewCount} reviews)
             </span>
           </div>
@@ -136,14 +135,14 @@ export default function ProductPage() {
               {formatPrice(product.price)}
             </span>
             {product.compareAtPrice && (
-              <span className="text-xl text-gray-400 line-through">
+                <span className="text-xl text-third opacity-70 line-through">
                 {formatPrice(product.compareAtPrice)}
               </span>
             )}
           </div>
 
           {/* Description */}
-          <p className="text-gray-600 leading-relaxed">
+          <p className="text-third leading-relaxed">
             {product.description}
           </p>
 
@@ -160,17 +159,17 @@ export default function ProductPage() {
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
               <Truck className="w-6 h-6 text-primary mb-2" />
               <span className="text-sm font-medium">Free Shipping</span>
-              <span className="text-xs text-gray-500">Orders over $50</span>
+              <span className="text-xs text-third">Orders over $50</span>
             </div>
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
               <RotateCcw className="w-6 h-6 text-primary mb-2" />
               <span className="text-sm font-medium">Easy Returns</span>
-              <span className="text-xs text-gray-500">30-day policy</span>
+              <span className="text-xs text-third">30-day policy</span>
             </div>
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
               <Shield className="w-6 h-6 text-primary mb-2" />
               <span className="text-sm font-medium">Secure</span>
-              <span className="text-xs text-gray-500">Safe checkout</span>
+              <span className="text-xs text-third">Safe checkout</span>
             </div>
           </div>
         </div>
@@ -190,18 +189,18 @@ export default function ProductPage() {
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Store className="w-6 h-6 text-gray-400" />
+                  <Store className="w-6 h-6 text-third" />
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-500">Sold by</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-xs text-third">Sold by</p>
+                <p className="font-semibold text-primary">
                   {product.vendor?.name || "OrdonSooq"}
                 </p>
                 {product.vendor && (
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="w-3 h-3 fill-secondary text-secondary" />
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-third">
                       {product.vendor.rating} ({product.vendor.reviewCount} reviews)
                     </span>
                   </div>
@@ -219,7 +218,7 @@ export default function ProductPage() {
           {/* Other Sellers */}
           {product.otherSellers && product.otherSellers.length > 0 && (
             <Card className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">
+              <h3 className="font-semibold text-primary mb-3">
                 Check offers from {product.otherSellers.length} other sellers
               </h3>
               <div className="space-y-3">
@@ -229,10 +228,10 @@ export default function ProductPage() {
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{seller.name}</p>
+                      <p className="font-medium text-primary text-sm">{seller.name}</p>
                       <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 fill-secondary text-secondary" />
-                        <span className="text-xs text-gray-500">{seller.rating}</span>
+                        <span className="text-xs text-third">{seller.rating}</span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -249,8 +248,8 @@ export default function ProductPage() {
 
           {/* SKU & Tags */}
           <Card className="p-4">
-            <div className="text-sm text-gray-500 space-y-2">
-              <p>SKU: <span className="text-gray-900">{product.sku}</span></p>
+            <div className="text-sm text-third space-y-2">
+              <p>SKU: <span className="text-primary">{product.sku}</span></p>
               <p>Category: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
               {product.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
@@ -274,10 +273,10 @@ export default function ProductPage() {
       {/* Product Description Section */}
       {product.longDescription && (
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Description</h2>
+          <h2 className="text-2xl font-bold text-primary mb-6">Product Description</h2>
           <Card className="p-8">
             <div
-              className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-primary"
+              className="prose max-w-none prose-headings:text-primary prose-p:text-third prose-a:text-primary"
               dangerouslySetInnerHTML={{ __html: product.longDescription }}
             />
             {product.descriptionImages && product.descriptionImages.length > 0 && (
@@ -301,7 +300,7 @@ export default function ProductPage() {
       {/* Reviews Section - Placeholder for future API integration */}
       {product.reviewCount > 0 && (
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
+          <h2 className="text-2xl font-bold text-primary mb-6">Customer Reviews</h2>
           <Card className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="flex items-center gap-1">
@@ -310,14 +309,14 @@ export default function ProductPage() {
                     key={i}
                     className={`w-6 h-6 ${i < Math.floor(product.rating)
                         ? "fill-secondary text-secondary"
-                        : "fill-gray-200 text-gray-200"
+                        : "fill-gray-200 text-third"
                       }`}
                   />
                 ))}
               </div>
-              <span className="text-xl font-bold text-gray-900">{product.rating}</span>
+              <span className="text-xl font-bold text-primary">{product.rating}</span>
             </div>
-            <p className="text-gray-600">Based on {product.reviewCount} reviews</p>
+            <p className="text-third">Based on {product.reviewCount} reviews</p>
           </Card>
         </section>
       )}
@@ -325,7 +324,7 @@ export default function ProductPage() {
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section>
-          <FeaturedProducts
+          <ProductsSection
             products={relatedProducts}
             title="Related Products"
             subtitle="You might also like these"

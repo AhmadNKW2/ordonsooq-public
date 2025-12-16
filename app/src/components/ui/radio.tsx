@@ -80,7 +80,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              "ml-2.5 text-sm text-gray-700 cursor-pointer select-none",
+              "ml-2.5 text-sm text-primary cursor-pointer select-none",
               disabled && "cursor-not-allowed opacity-50"
             )}
           >

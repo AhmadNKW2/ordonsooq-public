@@ -34,7 +34,7 @@ const variantClasses = {
   outline: "bg-transparent border border-gray-200 hover:bg-gray-50",
   filled: "shadow-s1",
   header: "text-white hover:bg-gray-100 hover:text-primary",
-  social: "bg-gray-800 hover:bg-secondary text-gray-300 hover:text-white",
+  social: "bg-gray-800 hover:bg-secondary text-white hover:text-white",
 };
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -63,7 +63,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       ...(effectiveColor && { "--icon-color": effectiveColor }),
       ...(variant === "filled" && effectiveColor && {
         "--icon-bg": effectiveColor,
-        "--icon-color": "#ffffff",
+        "--icon-color": "var(--color-third)",
       }),
     } as React.CSSProperties;
 

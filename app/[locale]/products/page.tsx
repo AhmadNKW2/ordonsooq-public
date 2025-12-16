@@ -79,8 +79,8 @@ export default function ProductsPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Products</h1>
-        <p className="text-gray-500">
+        <h1 className="text-3xl font-bold text-primary mb-2">All Products</h1>
+        <p className="text-third">
           Discover our wide selection of quality products
         </p>
       </div>
@@ -104,7 +104,7 @@ export default function ProductsPage() {
           </Button>
 
           {/* Results Count */}
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-third">
             {isLoading ? 'Loading...' : `${totalProducts} products found`}
           </span>
         </div>
@@ -112,7 +112,7 @@ export default function ProductsPage() {
         <div className="flex items-center gap-4">
           {/* Sort */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 hidden sm:inline">
+            <span className="text-sm text-third hidden sm:inline">
               Sort by:
             </span>
             <Select
@@ -134,7 +134,7 @@ export default function ProductsPage() {
               className={cn(
                 "p-2 transition-colors",
                 viewMode === "grid-4"
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-third"
                   : "hover:bg-gray-100"
               )}
               aria-label="Grid 4 columns"
@@ -146,7 +146,7 @@ export default function ProductsPage() {
               className={cn(
                 "p-2 transition-colors",
                 viewMode === "grid-3"
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-third"
                   : "hover:bg-gray-100"
               )}
               aria-label="Grid 3 columns"
@@ -158,7 +158,7 @@ export default function ProductsPage() {
               className={cn(
                 "p-2 transition-colors",
                 viewMode === "list"
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-third"
                   : "hover:bg-gray-100"
               )}
               aria-label="List view"
@@ -224,11 +224,11 @@ export default function ProductsPage() {
             <ProductGridSkeleton count={12} />
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-red-500">Error loading products. Please try again.</p>
+              <p className="text-secondary">Error loading products. Please try again.</p>
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No products found matching your criteria.</p>
+              <p className="text-third">No products found matching your criteria.</p>
             </div>
           ) : (
             <>
@@ -246,7 +246,7 @@ export default function ProductsPage() {
                   >
                     Previous
                   </Button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-third">
                     Page {page} of {totalPages}
                   </span>
                   <Button

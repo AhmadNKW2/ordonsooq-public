@@ -19,7 +19,7 @@ export function ProductOptions({ variants }: ProductOptionsProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-900">Options</h3>
+      <h3 className="font-semibold text-primary">Options</h3>
       <div className="flex flex-wrap gap-2">
         {variants.map((variant) => (
           <Radio

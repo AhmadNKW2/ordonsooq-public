@@ -110,7 +110,7 @@ export function ProductFilters({
     <Card className={cn("p-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900">Filters</h3>
+        <h3 className="font-semibold text-primary">Filters</h3>
         {activeFiltersCount > 0 && (
           <button
             onClick={clearAllFilters}
@@ -192,13 +192,13 @@ export function ProductFilters({
                 onChange={() => handleCategoryChange(category.id)}
               />
               <span 
-                className="text-sm text-gray-700 cursor-pointer flex-1"
+                className="text-sm text-primary cursor-pointer flex-1"
                 onClick={() => handleCategoryChange(category.id)}
               >
                 {category.name}
               </span>
               {category.productCount && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-third">
                   ({category.productCount})
                 </span>
               )}
@@ -228,7 +228,7 @@ export function ProductFilters({
                 onChange={() => handlePriceChange({ min: range.min, max: range.max })}
               />
               <span 
-                className="text-sm text-gray-700 cursor-pointer"
+                className="text-sm text-primary cursor-pointer"
                 onClick={() => handlePriceChange({ min: range.min, max: range.max })}
               >
                 {range.label}
@@ -256,7 +256,7 @@ export function ProductFilters({
                   onChange={() => handleBrandChange(brand.id)}
                 />
                 <span 
-                  className="text-sm text-gray-700 cursor-pointer"
+                  className="text-sm text-primary cursor-pointer"
                   onClick={() => handleBrandChange(brand.id)}
                 >
                   {brand.name}
@@ -285,7 +285,7 @@ export function ProductFilters({
                 onChange={() => handleRatingChange(option.value)}
               />
               <span 
-                className="text-sm text-gray-700 cursor-pointer"
+                className="text-sm text-primary cursor-pointer"
                 onClick={() => handleRatingChange(option.value)}
               >
                 {option.label}
@@ -312,11 +312,11 @@ function FilterSection({ title, isExpanded, onToggle, children }: FilterSectionP
         onClick={onToggle}
         className="flex items-center justify-between w-full text-left"
       >
-        <span className="font-medium text-gray-900">{title}</span>
+        <span className="font-medium text-primary">{title}</span>
         {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-500" />
+          <ChevronUp className="w-4 h-4 text-third" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-500" />
+          <ChevronDown className="w-4 h-4 text-third" />
         )}
       </button>
       <div
