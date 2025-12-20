@@ -18,7 +18,7 @@ export function ProductOptions({ variants }: ProductOptionsProps) {
   if (!variants || variants.length === 0) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-5">
       <h3 className="font-semibold text-primary">Options</h3>
       <div className="flex flex-wrap gap-2">
         {variants.map((variant) => (

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { SlidersHorizontal, Grid3X3, Grid2X2, List, X } from "lucide-react";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
-import { Button, Badge, Card, Select } from "@/components/ui";
+import { Button, Badge, Card, Select, PageWrapper } from "@/components/ui";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProducts, useCategories } from "@/hooks";
 import { transformProducts, transformCategories, type Locale } from "@/lib/transformers";
@@ -76,7 +76,7 @@ export default function ProductsPage() {
     (filters.rating ? 1 : 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary mb-2">All Products</h1>
@@ -86,8 +86,8 @@ export default function ProductsPage() {
       </div>
 
       {/* Toolbar */}
-      <Card className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4">
-        <div className="flex items-center gap-4">
+      <Card className="flex flex-wrap items-center justify-between gap-5 mb-6 p-4">
+        <div className="flex items-center gap-5">
           {/* Mobile Filter Toggle */}
           <Button
             color="white"
@@ -109,7 +109,7 @@ export default function ProductsPage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           {/* Sort */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-third hidden sm:inline">
@@ -170,7 +170,7 @@ export default function ProductsPage() {
       </Card>
 
       {/* Main Content */}
-      <div className="flex gap-6">
+      <div className="flex gap-5">
         {/* Sidebar Filters - Desktop */}
         <aside className="hidden lg:block w-72 shrink-0">
           <ProductFilters
@@ -262,6 +262,6 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

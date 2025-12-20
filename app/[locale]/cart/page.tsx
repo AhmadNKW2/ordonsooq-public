@@ -2,8 +2,8 @@
 
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, ArrowLeft, Tag } from "lucide-react";
-import { Button, Input, Card, CardContent } from "@/components/ui";
+import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight } from "lucide-react";
+import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/utils";
 
@@ -37,9 +37,9 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-primary mb-2">Shopping Cart</h1>
           <p className="text-third">{totalItems} items in your cart</p>
@@ -54,13 +54,38 @@ export default function CartPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Free Shipping Progress */}
+      <Card className="bg-linear-to-r from-primary/5 to-secondary/5 border-primary/10">
+        <div className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-white rounded-full shadow-xs">
+              <Truck className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-primary">
+                {totalPrice >= 50
+                  ? "You've earned FREE shipping!"
+                  : `Add ${formatPrice(50 - totalPrice)} to get FREE shipping`}
+              </p>
+            </div>
+            <span className="font-bold text-primary">{Math.min(Math.round((totalPrice / 50) * 100), 100)}%</span>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 flex flex-col gap-5">
           {items.map((item) => (
             <Card key={item.product.id} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="flex flex-col sm:flex-row gap-4 p-4">
+              <div className="p-0">
+                <div className="flex flex-col sm:flex-row gap-5 p-4">
                   {/* Product Image */}
                   <Link href={`/products/${item.product.slug}`} className="relative w-full sm:w-32 h-32 shrink-0">
                     <Image
@@ -89,26 +114,14 @@ export default function CartPage() {
 
                     <div className="flex items-center justify-between mt-4 sm:mt-0">
                       {/* Quantity Selector */}
-                      <div className="flex items-center border border-gray-200 rounded-lg">
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
-                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-10 text-center font-medium">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.product.stock}
-                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <QuantitySelector
+                        value={item.quantity}
+                        onChange={(val) => updateQuantity(item.product.id, val)}
+                        max={item.product.stock}
+                      />
 
                       {/* Price & Remove */}
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-5">
                         <div className="text-right">
                           <p className="font-semibold text-primary">
                             {formatPrice(item.product.price * item.quantity)}
@@ -119,17 +132,16 @@ export default function CartPage() {
                             </p>
                           )}
                         </div>
-                        <button
+                        <IconButton
+                          icon="trash"
                           onClick={() => removeItem(item.product.id)}
-                          className="p-2 text-third hover:text-secondary hover:bg-danger/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                          variant="wishlist"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))}
 
@@ -142,12 +154,12 @@ export default function CartPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-24">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-primary mb-6">Order Summary</h2>
+          <Card className="sticky top-46">
+            <div className="flex flex-col gap-5">
+              <h2 className="text-xl font-bold text-primary">Order Summary</h2>
 
               {/* Coupon Code */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-2">
                 <Input placeholder="Coupon code" icon={Tag} />
                 <Button
                   variant="solid"
@@ -158,7 +170,7 @@ export default function CartPage() {
               </div>
 
               {/* Summary Items */}
-              <div className="space-y-4 pb-6 border-b border-gray-100">
+              <div className="flex flex-col gap-5 pb-5 border-b border-gray-100">
                 <div className="flex justify-between text-third">
                   <span>Subtotal ({totalItems} items)</span>
                   <span>{formatPrice(totalPrice)}</span>
@@ -176,14 +188,14 @@ export default function CartPage() {
               </div>
 
               {/* Total */}
-              <div className="flex justify-between py-6 text-lg font-bold text-primary">
+              <div className="flex justify-between text-lg font-bold text-primary">
                 <span>Total</span>
                 <span className="text-primary">{formatPrice(finalTotal)}</span>
               </div>
 
               {/* Free Shipping Notice */}
               {totalPrice < 50 && (
-                <div className="mb-6 p-4 bg-secondary/10 rounded-lg">
+                <div className="p-4 bg-secondary/10 rounded-lg">
                   <p className="text-sm text-third">
                     Add <span className="font-bold text-primary">{formatPrice(50 - totalPrice)}</span> more to get{" "}
                     <span className="font-bold text-secondary">FREE shipping!</span>
@@ -206,13 +218,13 @@ export default function CartPage() {
               </Link>
 
               {/* Secure Checkout Notice */}
-              <p className="text-center text-sm text-third mt-4">
+              <p className="text-center text-sm text-third">
                 🔒 Secure checkout powered by Stripe
               </p>
-            </CardContent>
+            </div>
           </Card>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

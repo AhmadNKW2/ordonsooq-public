@@ -8,7 +8,7 @@ export type { BadgeProps } from "./badge";
 export { Button } from "./button";
 export type { ButtonProps } from "./button";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "./card";
+export { Card } from "./card";
 
 export { Checkbox } from "./checkbox";
 export type { CheckboxProps } from "./checkbox";
@@ -22,6 +22,8 @@ export type { InputProps } from "./input";
 export { Modal } from "./modal";
 
 export { QuantitySelector } from "./quantity-selector";
+
+export { PageWrapper } from "./page-wrapper";
 
 export { Radio } from "./radio";
 export type { RadioProps } from "./radio";

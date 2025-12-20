@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Heart, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Product } from "@/types";
 import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
 import { Badge, IconButton } from "@/components/ui";
@@ -25,7 +25,7 @@ export function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, openCart } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
 
@@ -43,6 +43,10 @@ export function ProductCard({
     addItem(product, quantity);
   };
 
+  const handleAnimationEnd = () => {
+    openCart();
+  };
+
   const handleCartButtonStatusChange = (status: "idle" | "loading" | "success") => {
     setCartButtonStatus(status);
   };
@@ -56,7 +60,7 @@ export function ProductCard({
     return (
       <div
         onClick={handleCardClick}
-        className="group flex gap-4 p-4 bg-white rounded-r1 border border-gray-100 shadow-s1 hover:shadow-s1 transition-all duration-300 cursor-pointer"
+        className="group flex gap-5 p-4 bg-white rounded-r1 border border-gray-100 shadow-s1 hover:shadow-s1 transition-all duration-300 cursor-pointer"
       >
         <div className="relative w-32 h-32 shrink-0 overflow-hidden rounded-lg">
           <Image
@@ -156,15 +160,12 @@ export function ProductCard({
             <IconButton
               onClick={handleToggleWishlist}
               size="sm"
-              variant={inWishlist ? "filled" : "default"}
-              color={inWishlist ? "var(--color-danger)" : "var(--color-gray-700)"}
-              className={cn(
-                !inWishlist && "hover:bg-danger hover:text-third"
-              )}
+              variant="wishlist"
+              isActive={inWishlist}
               aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
-            >
-              <Heart className={cn(inWishlist && "fill-current")} />
-            </IconButton>
+              icon="heart"
+              shape="circle"
+            />
           </div>
         )}
 
@@ -189,6 +190,7 @@ export function ProductCard({
               }}
               onAddToCart={handleAddToCart}
               onStatusChange={handleCartButtonStatusChange}
+              onAnimationEnd={handleAnimationEnd}
             />
           </div>
         )}

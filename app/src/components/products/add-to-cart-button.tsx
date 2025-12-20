@@ -18,12 +18,13 @@ interface AddToCartButtonProps {
   product: Product;
   onAddToCart?: (count: number) => void;
   onStatusChange?: (status: "idle" | "loading" | "success") => void;
+  onAnimationEnd?: () => void;
   color?: string;
 }
 
 // --- Components ---
 
-export function AddToCartButton({ product, onAddToCart, onStatusChange, color }: AddToCartButtonProps) {
+export function AddToCartButton({ product, onAddToCart, onStatusChange, onAnimationEnd, color }: AddToCartButtonProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const buttonRef = useRef<HTMLButtonElement>(null);
   
@@ -44,7 +45,8 @@ export function AddToCartButton({ product, onAddToCart, onStatusChange, color }:
 
     setTimeout(() => {
       updateStatus("idle");
-    }, 2500);
+      onAnimationEnd?.();
+    }, 750);
   };
 
   return (

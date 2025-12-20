@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Search as SearchIcon, X, SlidersHorizontal } from "lucide-react";
-import { Input, Button, Badge, Select } from "@/components/ui";
+import { Input, Button, Badge, Select, PageWrapper } from "@/components/ui";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProductSearch, useCategories } from "@/hooks";
@@ -81,7 +81,7 @@ function SearchPageContent() {
     (filters.rating ? 1 : 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Search Header */}
       <div className="mb-8">
         <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
@@ -129,7 +129,7 @@ function SearchPageContent() {
             <SearchIcon className="w-12 h-12 text-third" />
           </div>
           <h2 className="text-xl font-bold text-primary mb-2">Start Searching</h2>
-          <p className="text-third mb-6">
+          <p className="text-third mb-8">
             Enter a search term to find products, brands, and more
           </p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -151,8 +151,8 @@ function SearchPageContent() {
       {query && (
         <>
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-white rounded-r1 border border-gray-100 shadow-s1">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-5 p-4 bg-white rounded-r1 border border-gray-100 shadow-s1 mb-6">
+            <div className="flex items-center gap-5">
               {/* Mobile Filter Toggle */}
               <Button
                 color="white"
@@ -174,7 +174,7 @@ function SearchPageContent() {
               </span>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {/* Sort */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-third hidden sm:inline">
@@ -195,7 +195,7 @@ function SearchPageContent() {
           </div>
 
           {/* Main Content */}
-          <div className="flex gap-6">
+          <div className="flex gap-5">
             {/* Sidebar Filters - Desktop */}
             <aside className="hidden lg:block w-72 shrink-0">
               <ProductFilters
@@ -251,7 +251,7 @@ function SearchPageContent() {
                 <ProductGrid products={searchResults} columns={4} />
               ) : (
                 <div className="text-center py-16">
-                  <p className="text-third mb-4">
+                  <p className="text-third">
                     No products match your search criteria.
                   </p>
                   <Button
@@ -273,7 +273,7 @@ function SearchPageContent() {
           </div>
         </>
       )}
-    </div>
+    </PageWrapper>
   );
 }
 
@@ -281,7 +281,7 @@ export default function SearchPage() {
   return (
     <Suspense fallback={
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto mb-8">
+        <div className="max-w-2xl mx-auto">
           <div className="h-14 bg-gray-100 rounded-lg animate-pulse" />
         </div>
         <ProductGridSkeleton count={8} />

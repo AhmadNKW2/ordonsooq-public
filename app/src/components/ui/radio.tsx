@@ -5,13 +5,67 @@ import { cn } from "@/lib/utils";
 
 export interface RadioProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
-  label?: string;
-  variant?: "default" | "tag";
+  label?: React.ReactNode;
+  description?: React.ReactNode;
+  rightNode?: React.ReactNode;
+  variant?: "default" | "tag" | "item";
 }
 
 const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
-  ({ className, label, id, disabled, variant = "default", ...props }, ref) => {
+  ({ className, label, description, rightNode, id, disabled, variant = "default", ...props }, ref) => {
     const inputId = id || React.useId();
+
+    if (variant === "item") {
+      return (
+        <label
+          htmlFor={inputId}
+          className={cn(
+            "flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all",
+            props.checked
+              ? "border-secondary bg-secondary/5 shadow-s1"
+              : "border-gray-200 hover:border-secondary/50",
+            className
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center shrink-0">
+              <input
+                type="radio"
+                id={inputId}
+                ref={ref}
+                disabled={disabled}
+                className={cn(
+                  "peer relative appearance-none h-5 w-5 rounded-full cursor-pointer",
+                  "border-2 border-gray-300 bg-white",
+                  "transition-all duration-300 ease-out",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary/30 focus-visible:ring-offset-2",
+                  "hover:border-secondary/60 hover:shadow-[0_0_0_4px_rgba(var(--secondary-rgb,99,102,241),0.1)]",
+                  "checked:border-secondary checked:bg-secondary",
+                  "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none"
+                )}
+                {...props}
+              />
+              <div 
+                className={cn(
+                  "absolute pointer-events-none",
+                  "h-2 w-2 rounded-full bg-white",
+                  "scale-0 opacity-0",
+                  "transition-all duration-300 ease-out",
+                  "peer-checked:scale-100 peer-checked:opacity-100"
+                )}
+              />
+            </div>
+            <div>
+              {label && <p className="font-medium text-primary">{label}</p>}
+              {description && <p className="text-sm text-third">{description}</p>}
+            </div>
+          </div>
+          {rightNode && (
+             <div className="font-semibold text-primary">{rightNode}</div>
+          )}
+        </label>
+      );
+    }
 
     if (variant === "tag") {
       return (
@@ -27,7 +81,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              "inline-block py-3 px-5 rounded-full cursor-pointer transition-all duration-200 ease-out select-none",
+              "inline-block py-3 px-5 rounded-full cursor-pointer transition-all duration-300 ease-out select-none",
               "bg-white shadow-sm ring-1 ring-inset ring-gray-200",
               "hover:bg-gray-50 hover:ring-gray-300",
               "peer-focus:outline-none peer-focus-visible:ring-2 peer-checked:text-secondary peer-checked:font-semibold peer-focus-visible:ring-secondary/30 peer-focus-visible:ring-offset-2",
@@ -53,7 +107,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
               // Base styles
               "peer relative appearance-none h-5 w-5 rounded-full cursor-pointer",
               "border-2 border-gray-300 bg-white",
-              "transition-all duration-200 ease-out",
+              "transition-all duration-300 ease-out",
               // Focus state
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary/30 focus-visible:ring-offset-2",
               // Hover state
@@ -71,7 +125,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
               "absolute pointer-events-none",
               "h-2 w-2 rounded-full bg-white",
               "scale-0 opacity-0",
-              "transition-all duration-200 ease-out",
+              "transition-all duration-300 ease-out",
               "peer-checked:scale-100 peer-checked:opacity-100"
             )}
           />

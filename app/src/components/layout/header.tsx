@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { CartSidebar } from "@/components/cart";
 import {
   TopBar,
   Logo,
@@ -53,6 +54,9 @@ export function Header() {
 
       {/* Mobile Navigation */}
       <MobileNav isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+
+      {/* Cart Sidebar */}
+      <CartSidebar />
     </header>
   );
 }

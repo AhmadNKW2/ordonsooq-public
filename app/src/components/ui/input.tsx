@@ -19,7 +19,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={id}
-            className="block text-sm font-medium text-primary mb-1.5"
+            className="block text-sm font-medium text-primary mb-2"
           >
             {label}
           </label>

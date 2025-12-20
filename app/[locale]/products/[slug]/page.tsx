@@ -5,11 +5,11 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-react";
 import { useProduct, useProductsByCategory } from "@/hooks";
+import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, transformProducts, type Locale } from "@/lib/transformers";
-import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { ProductGallery, ProductsSection, ProductOptions } from "@/components";
-import { Badge, Card } from "@/components/ui";
-import { WishlistButton } from "./wishlist-button";
+import { Badge, Card, IconButton, PageWrapper } from "@/components/ui";
 import { ProductActions } from "./product-actions";
 
 export default function ProductPage() {
@@ -17,6 +17,7 @@ export default function ProductPage() {
   const t = useTranslations();
   const params = useParams();
   const slug = params.slug as string;
+  const { toggleItem, isInWishlist } = useWishlist();
 
   // Extract product ID from slug (format: product-name-ID)
   const productId = parseInt(slug.split('-').pop() || '0', 10);
@@ -37,7 +38,7 @@ export default function ProductPage() {
           <div className="lg:col-span-5">
             <div className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
           </div>
-          <div className="lg:col-span-4 space-y-4">
+          <div className="lg:col-span-4 flex flex-col gap-5">
             <div className="h-8 bg-gray-200 animate-pulse rounded w-3/4" />
             <div className="h-6 bg-gray-200 animate-pulse rounded w-1/2" />
             <div className="h-10 bg-gray-200 animate-pulse rounded w-1/3" />
@@ -65,7 +66,7 @@ export default function ProductPage() {
     : 0;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Breadcrumb */}
       <nav className="text-sm text-third mb-6">
         <ol className="flex items-center gap-2">
@@ -86,12 +87,25 @@ export default function ProductPage() {
           <ProductGallery
             images={product.images}
             productName={product.name}
-            wishlistButton={<WishlistButton product={product} variant="icon" />}
+            wishlistButton={
+              <IconButton
+                onClick={() => toggleItem(product)}
+                isActive={isInWishlist(product.id)}
+                className={cn(
+                  "shadow-lg hover:scale-110",
+                  !isInWishlist(product.id) && "bg-white/90 backdrop-blur-sm"
+                )}
+                aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                icon="heart"
+                shape="circle"
+                variant="wishlist"
+              />
+            }
           />
         </div>
 
         {/* Info - Column 2 */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 flex flex-col gap-5">
           {/* Badges */}
           <div className="flex items-center gap-2">
             {product.isNew && <Badge variant="new">New Arrival</Badge>}
@@ -104,7 +118,7 @@ export default function ProductPage() {
           {/* Title & Brand */}
           <div>
             {product.brand && (
-              <p className="text-sm text-primary font-medium mb-1">{product.brand.name}</p>
+              <p className="text-sm text-primary font-medium">{product.brand.name}</p>
             )}
             <h1 className="text-2xl md:text-3xl font-bold text-primary">
               {product.name}
@@ -112,7 +126,7 @@ export default function ProductPage() {
           </div>
 
           {/* Rating */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
@@ -155,19 +169,19 @@ export default function ProductPage() {
           <ProductActions product={product} />
 
           {/* Features */}
-          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <Truck className="w-6 h-6 text-primary mb-2" />
+              <Truck className="w-6 h-6 text-primary" />
               <span className="text-sm font-medium">Free Shipping</span>
               <span className="text-xs text-third">Orders over $50</span>
             </div>
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <RotateCcw className="w-6 h-6 text-primary mb-2" />
+              <RotateCcw className="w-6 h-6 text-primary" />
               <span className="text-sm font-medium">Easy Returns</span>
               <span className="text-xs text-third">30-day policy</span>
             </div>
             <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <Shield className="w-6 h-6 text-primary mb-2" />
+              <Shield className="w-6 h-6 text-primary" />
               <span className="text-sm font-medium">Secure</span>
               <span className="text-xs text-third">Safe checkout</span>
             </div>
@@ -175,10 +189,10 @@ export default function ProductPage() {
         </div>
 
         {/* Vendor Info - Column 3 */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 flex flex-col gap-5">
           {/* Vendor Card */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3 mb-4">
+          <Card className="p-4 flex justify-between">
+            <div className="flex items-center gap-3">
               {product.vendor?.logo ? (
                 <Image
                   src={product.vendor.logo}
@@ -218,10 +232,10 @@ export default function ProductPage() {
           {/* Other Sellers */}
           {product.otherSellers && product.otherSellers.length > 0 && (
             <Card className="p-4">
-              <h3 className="font-semibold text-primary mb-3">
+              <h3 className="font-semibold text-primary">
                 Check offers from {product.otherSellers.length} other sellers
               </h3>
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {product.otherSellers.map((seller) => (
                   <div
                     key={seller.id}
@@ -248,7 +262,7 @@ export default function ProductPage() {
 
           {/* SKU & Tags */}
           <Card className="p-4">
-            <div className="text-sm text-third space-y-2">
+            <div className="text-sm text-third flex flex-col gap-2">
               <p>SKU: <span className="text-primary">{product.sku}</span></p>
               <p>Category: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
               {product.tags.length > 0 && (
@@ -272,15 +286,15 @@ export default function ProductPage() {
 
       {/* Product Description Section */}
       {product.longDescription && (
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-primary mb-6">Product Description</h2>
+        <section >
+          <h2 className="text-2xl font-bold text-primary">Product Description</h2>
           <Card className="p-8">
             <div
               className="prose max-w-none prose-headings:text-primary prose-p:text-third prose-a:text-primary"
               dangerouslySetInnerHTML={{ __html: product.longDescription }}
             />
             {product.descriptionImages && product.descriptionImages.length > 0 && (
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
                 {product.descriptionImages.map((img, index) => (
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden">
                     <Image
@@ -299,10 +313,10 @@ export default function ProductPage() {
 
       {/* Reviews Section - Placeholder for future API integration */}
       {product.reviewCount > 0 && (
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-primary mb-6">Customer Reviews</h2>
+        <section >
+          <h2 className="text-2xl font-bold text-primary">Customer Reviews</h2>
           <Card className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center justify-center gap-2">
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
@@ -328,12 +342,12 @@ export default function ProductPage() {
             products={relatedProducts}
             title="Related Products"
             subtitle="You might also like these"
-            viewAllLink={`/categories/${product.category.slug}`}
+            viewAllHref={`/categories/${product.category.slug}`}
             showLoadMore={false}
             showNavArrows={true}
           />
         </section>
       )}
-    </div>
+    </PageWrapper>
   );
 }

@@ -7,6 +7,7 @@ import { STORAGE_KEYS } from "@/lib/constants";
 interface CartState {
   items: CartItem[];
   isLoading: boolean;
+  isOpen: boolean;
 }
 
 type CartAction =
@@ -14,11 +15,13 @@ type CartAction =
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" }
-  | { type: "LOAD_CART"; payload: CartItem[] };
+  | { type: "LOAD_CART"; payload: CartItem[] }
+  | { type: "SET_IS_OPEN"; payload: boolean };
 
 const initialState: CartState = {
   items: [],
   isLoading: true,
+  isOpen: false,
 };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -29,20 +32,22 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       
       const existingItemIndex = state.items.findIndex((item) => item.id === itemId);
       
+      let newItems;
       if (existingItemIndex > -1) {
         const updatedItems = [...state.items];
         updatedItems[existingItemIndex].quantity += quantity;
-        return { ...state, items: updatedItems };
+        newItems = updatedItems;
+      } else {
+        const newItem: CartItem = {
+          id: itemId,
+          product,
+          quantity,
+          variant,
+        };
+        newItems = [...state.items, newItem];
       }
       
-      const newItem: CartItem = {
-        id: itemId,
-        product,
-        quantity,
-        variant,
-      };
-      
-      return { ...state, items: [...state.items, newItem] };
+      return { ...state, items: newItems };
     }
     
     case "REMOVE_ITEM": {
@@ -76,6 +81,10 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "LOAD_CART": {
       return { ...state, items: action.payload, isLoading: false };
     }
+
+    case "SET_IS_OPEN": {
+      return { ...state, isOpen: action.payload };
+    }
     
     default:
       return state;
@@ -85,6 +94,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 interface CartContextType {
   items: CartItem[];
   isLoading: boolean;
+  isOpen: boolean;
   totalItems: number;
   subtotal: number;
   totalPrice: number;
@@ -93,6 +103,9 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   isInCart: (productId: string) => boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  toggleCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -150,11 +163,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return state.items.some((item) => item.product.id === productId);
   };
 
+  const openCart = () => dispatch({ type: "SET_IS_OPEN", payload: true });
+  const closeCart = () => dispatch({ type: "SET_IS_OPEN", payload: false });
+  const toggleCart = () => dispatch({ type: "SET_IS_OPEN", payload: !state.isOpen });
+
   return (
     <CartContext.Provider
       value={{
         items: state.items,
         isLoading: state.isLoading,
+        isOpen: state.isOpen,
         totalItems,
         subtotal,
         totalPrice: subtotal,
@@ -163,6 +181,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         updateQuantity,
         clearCart,
         isInCart,
+        openCart,
+        closeCart,
+        toggleCart,
       }}
     >
       {children}

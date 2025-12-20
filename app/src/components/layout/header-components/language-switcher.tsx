@@ -2,7 +2,6 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { Globe } from "lucide-react";
 import { IconButton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -46,9 +45,8 @@ export function LanguageSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label={t("switchLanguage")}
         aria-expanded={isOpen}
-      >
-        <Globe size={22} />
-      </IconButton>
+        icon="globe"
+      />
 
       {/* Dropdown */}
       {isOpen && (

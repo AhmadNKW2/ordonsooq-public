@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { useRootCategories } from "@/hooks";
 import { transformCategories, type Locale } from "@/lib/transformers";
 import { CategoryCardSkeleton } from "@/components/ui/skeleton";
+import { PageWrapper } from "@/components/ui";
 
 export default function CategoriesPage() {
   const locale = useLocale() as Locale;
@@ -31,7 +32,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary mb-2">Shop by Category</h1>
@@ -42,7 +43,7 @@ export default function CategoriesPage() {
 
       {/* Categories Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => (
             <CategoryCardSkeleton key={i} />
           ))}
@@ -52,7 +53,7 @@ export default function CategoriesPage() {
           <p className="text-third">No categories found.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {categories.map((category) => {
             const subcategories = category.children || [];
             
@@ -74,7 +75,7 @@ export default function CategoriesPage() {
                   
                   {/* Category Name on Image */}
                   <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-xl font-bold text-third mb-1">
+                    <h3 className="text-xl font-bold text-third">
                       {category.name}
                     </h3>
                     {category.productCount !== undefined && (
@@ -116,6 +117,6 @@ export default function CategoriesPage() {
           })}
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 }

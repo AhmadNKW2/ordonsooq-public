@@ -42,16 +42,16 @@ export function FeaturesSection() {
   return (
     <section className="bg-gray-50 rounded-r1">
       <div className="container mx-auto p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
           {features.map((feature, index) => (
             <div
               key={index}
               className="flex flex-col items-center text-center p-4 hover:bg-white hover:shadow-s1 rounded-xl transition-all duration-300"
             >
-              <div className="p-3 bg-primary/5 rounded-full mb-4">
+              <div className="p-3 bg-primary/5 rounded-full">
                 <feature.icon className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-semibold text-primary mb-1">{feature.title}</h3>
+              <h3 className="font-semibold text-primary">{feature.title}</h3>
               <p className="text-sm text-third">{feature.description}</p>
             </div>
           ))}

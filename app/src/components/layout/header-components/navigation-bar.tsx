@@ -267,10 +267,10 @@ export function NavigationBar() {
                         transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(12px)",
                       }}
                     >
-                      <h3 className="text-xs font-semibold text-third uppercase tracking-wider mb-4">
+                      <h3 className="text-xs font-semibold text-third uppercase tracking-wider">
                         {section.title}
                       </h3>
-                      <ul className="space-y-1">
+                      <ul className="flex flex-col gap-1">
                         {section.links.map((link, linkIdx) => (
                           <li key={linkIdx}>
                             <Link

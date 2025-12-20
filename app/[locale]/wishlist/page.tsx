@@ -2,7 +2,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { Heart, ShoppingBag, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, PageWrapper } from "@/components/ui";
 import { ProductGrid } from "@/components/products";
 import { useWishlist } from "@/hooks/use-wishlist";
 
@@ -35,7 +35,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -54,6 +54,6 @@ export default function WishlistPage() {
 
       {/* Wishlist Products */}
       <ProductGrid products={wishlistProducts} columns={4} />
-    </div>
+    </PageWrapper>
   );
 }

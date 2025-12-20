@@ -18,7 +18,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
-      <nav className="p-4 space-y-1">
+      <nav className="p-4 flex flex-col gap-1">
         {NAV_LINKS.map((link) => (
           <Link
             key={link.href}

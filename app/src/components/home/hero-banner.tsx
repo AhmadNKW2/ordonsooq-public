@@ -118,7 +118,6 @@ export function HeroBanner({
         <>
           <ArrowButton
             direction="left"
-            variant="banner"
             size="lg"
             onClick={goToPrevious}
             disabled={isTransitioning}
@@ -128,7 +127,6 @@ export function HeroBanner({
 
           <ArrowButton
             direction="right"
-            variant="banner"
             size="lg"
             onClick={() => goToNext()}
             disabled={isTransitioning}

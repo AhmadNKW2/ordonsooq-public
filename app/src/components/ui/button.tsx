@@ -8,7 +8,11 @@ type ButtonColorValue = `#${string}` | `var(--${string})`;
 function isButtonColorValue(value: unknown): value is ButtonColorValue {
   if (typeof value !== "string") return false;
   const trimmed = value.trim();
-  return /^#[0-9a-fA-F]{3,8}$/.test(trimmed) || /^var\(--[a-zA-Z0-9-_]+\)$/.test(trimmed);
+  return (
+    /^#[0-9a-fA-F]{3,8}$/.test(trimmed) ||
+    /^var\(--[a-zA-Z0-9-_]+\)$/.test(trimmed) ||
+    /^(rgb|hsl)a?\(/.test(trimmed)
+  );
 }
 
 export interface ButtonProps

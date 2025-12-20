@@ -9,6 +9,7 @@ import { useCategory, useProductsByCategory } from "@/hooks";
 import { transformCategory, transformProducts, type Locale } from "@/lib/transformers";
 import { ProductGrid } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
+import { PageWrapper } from "@/components/ui";
 
 export default function CategoryPage() {
   const locale = useLocale() as Locale;
@@ -28,7 +29,7 @@ export default function CategoryPage() {
   if (categoryLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="h-48 md:h-64 bg-gray-200 animate-pulse rounded-lg mb-8" />
+        <div className="h-48 md:h-64 bg-gray-200 animate-pulse rounded-lg" />
         <ProductGridSkeleton count={8} />
       </div>
     );
@@ -50,7 +51,7 @@ export default function CategoryPage() {
   } : null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageWrapper className="container mx-auto">
       {/* Breadcrumb */}
       <nav className="text-sm text-third mb-6">
         <ol className="flex items-center gap-2">
@@ -82,7 +83,7 @@ export default function CategoryPage() {
         />
         <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/30" />
         <div className="absolute inset-0 flex flex-col justify-center p-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-third mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-third">
             {category.name}
           </h1>
           <p className="text-third opacity-80">
@@ -93,16 +94,16 @@ export default function CategoryPage() {
 
       {/* Subcategories */}
       {subcategories.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-12">
           <h2 className="text-xl font-bold text-primary mb-4">Shop by Subcategory</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {subcategories.map((sub) => (
               <Link
                 key={sub.id}
                 href={`/categories/${sub.slug}`}
                 className="group flex flex-col items-center p-4 bg-white rounded-r1 border border-gray-100 shadow-s1 hover:shadow-s1 hover:border-primary/20 transition-all duration-300"
               >
-                <div className="relative w-16 h-16 mb-3 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="relative w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
                   <span className="text-2xl font-bold text-third">
                     {sub.name.charAt(0)}
                   </span>
@@ -118,7 +119,7 @@ export default function CategoryPage() {
 
       {/* Products */}
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-primary">
             All {category.name} Products
           </h2>
@@ -133,13 +134,13 @@ export default function CategoryPage() {
           <ProductGrid products={products} columns={4} />
         ) : (
           <div className="text-center py-16">
-            <p className="text-third mb-4">No products found in this category yet.</p>
+            <p className="text-third">No products found in this category yet.</p>
             <Link href="/products" className="text-primary hover:underline">
               Browse all products
             </Link>
           </div>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }

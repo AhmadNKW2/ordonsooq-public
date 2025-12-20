@@ -109,7 +109,7 @@ export function ProductFilters({
   return (
     <Card className={cn("p-4", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <h3 className="font-semibold text-primary">Filters</h3>
         {activeFiltersCount > 0 && (
           <button
@@ -123,7 +123,7 @@ export function ProductFilters({
 
       {/* Active Filters */}
       {activeFiltersCount > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b border-gray-100">
+        <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-100">
           {filters.categories.map((catId) => {
             const category = categories.find((c) => c.id === catId);
             return category ? (
@@ -181,7 +181,7 @@ export function ProductFilters({
         isExpanded={expandedSections.includes("categories")}
         onToggle={() => toggleSection("categories")}
       >
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {categories.map((category) => (
             <div
               key={category.id}
@@ -213,7 +213,7 @@ export function ProductFilters({
         isExpanded={expandedSections.includes("price")}
         onToggle={() => toggleSection("price")}
       >
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {PRICE_RANGES.map((range) => (
             <div
               key={range.label}
@@ -245,7 +245,7 @@ export function ProductFilters({
           isExpanded={expandedSections.includes("brands")}
           onToggle={() => toggleSection("brands")}
         >
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {brands.map((brand) => (
               <div
                 key={brand.id}
@@ -273,7 +273,7 @@ export function ProductFilters({
         isExpanded={expandedSections.includes("rating")}
         onToggle={() => toggleSection("rating")}
       >
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {RATING_OPTIONS.map((option) => (
             <div
               key={option.value}

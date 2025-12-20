@@ -1,7 +1,6 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { Search, ShoppingCart, Heart, User } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { IconButton } from "@/components/ui/icon-button";
@@ -12,7 +11,7 @@ interface HeaderActionsProps {
 }
 
 export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
-  const { totalItems } = useCart();
+  const { totalItems, toggleCart } = useCart();
   const { items: wishlistItems } = useWishlist();
 
   return (
@@ -23,9 +22,8 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
         className="md:hidden"
         onClick={onSearchToggle}
         aria-label="Toggle search"
-      >
-        <Search size={22} />
-      </IconButton>
+        icon="search"
+      />
 
       {/* Language Switcher */}
       <LanguageSwitcher />
@@ -36,28 +34,25 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
           variant="header"
           badge={wishlistItems.length}
           aria-label="Wishlist"
-        >
-          <Heart size={22} />
-        </IconButton>
+          icon="heart"
+        />
       </Link>
 
       {/* User Account */}
       <Link href="/account" className="hidden sm:flex">
-        <IconButton variant="header" aria-label="Account">
-          <User size={22} />
-        </IconButton>
+        <IconButton variant="header" aria-label="Account" icon="user" />
       </Link>
 
       {/* Cart */}
-      <Link href="/cart" className="hidden sm:flex">
+      <div className="hidden sm:flex">
         <IconButton
           variant="header"
           badge={totalItems}
           aria-label="Cart"
-        >
-          <ShoppingCart size={22} />
-        </IconButton>
-      </Link>
+          icon="cart"
+          onClick={toggleCart}
+        />
+      </div>
     </div>
   );
 }

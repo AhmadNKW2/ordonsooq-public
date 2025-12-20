@@ -165,7 +165,6 @@ export function HomeSection(props: HomeSectionProps) {
         <div className={cn("relative group", containerClassName)}>
           <ArrowButton
             direction="left"
-            variant="banner"
             size="lg"
             onClick={() => scrollLeft()}
             disabled={!canScrollLeft}
@@ -177,7 +176,6 @@ export function HomeSection(props: HomeSectionProps) {
 
           <ArrowButton
             direction="right"
-            variant="banner"
             size="lg"
             onClick={() => scrollRight()}
             disabled={!canScrollRight}
@@ -190,7 +188,7 @@ export function HomeSection(props: HomeSectionProps) {
           <div
             ref={scrollerRef}
             className={cn(
-              "flex gap-6 overflow-x-auto scrollbar-hide -mx-4 p-4 scroll-smooth",
+              "flex gap-5 overflow-x-auto scrollbar-hide -mx-4 p-4 scroll-smooth",
               scrollerClassName
             )}
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -298,7 +296,7 @@ export function HomeSection(props: HomeSectionProps) {
   if (products.length === 0) return null;
 
   const headerRight = (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       {showNavArrows && products.length > 4 ? (
         <div className="flex items-center gap-2">
           <button
@@ -341,7 +339,7 @@ export function HomeSection(props: HomeSectionProps) {
       {showNavArrows ? (
         <div
           ref={scrollerRef}
-          className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4"
+          className="flex gap-5 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {visibleProducts.map((product) => (
@@ -351,7 +349,7 @@ export function HomeSection(props: HomeSectionProps) {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {visibleProducts.map((product) => (
             <motion.div
               key={product.id}

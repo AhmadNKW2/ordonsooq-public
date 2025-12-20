@@ -12,6 +12,7 @@ import type { ShopByItem } from "@/components/home/shop-by-section";
 import { useProducts, useHome } from "@/hooks";
 import { transformProducts, transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { PageWrapper } from "@/components/ui";
 
 export default function HomePage() {
   const locale = useLocale() as Locale;
@@ -87,9 +88,9 @@ export default function HomePage() {
     : [];
 
   return (
-    <div className="flex flex-col gap-10 py-10">
+    <div>
       {/* Hero Banner */}
-      <section className="container mx-auto pt-0">
+      <section className="container mx-auto pt-0 mb-12">
         {homeLoading ? (
           <Skeleton className="h-[400px] md:h-[500px] rounded-2xl" />
         ) : (
@@ -98,9 +99,9 @@ export default function HomePage() {
       </section>
 
       {/* Categories Carousel */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto mb-12">
         {homeLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <CategoryCardSkeleton key={i} />
             ))}
@@ -116,7 +117,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto mb-12">
         {featuredLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -129,14 +130,14 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto">
+      <section className="container mx-auto mb-12">
         <FeaturesSection />
       </section>
 
       {/* Brands Section */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto mb-12">
         {homeLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-32 rounded-r1" />
             ))}
@@ -152,9 +153,9 @@ export default function HomePage() {
       </section>
 
       {/* Vendors Section */}
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto mb-12">
         {homeLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-32 rounded-r1" />
             ))}
@@ -170,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* New Arrivals */}
-      <section className="container mx-auto">
+      <section className="container mx-auto mb-12">
         {newLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -178,13 +179,13 @@ export default function HomePage() {
             products={newProducts}
             title={t('newArrivals')}
             subtitle={t('newArrivalsSubtitle')}
-            viewAllLink="/products?filter=new"
+            viewAllHref="/products?filter=new"
           />
         )}
       </section>
 
       {/* Newsletter */}
-      <section className="container mx-auto">
+      <section className="container mx-auto mb-12">
         <Newsletter />
       </section>
     </div>

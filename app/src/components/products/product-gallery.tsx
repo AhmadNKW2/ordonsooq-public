@@ -105,7 +105,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
 
   return (
     <>
-      <div className="flex gap-4 w-full h-150">
+      <div className="flex gap-5 w-full h-150">
         {/* Thumbnails - Left Side */}
         {images.length > 1 && (
           <div className="relative shrink-0 group h-[600px]">
@@ -113,7 +113,6 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
             {showScrollUp && (
               <ArrowButton
                 direction="up"
-                variant="gallery"
                 onClick={() => scrollThumbnails('up')}
                 showOnHover
                 className="absolute top-0 left-1/2 -translate-x-1/2 z-10"
@@ -125,7 +124,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
             <div
               ref={thumbnailContainerRef}
               onScroll={handleScroll}
-              className="flex flex-col gap-3 h-full overflow-y-auto scrollbar-hide"
+              className="flex flex-col gap-3 h-full overflow-y-auto scrollbar-hide px-2 py-1"
             >
               {images.map((image, index) => (
                 <button
@@ -152,7 +151,6 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
             {showScrollDown && (
               <ArrowButton
                 direction="down"
-                variant="gallery"
                 onClick={() => scrollThumbnails('down')}
                 showOnHover
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10"
@@ -200,14 +198,12 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
             <>
               <ArrowButton
                 direction="left"
-                variant="gallery"
                 onClick={handlePrevious}
                 showOnHover
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-10"
               />
               <ArrowButton
                 direction="right"
-                variant="gallery"
                 onClick={handleNext}
                 showOnHover
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
@@ -216,7 +212,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
           )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-primary text-sm z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-white text-sm z-10">
             {selectedIndex + 1} / {images.length}
           </div>
         </div>
@@ -260,14 +256,12 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
             <>
               <ArrowButton
                 direction="left"
-                variant="banner"
                 size="lg"
                 onClick={handlePrevious}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-50"
               />
               <ArrowButton
                 direction="right"
-                variant="banner"
                 size="lg"
                 onClick={handleNext}
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-50"

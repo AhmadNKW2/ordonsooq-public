@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { AddToCartButton } from "@/components";
+import { Button } from "@/components/ui";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
-
-interface Product {
-  id: string | number;
-  name: string;
-  price: number;
-  stock: number;
-  image?: string;
-}
+import { useCart } from "@/hooks/use-cart";
+import { Product } from "@/types";
 
 interface ProductActionsProps {
   product: Product;
@@ -18,18 +14,22 @@ interface ProductActionsProps {
 
 export function ProductActions({ product }: ProductActionsProps) {
   const [quantity, setQuantity] = useState(1);
+  const { addItem, openCart } = useCart();
+  const router = useRouter();
 
   const handleAddToCart = (count: number) => {
-    // In a real app, you would use the 'quantity' state here
-    // But AddToCartButton might handle the click.
-    // If AddToCartButton calls this with a count, we can ignore it and use our state,
-    // or we can pass the quantity to AddToCartButton if it supported it.
-    // For now, let's assume we want to add 'quantity' items.
-    console.log(`Adding ${quantity} items of product ${product.id} to cart`);
+    // AddToCartButton passes 1 by default, but we want to use the selected quantity
+    // We can ignore the count passed by the button and use our state
+    addItem(product, quantity);
+  };
+
+  const handleCheckout = () => {
+    addItem(product, quantity);
+    router.push("/checkout");
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full">
+    <div className="flex flex-col sm:flex-row gap-5 pt-4 w-full">
       <div className="shrink-0">
         <QuantitySelector 
           value={quantity} 
@@ -37,12 +37,25 @@ export function ProductActions({ product }: ProductActionsProps) {
           max={product.stock > 0 ? product.stock : 1}
         />
       </div>
-      <div className="flex-1">
-        <AddToCartButton 
-          product={product} 
-          color="bg-primary" 
-          onAddToCart={() => handleAddToCart(quantity)}
-        />
+      <div className="flex-1 flex gap-5">
+        <div className="flex-1">
+          <AddToCartButton 
+            product={product} 
+            color="bg-primary" 
+            onAddToCart={() => handleAddToCart(quantity)}
+            onAnimationEnd={openCart}
+          />
+        </div>
+        <div className="flex-1">
+          <Button 
+            variant="pill" 
+            className="w-full h-11 font-bold shadow-s1 bg-secondary hover:bg-secondary/90 text-white"
+            onClick={handleCheckout}
+            disabled={product.stock === 0}
+          >
+            Checkout
+          </Button>
+        </div>
       </div>
     </div>
   );

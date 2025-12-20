@@ -38,7 +38,7 @@ export function Newsletter() {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
                 {t('title')}
               </h2>
               <p className="text-white/90 mb-8">

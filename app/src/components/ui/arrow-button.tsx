@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 export interface ArrowButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   direction: "left" | "right" | "up" | "down";
-  variant?: "banner" | "gallery";
   size?: "sm" | "default" | "lg";
   /** Show only on parent hover (add group class to parent) */
   showOnHover?: boolean;
@@ -59,24 +58,11 @@ const sizeClasses = {
   lg: "p-3 [&_svg]:w-6 [&_svg]:h-6",
 };
 
-const variantClasses = {
-  // Banner style: translucent white with backdrop blur, appears on hover
-  banner: "bg-white/50 backdrop-blur-sm hover:bg-white shadow-s1 text-primary",
-  // Gallery style: filled with custom color (uses IconButton filled style)
-  gallery: "bg-secondary text-third hover:opacity-90 shadow-s1",
-};
-
-const disabledClasses = {
-  banner: "disabled:opacity-50 disabled:cursor-not-allowed",
-  gallery: "disabled:opacity-50 disabled:cursor-not-allowed",
-};
-
 const ArrowButton = React.forwardRef<HTMLButtonElement, ArrowButtonProps>(
   (
     {
       className,
       direction,
-      variant = "banner",
       size = "default",
       showOnHover = false,
       backgroundColor,
@@ -103,8 +89,8 @@ const ArrowButton = React.forwardRef<HTMLButtonElement, ArrowButtonProps>(
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           "active:scale-95",
           sizeClasses[size],
-          variantClasses[variant],
-          disabledClasses[variant],
+          "bg-white/50 backdrop-blur-sm hover:bg-white shadow-s1 text-primary",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
           showOnHover &&
             "opacity-0 group-hover:opacity-100 disabled:opacity-0 group-hover:disabled:opacity-50",
           className
