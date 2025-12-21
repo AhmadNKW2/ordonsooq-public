@@ -78,12 +78,10 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     images = ['/placeholder.svg'];
   }
 
-  // Get price from prices array or direct property
+  let actualPrice = 0;
+  let compareAtPrice: number | undefined = undefined;
   const allPrices = (apiProduct as any).prices || [];
-  
-  // Find default price (one without group values or just the first one)
-  const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0) || allPrices[0];
-  
+
   const getPriceValues = (entry: any) => {
     const regPrice = entry?.price ? parseFloat(String(entry.price)) : 0;
     const sPrice = entry?.sale_price ? parseFloat(String(entry.sale_price)) : undefined;
@@ -95,7 +93,25 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     return { actual, compare };
   };
 
-  const { actual: actualPrice, compare: compareAtPrice } = getPriceValues(defaultPriceEntry);
+  // Check for direct price properties first (new API structure)
+  if ('price' in apiProduct && apiProduct.price) {
+    const price = parseFloat(String(apiProduct.price));
+    const salePrice = apiProduct.sale_price ? parseFloat(String(apiProduct.sale_price)) : null;
+
+    if (salePrice !== null && salePrice < price) {
+      actualPrice = salePrice;
+      compareAtPrice = price;
+    } else {
+      actualPrice = price;
+    }
+  } else {
+    // Find default price (one without group values or just the first one)
+    const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0) || allPrices[0];
+    
+    const result = getPriceValues(defaultPriceEntry);
+    actualPrice = result.actual;
+    compareAtPrice = result.compare;
+  }
 
   // Helper to get variant price
   const getVariantPriceData = (v: any) => {
@@ -112,7 +128,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         // Check if ALL groupValues in the price entry match the variant's combinations
         return p.groupValues.every((gv: any) => 
           v.combinations.some((c: any) => 
-            c.attribute_id === gv.attribute_id && c.attribute_value_id === gv.attribute_value_id
+            // Use loose equality to handle string/number mismatches
+            c.attribute_id == gv.attribute_id && c.attribute_value_id == gv.attribute_value_id
           )
         );
       });
@@ -168,11 +185,13 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   const attributeIdToName = new Map<number, string>();
 
   if ('attributes' in apiProduct && Array.isArray(apiProduct.attributes)) {
-    attributes = (apiProduct.attributes as any[]).map(attr => {
+    attributes = (apiProduct.attributes as any[])
+      .sort((a, b) => (a.attribute?.sort_order ?? 0) - (b.attribute?.sort_order ?? 0))
+      .map(attr => {
       const attrName = getLocalizedText(attr.attribute?.name_en, attr.attribute?.name_ar, locale);
       attributeIdToName.set(attr.attribute_id, attrName);
       
-      const valuesMap = new Map<string, { meta?: string, image?: string }>();
+      const valuesMap = new Map<string, { meta?: string, image?: string, sortOrder: number }>();
       
       if ('variants' in apiProduct && Array.isArray(apiProduct.variants)) {
         (apiProduct.variants as any[]).forEach(v => {
@@ -201,7 +220,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
                 }
                 
                 const meta = c.attribute_value.color_code;
-                valuesMap.set(val, { meta, image: mediaUrl });
+                const sortOrder = c.attribute_value.sort_order ?? 0;
+                valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
               }
             });
           }
@@ -211,7 +231,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       return {
         id: String(attr.attribute_id),
         name: attrName,
-        values: Array.from(valuesMap.entries()).map(([value, data]) => ({ 
+        values: Array.from(valuesMap.entries())
+          .sort(([, a], [, b]) => a.sortOrder - b.sortOrder)
+          .map(([value, data]) => ({ 
           value, 
           meta: data.meta,
           image: data.image

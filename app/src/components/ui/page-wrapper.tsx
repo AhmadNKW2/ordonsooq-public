@@ -9,7 +9,7 @@ export function PageWrapper({ children, className, ...props }: PageWrapperProps)
   return (
     <div
       className={cn(
-        "flex flex-col gap-5 py-5 px-5 md:py-5 md:px-5",
+        "flex flex-col gap-5 py-5 px-12 md:py-5 md:px-12",
         className
       )}
       {...props}

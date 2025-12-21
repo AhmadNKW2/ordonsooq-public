@@ -76,7 +76,7 @@ export default function CheckoutPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-secondary" />
+            <Check className="w-10 h-10 text-success" />
           </div>
           <h1 className="text-2xl font-bold text-primary mb-2">Order Confirmed!</h1>
           <p className="text-third mb-2">
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
             <Link href="/cart">
               <Button
                 backgroundColor="var(--color-secondary)"
-                textColor="white"
+                textColor="#ffffff"
                 className="h-auto shadow-none hover:shadow-none hover:scale-100"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
                     isCurrent
                       ? undefined
                       : isCompleted
-                        ? "white"
+                        ? "#ffffff"
                         : "var(--color-third)"
                   }
                   className="h-auto shadow-none hover:shadow-none hover:scale-100"

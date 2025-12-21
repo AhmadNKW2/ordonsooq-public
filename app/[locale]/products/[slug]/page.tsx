@@ -9,8 +9,8 @@ import { useProduct, useProductsByCategory } from "@/hooks";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, transformProducts, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
-import { ProductGallery, ProductsSection, ProductOptions } from "@/components";
-import { Badge, Card, IconButton, PageWrapper } from "@/components/ui";
+import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
+import { Badge, Card, IconButton, PageWrapper, Breadcrumb } from "@/components/ui";
 import { ProductActions } from "./product-actions";
 
 export default function ProductPage() {
@@ -46,12 +46,12 @@ export default function ProductPage() {
     if (product?.variants && product.variants.length > 0 && Object.keys(selectedOptions).length === 0) {
       // 1. Try to find the first variant with stock > 0
       let defaultVariant = product.variants.find(v => v.stock > 0);
-      
+
       // 2. If no stock, just take the first variant
       if (!defaultVariant) {
         defaultVariant = product.variants[0];
       }
-      
+
       if (defaultVariant) {
         setSelectedOptions(defaultVariant.attributes);
       }
@@ -69,23 +69,23 @@ export default function ProductPage() {
   // Determine which image index to show
   const selectedImageIndex = useMemo(() => {
     if (!product || !product.attributes) return 0;
-    
+
     // Find attribute that controls media
     const mediaAttribute = product.attributes.find(a => a.controlsMedia);
     if (!mediaAttribute) return 0;
-    
+
     // Get selected value for that attribute
     const selectedValue = selectedOptions[mediaAttribute.name];
     if (!selectedValue) return 0;
-    
+
     // Find the image url for this value
     const attributeValue = mediaAttribute.values.find(v => v.value === selectedValue);
-    
+
     if (attributeValue?.image) {
-       const index = product.images.indexOf(attributeValue.image);
-       return index >= 0 ? index : 0;
+      const index = product.images.indexOf(attributeValue.image);
+      return index >= 0 ? index : 0;
     }
-    
+
     return 0;
   }, [product, selectedOptions]);
 
@@ -98,7 +98,7 @@ export default function ProductPage() {
     const newOptions = { ...selectedOptions, [attributeName]: value };
 
     // Check if the new combination is valid and in stock
-    const exactMatch = product.variants.find(v => 
+    const exactMatch = product.variants.find(v =>
       Object.entries(newOptions).every(([key, val]) => v.attributes[key] === val)
     );
 
@@ -128,12 +128,12 @@ export default function ProductPage() {
   // Check if an option should be disabled
   const isOptionDisabled = (attributeName: string, value: string) => {
     if (!product?.variants) return false;
-    
+
     // Check if this option value exists in ANY variant that is in stock
-    const hasAnyInStockVariant = product.variants.some(v => 
+    const hasAnyInStockVariant = product.variants.some(v =>
       v.attributes[attributeName] === value && v.stock > 0
     );
-    
+
     return !hasAnyInStockVariant;
   };
 
@@ -169,7 +169,7 @@ export default function ProductPage() {
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentCompareAtPrice = selectedVariant && selectedVariant.compareAtPrice ? selectedVariant.compareAtPrice : product.compareAtPrice;
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
-  const currentSku = selectedVariant ? selectedVariant.sku : product.sku;
+  const currentSku = product.sku;
 
   const discount = currentCompareAtPrice
     ? calculateDiscount(currentCompareAtPrice, currentPrice)
@@ -178,17 +178,13 @@ export default function ProductPage() {
   return (
     <PageWrapper className="container mx-auto">
       {/* Breadcrumb */}
-      <nav className="text-sm text-third mb-6">
-        <ol className="flex items-center gap-2">
-          <li><a href="/" className="hover:text-primary">Home</a></li>
-          <li>/</li>
-          <li><a href="/products" className="hover:text-primary">Products</a></li>
-          <li>/</li>
-          <li><a href={`/categories/${product.category.slug}`} className="hover:text-primary">{product.category.name}</a></li>
-          <li>/</li>
-          <li className="text-primary font-medium truncate max-w-50">{product.name}</li>
-        </ol>
-      </nav>
+      <Breadcrumb
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.category.name, href: `/categories/${product.category.slug}` },
+          { label: product.name }
+        ]}
+      />
 
       {/* Product Details - 3 Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
@@ -254,8 +250,8 @@ export default function ProductPage() {
                 <Star
                   key={i}
                   className={`w-5 h-5 ${i < Math.floor(product.rating)
-                      ? "fill-secondary text-secondary"
-                      : "fill-gray-200 text-third"
+                    ? "fill-secondary text-secondary"
+                    : "fill-gray-200 text-third"
                     }`}
                 />
               ))}
@@ -271,7 +267,7 @@ export default function ProductPage() {
               {formatPrice(currentPrice)}
             </span>
             {currentCompareAtPrice && (
-                <span className="text-xl text-third opacity-70 line-through">
+              <span className="text-xl text-third opacity-70 line-through">
                 {formatPrice(currentCompareAtPrice)}
               </span>
             )}
@@ -284,42 +280,21 @@ export default function ProductPage() {
 
           {/* Variants */}
           {product.attributes && product.attributes.length > 0 && (
-            <ProductOptions 
-              attributes={product.attributes} 
+            <ProductOptions
+              attributes={product.attributes}
               selectedOptions={selectedOptions}
               onChange={handleOptionChange}
               isOptionDisabled={isOptionDisabled}
             />
           )}
 
-          {/* Actions */}
-          <ProductActions product={product} selectedVariant={selectedVariant} />
-
-          {/* Features */}
-          <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
-            <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <Truck className="w-6 h-6 text-primary" />
-              <span className="text-sm font-medium">Free Shipping</span>
-              <span className="text-xs text-third">Orders over $50</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <RotateCcw className="w-6 h-6 text-primary" />
-              <span className="text-sm font-medium">Easy Returns</span>
-              <span className="text-xs text-third">30-day policy</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
-              <Shield className="w-6 h-6 text-primary" />
-              <span className="text-sm font-medium">Secure</span>
-              <span className="text-xs text-third">Safe checkout</span>
-            </div>
-          </div>
         </div>
 
         {/* Vendor Info - Column 3 */}
         <div className="lg:col-span-3 flex flex-col gap-5">
           {/* Vendor Card */}
           <Card className="p-4 flex flex-col gap-4">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 {product.vendor?.logo ? (
                   <Image
@@ -336,31 +311,27 @@ export default function ProductPage() {
                 )}
                 <div>
                   <p className="text-xs text-third">Sold by</p>
-                  <p className="font-semibold text-primary">
+                  <a
+                    href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
+                    className="font-semibold text-primary hover:text-secondary hover:translate-x-1.5 transition-all flex items-center gap-1"
+                  >
                     {product.vendor?.name || "OrdonSooq"}
-                  </p>
+                    <ChevronRight className="w-4 h-4" />
+                  </a>
                   {product.vendor && (
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="w-3 h-3 fill-secondary text-secondary" />
                       <span className="text-xs text-third">
                         {product.vendor.rating} ({product.vendor.reviewCount} reviews)
                       </span>
+                      <span className="text-green-600 font-medium text-xs ml-1">
+                        ({Math.round((product.vendor.rating / 5) * 100)}% positive)
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
-              <a
-                href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
-                className="text-sm text-primary hover:underline flex items-center gap-1"
-              >
-                Visit Store <ChevronRight className="w-4 h-4" />
-              </a>
             </div>
-            {product.vendor?.description && (
-              <p className="text-sm text-third border-t pt-3 mt-1">
-                {product.vendor.description}
-              </p>
-            )}
           </Card>
 
           {/* Other Sellers */}
@@ -413,8 +384,35 @@ export default function ProductPage() {
                   ))}
                 </div>
               )}
+                <p>Brand: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
+
             </div>
           </Card>
+
+          {/* Actions */}
+          <ProductActions product={product} selectedVariant={selectedVariant} />
+
+
+        </div>
+
+
+      </div>
+      {/* Features */}
+      <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+          <Truck className="w-6 h-6 text-primary" />
+          <span className="text-sm font-medium">Free Shipping</span>
+          <span className="text-xs text-third">Orders over $50</span>
+        </div>
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+          <RotateCcw className="w-6 h-6 text-primary" />
+          <span className="text-sm font-medium">Easy Returns</span>
+          <span className="text-xs text-third">30-day policy</span>
+        </div>
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+          <Shield className="w-6 h-6 text-primary" />
+          <span className="text-sm font-medium">Secure</span>
+          <span className="text-xs text-third">Safe checkout</span>
         </div>
       </div>
 
@@ -492,29 +490,13 @@ export default function ProductPage() {
         </section>
       )}
 
-      {/* Reviews Section - Placeholder for future API integration */}
-      {product.reviewCount > 0 && (
-        <section >
-          <h2 className="text-2xl font-bold text-primary">Customer Reviews</h2>
-          <Card className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-6 h-6 ${i < Math.floor(product.rating)
-                        ? "fill-secondary text-secondary"
-                        : "fill-gray-200 text-third"
-                      }`}
-                  />
-                ))}
-              </div>
-              <span className="text-xl font-bold text-primary">{product.rating}</span>
-            </div>
-            <p className="text-third">Based on {product.reviewCount} reviews</p>
-          </Card>
-        </section>
-      )}
+      {/* Reviews Section */}
+      <section>
+        <ProductReviews
+          rating={product.rating}
+          reviewCount={product.reviewCount}
+        />
+      </section>
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (

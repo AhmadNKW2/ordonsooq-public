@@ -38,3 +38,4 @@ export {
   CategoryCardSkeleton,
   BannerSkeleton 
 } from "./skeleton";
+export { Breadcrumb } from './breadcrumb';

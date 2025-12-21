@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence, type Transition } from "framer-motion";
-import { Modal, ArrowButton } from "@/components/ui";
 
 interface ProductGalleryProps {
   images: string[];
@@ -13,30 +11,68 @@ interface ProductGalleryProps {
   initialIndex?: number;
 }
 
-export function ProductGallery({ images, productName, wishlistButton, initialIndex = 0 }: ProductGalleryProps) {
+export function ProductGallery({
+  images,
+  productName,
+  wishlistButton,
+  initialIndex = 0
+}: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const [showZoomModal, setShowZoomModal] = useState(false);
-  const [direction, setDirection] = useState(0);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [showScrollUp, setShowScrollUp] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePrevious = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setDirection(-1);
+
+    setDirection('right');
+    setIsAnimating(true);
     setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  }, [images.length]);
+
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsAnimating(false);
+      setDirection(null);
+    }, 500);
+  }, [images.length, isAnimating]);
 
   const handleNext = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setDirection(1);
+
+    setDirection('left');
+    setIsAnimating(true);
     setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  }, [images.length]);
+
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsAnimating(false);
+      setDirection(null);
+    }, 500);
+  }, [images.length, isAnimating]);
 
   const handleThumbnailClick = useCallback((index: number) => {
-    setDirection(index > selectedIndex ? 1 : -1);
+    if (index === selectedIndex) return;
+
+    setDirection(index > selectedIndex ? 'left' : 'right');
+    setIsAnimating(true);
     setSelectedIndex(index);
-  }, [selectedIndex]);
+
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsAnimating(false);
+      setDirection(null);
+    }, 500);
+  }, [selectedIndex, isAnimating]);
 
   const handleImageClick = useCallback(() => {
     setShowZoomModal(true);
@@ -52,19 +88,18 @@ export function ProductGallery({ images, productName, wishlistButton, initialInd
     );
   }, []);
 
-  const scrollThumbnails = useCallback((direction: 'up' | 'down') => {
+  const scrollThumbnails = useCallback((scrollDirection: 'up' | 'down') => {
     const container = thumbnailContainerRef.current;
     if (!container) return;
 
-    const scrollAmount = 88; // thumbnail height (80px) + gap (8px)
-    const newScrollTop = direction === 'up'
+    const scrollAmount = 88;
+    const newScrollTop = scrollDirection === 'up'
       ? container.scrollTop - scrollAmount
       : container.scrollTop + scrollAmount;
 
     container.scrollTo({ top: newScrollTop, behavior: 'smooth' });
   }, []);
 
-  // Check scroll position on mount and when images change
   const checkScrollPosition = useCallback(() => {
     const container = thumbnailContainerRef.current;
     if (!container) return;
@@ -76,71 +111,59 @@ export function ProductGallery({ images, productName, wishlistButton, initialInd
     );
   }, []);
 
-  // Use effect to check scroll position after render
   useEffect(() => {
     checkScrollPosition();
-    // Small delay to ensure DOM is fully rendered
     const timer = setTimeout(checkScrollPosition, 100);
     return () => clearTimeout(timer);
   }, [images.length, checkScrollPosition]);
 
-  // Update selected index when initialIndex changes (e.g. variant change)
   useEffect(() => {
     setSelectedIndex(initialIndex);
   }, [initialIndex]);
 
-  const slideVariants = useMemo(() => ({
-    enter: (dir: number) => ({
-      opacity: 0,
-      x: dir > 0 ? 60 : -60,
-    }),
-    center: {
-      opacity: 1,
-      x: 0,
-    },
-    exit: (dir: number) => ({
-      opacity: 0,
-      x: dir < 0 ? 60 : -60,
-    }),
-  }), []);
-
-  const transition: Transition = useMemo(() => ({
-    x: { type: "tween" as const, ease: "easeOut", duration: 0.25 },
-    opacity: { duration: 0.2 },
-  }), []);
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
-      <div className="flex gap-2 w-full h-150">
+      <div className="flex gap-2 w-full h-[600px]">
         {/* Thumbnails - Left Side */}
         {images.length > 1 && (
-          <div className="relative shrink-0 group h-[600px]">
+          <div className="relative shrink-0 group h-full">
             {/* Scroll Up Arrow */}
             {showScrollUp && (
-              <ArrowButton
-                direction="up"
+              <button
                 onClick={() => scrollThumbnails('up')}
-                showOnHover
-                className="absolute top-0 left-1/2 -translate-x-1/2 z-10"
+                className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
                 aria-label="Scroll up"
-              />
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
             )}
 
             {/* Thumbnail Container */}
             <div
               ref={thumbnailContainerRef}
               onScroll={handleScroll}
-              className="flex flex-col gap-3 h-full overflow-y-auto scrollbar-hide px-2 py-1"
+              className="flex flex-col gap-4 h-full overflow-y-auto scrollbar-hide px-2 py-2"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {images.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => handleThumbnailClick(index)}
                   className={cn(
-                    "relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 shrink-0 ring-2",
+                    "relative w-20 h-20 rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
                     selectedIndex === index
-                      ? "ring-secondary ring-offset-2"
-                      : "opacity-60 ring-primary/20 hover:opacity-100 hover:ring-secondary/50"
+                      ? "ring-blue-500 ring-offset-2 opacity-100 scale-105"
+                      : "opacity-60 ring-gray-300 hover:opacity-100 hover:ring-blue-300 hover:scale-105"
                   )}
                 >
                   <Image
@@ -155,46 +178,59 @@ export function ProductGallery({ images, productName, wishlistButton, initialInd
 
             {/* Scroll Down Arrow */}
             {showScrollDown && (
-              <ArrowButton
-                direction="down"
+              <button
                 onClick={() => scrollThumbnails('down')}
-                showOnHover
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
                 aria-label="Scroll down"
-              />
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             )}
           </div>
         )}
 
         {/* Main Image */}
         <div
-          className="relative flex-1 aspect-square bg-gray-50 rounded-r1 overflow-hidden group cursor-zoom-in"
+          className="relative flex-1 aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in"
           onClick={handleImageClick}
         >
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={selectedIndex}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={transition}
-              className="absolute inset-0 w-full h-full"
-            >
-              <Image
-                src={images[selectedIndex]}
-                alt={`${productName} - Image ${selectedIndex + 1}`}
-                fill
-                className="object-cover"
-                priority
-              />
-            </motion.div>
-          </AnimatePresence>
+          {/* Image Container with Animation */}
+          <div className="relative w-full h-full">
+            {images.map((image, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "absolute inset-0 w-full h-full transition-all duration-500 ease-in-out",
+                  selectedIndex === index && !direction && "opacity-100 translate-x-0 scale-100",
+                  selectedIndex === index && direction === 'left' && "opacity-100 translate-x-0 scale-100 animate-slide-in-left",
+                  selectedIndex === index && direction === 'right' && "opacity-100 translate-x-0 scale-100 animate-slide-in-right",
+                  selectedIndex !== index && direction === 'left' && "opacity-0 -translate-x-full scale-95",
+                  selectedIndex !== index && direction === 'right' && "opacity-0 translate-x-full scale-95",
+                  selectedIndex !== index && !direction && index < selectedIndex && "opacity-0 -translate-x-full scale-95",
+                  selectedIndex !== index && !direction && direction === 'right' && "opacity-0 translate-x-full scale-95",
+                  selectedIndex !== index && !direction && index < selectedIndex && "opacity-0 -translate-x-full scale-95",
+                  selectedIndex !== index && !direction && index > selectedIndex && "opacity-0 translate-x-full scale-95"
+                )}
+                style={{
+                  zIndex: selectedIndex === index ? 1 : 0,
+                }}
+              >
+                <Image
+                  src={image}
+                  alt={`${productName} - Image ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  priority={index === 0}
+                />
+              </div>
+            ))}
+          </div>
 
-          {/* Wishlist Button - Top Left */}
+          {/* Wishlist Button - Top Right */}
           {wishlistButton && (
-            <div className="absolute top-4 left-4 z-10" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
               {wishlistButton}
             </div>
           )}
@@ -202,103 +238,184 @@ export function ProductGallery({ images, productName, wishlistButton, initialInd
           {/* Navigation Arrows */}
           {images.length > 1 && (
             <>
-              <ArrowButton
-                direction="left"
+              <button
                 onClick={handlePrevious}
-                showOnHover
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10"
-              />
-              <ArrowButton
-                direction="right"
+                disabled={isAnimating}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous image"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
                 onClick={handleNext}
-                showOnHover
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-              />
+                disabled={isAnimating}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next image"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </>
           )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-white text-sm z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm z-10 transition-opacity duration-300">
             {selectedIndex + 1} / {images.length}
           </div>
         </div>
       </div>
 
       {/* Zoom Modal */}
-      <Modal
-        isOpen={showZoomModal}
-        onClose={() => setShowZoomModal(false)}
-        className="max-w-5xl h-[90vh] bg-transparent shadow-none"
-        showCloseButton={true}
-        animation="zoom"
-        closeButtonClassName="text-primary hover:text-third hover:bg-white/10"
-      >
-        <div className="relative w-full h-full flex flex-col items-center justify-center">
-          <div className="relative w-full flex-1">
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              <motion.div
-                key={selectedIndex}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={transition}
-                className="absolute inset-0 w-full h-full"
-              >
-                <Image
-                  src={images[selectedIndex]}
-                  alt={`${productName} - Large View`}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+      {showZoomModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowZoomModal(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setShowZoomModal(false)}
+            className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 flex items-center justify-center text-white hover:scale-110"
+            aria-label="Close modal"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
-          {/* Modal Navigation */}
-          {images.length > 1 && (
-            <>
-              <ArrowButton
-                direction="left"
-                size="lg"
-                onClick={handlePrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-50"
-              />
-              <ArrowButton
-                direction="right"
-                size="lg"
-                onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-50"
-              />
-            </>
-          )}
+          <div className="relative w-full h-full max-w-6xl flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* Main Image Container */}
+            <div className="relative w-full flex-1 overflow-hidden rounded-lg">
+              {images.map((image, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "absolute inset-0 w-full h-full transition-all duration-500 ease-in-out",
+                    selectedIndex === index && !direction && "opacity-100 translate-x-0 scale-100",
+                    selectedIndex === index && direction === 'left' && "opacity-100 translate-x-0 scale-100 animate-slide-in-left",
+                    selectedIndex === index && direction === 'right' && "opacity-100 translate-x-0 scale-100 animate-slide-in-right",
+                    selectedIndex !== index && index < selectedIndex && "opacity-0 -translate-x-full scale-95",
+                    selectedIndex !== index && index > selectedIndex && "opacity-0 translate-x-full scale-95"
+                  )}
+                  style={{
+                    zIndex: selectedIndex === index ? 1 : 0,
+                  }}
+                >
+                  <Image
+                    src={image}
+                    alt={`${productName} - Large View`}
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              ))}
+            </div>
 
-          {/* Thumbnails in Modal */}
-          <div className="mt-4 flex gap-2 overflow-x-auto max-w-full px-4 z-50" onClick={(e) => e.stopPropagation()}>
-            {images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => handleThumbnailClick(index)}
-                className={cn(
-                  "relative w-16 h-16 rounded-md overflow-hidden transition-all shrink-0",
-                  selectedIndex === index
-                    ? "ring-2 ring-white"
-                    : "opacity-50 hover:opacity-100"
-                )}
-              >
-                <Image
-                  src={image}
-                  alt="Thumbnail"
-                  fill
-                  className="object-cover"
-                />
-              </button>
-            ))}
+            {/* Modal Navigation */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevious}
+                  disabled={isAnimating}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 flex items-center justify-center text-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                  aria-label="Previous image"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={isAnimating}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 flex items-center justify-center text-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                  aria-label="Next image"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            {/* Thumbnails in Modal */}
+            {images.length > 1 && (
+              <div className="mt-4 flex gap-2 overflow-x-auto max-w-full px-4 z-50 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleThumbnailClick(index)}
+                    className={cn(
+                      "relative w-16 h-16 rounded-md overflow-hidden transition-all duration-300 shrink-0",
+                      selectedIndex === index
+                        ? "ring-2 ring-white opacity-100 scale-110"
+                        : "opacity-50 hover:opacity-100 hover:scale-105"
+                    )}
+                  >
+                    <Image
+                      src={image}
+                      alt="Thumbnail"
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </Modal>
+      )}
+
+      <style jsx global>{`
+        @keyframes slide-in-left {
+          from {
+            transform: translateX(100%) scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slide-in-right {
+          from {
+            transform: translateX(-100%) scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animate-slide-in-left {
+          animation: slide-in-left 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-slide-in-right {
+          animation: slide-in-right 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   );
 }

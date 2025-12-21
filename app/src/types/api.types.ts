@@ -85,6 +85,7 @@ export type ProductVariant = {
   sku?: string;
   prices?: ProductPrice[];
   stock?: ProductStock[];
+  combinations?: any[];
 };
 
 export type ProductAttribute = {
@@ -117,9 +118,11 @@ export type Product = {
   category: ProductCategory | null;
   categories: ProductCategory[];
   vendor: ProductVendor | null;
-  primary_image: string | null;
-  stock: ProductStock | null;
-  prices: ProductPrice[];
+  primary_image: string | { url: string } | null;
+  stock: ProductStock | { total_quantity: number; in_stock: boolean } | null;
+  prices?: ProductPrice[];
+  price?: string;
+  sale_price?: string | null;
 };
 
 export type ProductDetail = Product & {

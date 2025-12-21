@@ -9,7 +9,7 @@ import { useCategory, useProductsByCategory } from "@/hooks";
 import { transformCategory, transformProducts, type Locale } from "@/lib/transformers";
 import { ProductGrid } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
-import { PageWrapper } from "@/components/ui";
+import { PageWrapper, Breadcrumb } from "@/components/ui";
 
 export default function CategoryPage() {
   const locale = useLocale() as Locale;
@@ -53,25 +53,15 @@ export default function CategoryPage() {
   return (
     <PageWrapper className="container mx-auto">
       {/* Breadcrumb */}
-      <nav className="text-sm text-third mb-6">
-        <ol className="flex items-center gap-2">
-          <li><Link href="/" className="hover:text-primary">Home</Link></li>
-          <li><ChevronRight className="w-4 h-4" /></li>
-          <li><Link href="/categories" className="hover:text-primary">Categories</Link></li>
-          {parentCategory && (
-            <>
-              <li><ChevronRight className="w-4 h-4" /></li>
-              <li>
-                <Link href={`/categories/${parentCategory.slug}`} className="hover:text-primary">
-                  {parentCategory.name}
-                </Link>
-              </li>
-            </>
-          )}
-          <li><ChevronRight className="w-4 h-4" /></li>
-          <li className="text-primary font-medium">{category.name}</li>
-        </ol>
-      </nav>
+      <div className="mb-6">
+        <Breadcrumb 
+          items={[
+            { label: "Categories", href: "/categories" },
+            ...(parentCategory ? [{ label: parentCategory.name, href: `/categories/${parentCategory.slug}` }] : []),
+            { label: category.name }
+          ]} 
+        />
+      </div>
 
       {/* Category Header */}
       <div className="relative h-48 md:h-64 rounded-r1 overflow-hidden mb-8">

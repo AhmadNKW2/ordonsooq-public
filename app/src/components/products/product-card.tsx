@@ -217,9 +217,9 @@ export function ProductCard({
         </h3>
 
         {/* Brand/Vendor - if available */}
-        {(product.brand?.name || product.vendor?.name) && (
+        {(product.vendor?.name || product.brand?.name) && (
           <p className="text-xs text-third text-center line-clamp-1">
-            {product.brand?.name || product.vendor?.name}
+            {product.vendor?.name || product.brand?.name}
           </p>
         )}
 

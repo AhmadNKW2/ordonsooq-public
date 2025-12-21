@@ -3,12 +3,14 @@
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight } from "lucide-react";
-import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton } from "@/components/ui";
+import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
-import { formatPrice } from "@/lib/utils";
+import { useWishlist } from "@/hooks/use-wishlist";
+import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalPrice } = useCart();
+  const { toggleItem, isInWishlist } = useWishlist();
 
   const shipping = totalPrice > 50 ? 0 : 9.99;
   const tax = totalPrice * 0.1;
@@ -38,6 +40,13 @@ export default function CartPage() {
 
   return (
     <PageWrapper className="container mx-auto">
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: "Cart" }
+        ]}
+      />
+
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -54,102 +63,113 @@ export default function CartPage() {
         </Button>
       </div>
 
-      {/* Free Shipping Progress */}
-      <Card className="bg-linear-to-r from-primary/5 to-secondary/5 border-primary/10">
-        <div className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-white rounded-full shadow-xs">
-              <Truck className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-primary">
-                {totalPrice >= 50
-                  ? "You've earned FREE shipping!"
-                  : `Add ${formatPrice(50 - totalPrice)} to get FREE shipping`}
-              </p>
-            </div>
-            <span className="font-bold text-primary">{Math.min(Math.round((totalPrice / 50) * 100), 100)}%</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
-              style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Cart Items */}
         <div className="lg:col-span-2 flex flex-col gap-5">
-          {items.map((item) => (
-            <Card key={item.product.id} className="overflow-hidden">
-              <div className="p-0">
-                <div className="flex flex-col sm:flex-row gap-5 p-4">
-                  {/* Product Image */}
-                  <Link href={`/products/${item.product.slug}`} className="relative w-full sm:w-32 h-32 shrink-0">
-                    <Image
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                  </Link>
+          {items.map((item) => {
+            const price = item.variant ? item.variant.price : item.product.price;
+            const compareAtPrice = item.variant?.compareAtPrice || item.product.compareAtPrice;
+            const discount = compareAtPrice ? calculateDiscount(compareAtPrice, price) : 0;
 
-                  {/* Product Info */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <Link href={`/products/${item.product.slug}`}>
-                        <h3 className="font-semibold text-primary hover:text-primary transition-colors">
-                          {item.product.name}
-                        </h3>
-                      </Link>
-                      {item.product.brand && (
-                        <p className="text-sm text-third">{item.product.brand.name}</p>
-                      )}
-                      {item.variant && (
-                        <p className="text-sm text-primary mt-1">{item.variant.name}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 sm:mt-0">
-                      {/* Quantity Selector */}
-                      <QuantitySelector
-                        value={item.quantity}
-                        onChange={(val) => updateQuantity(item.id, val)}
-                        max={item.product.stock}
+            return (
+              <Card key={item.id} className="overflow-hidden">
+                <div className="p-0">
+                  <div className="flex flex-col sm:flex-row gap-5 p-4">
+                    {/* Product Image */}
+                    <Link href={`/products/${item.product.slug}`} className="relative w-full sm:w-32 h-32 shrink-0">
+                      <Image
+                        src={item.product.images?.[0] || '/placeholder.svg'}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover rounded-lg"
                       />
+                    </Link>
 
-                      {/* Price & Remove */}
-                      <div className="flex items-center gap-5">
-                        <div className="text-right">
-                          <p className="font-semibold text-primary">
-                            {formatPrice(item.product.price * item.quantity)}
-                          </p>
+                    {/* Product Info */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <Link href={`/products/${item.product.slug}`}>
+                            <h3 className="font-semibold text-primary hover:text-primary transition-colors">
+                              {item.product.name}
+                            </h3>
+                          </Link>
+                          {item.product.brand && (
+                            <p className="text-sm text-third">{item.product.brand.name}</p>
+                          )}
+                          {item.variant && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {Object.entries(item.variant.attributes).map(([key, value]) => (
+                                <span key={key} className="text-xs text-third bg-gray-100 px-2 py-1 rounded">
+                                  {key}: {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Price Display (Top Right) */}
+                        <div className="flex flex-col gap-3 text-right">
+                          <div className="flex gap-2 items-center justify-center">
+                            {compareAtPrice && (
+                              <span className="text-xs text-third line-through">
+                                {formatPrice(compareAtPrice * item.quantity)}
+                              </span>
+                            )}
+                            {discount > 0 && (
+                              <span className="text-xs text-danger font-medium bg-danger/10 px-1.5 py-0.5 rounded">
+                                -{discount}%
+                              </span>
+                            )}
+                          </div>
+
+                          <span className="font-bold text-primary text-lg">
+                            {formatPrice(price * item.quantity)}
+                          </span>
                           {item.quantity > 1 && (
-                            <p className="text-sm text-third">
-                              {formatPrice(item.product.price)} each
+                            <p className="text-xs text-third mt-1">
+                              {formatPrice(price)} each
                             </p>
                           )}
                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-4 sm:mt-0">
+                        <div className="flex items-center gap-3">
+                          {/* Quantity Selector */}
+                          <QuantitySelector
+                            value={item.quantity}
+                            onChange={(val) => updateQuantity(item.id, val)}
+                            max={item.product.stock}
+                          />
+
+                          {/* Wishlist Button */}
+                          <IconButton
+                            icon="heart"
+                            onClick={() => toggleItem(item.product)}
+                            isActive={isInWishlist(item.product.id)}
+                            variant="wishlist"
+                            className="border border-gray-200"
+                            aria-label="Add to wishlist"
+                          />
+                        </div>
+
+                        {/* Remove Button */}
                         <IconButton
                           icon="trash"
                           onClick={() => removeItem(item.id)}
+                          aria-label="Remove item"
                           variant="wishlist"
+                          className="border border-gray-200"
+
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-
-          {/* Continue Shopping */}
-          <Link href="/products" className="inline-flex items-center gap-2 text-primary hover:underline">
-            <ArrowLeft className="w-4 h-4" />
-            Continue Shopping
-          </Link>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Order Summary */}
@@ -193,21 +213,25 @@ export default function CartPage() {
                 <span className="text-primary">{formatPrice(finalTotal)}</span>
               </div>
 
-              {/* Free Shipping Notice */}
-              {totalPrice < 50 && (
-                <div className="p-4 bg-secondary/10 rounded-lg">
-                  <p className="text-sm text-third">
-                    Add <span className="font-bold text-primary">{formatPrice(50 - totalPrice)}</span> more to get{" "}
-                    <span className="font-bold text-secondary">FREE shipping!</span>
+              {/* Free Shipping Progress */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <Truck className="w-4 h-4 text-secondary" />
+                  <p className="text-sm font-medium text-primary flex-1">
+                    {totalPrice >= 50
+                      ? "Free shipping unlocked!"
+                      : `Add ${formatPrice(50 - totalPrice)} for `}
+                    spa
                   </p>
-                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-linear-to-r from-primary to-secondary rounded-full transition-all"
-                      style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
-                    />
-                  </div>
+                  <span className="text-xs font-bold text-secondary">{Math.min(Math.round((totalPrice / 50) * 100), 100)}%</span>
                 </div>
-              )}
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
+                    style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
 
               {/* Checkout Button */}
               <Link href="/checkout">
