@@ -4,31 +4,39 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/hooks/use-cart";
+import { QuantitySelector } from "@/components/ui/quantity-selector";
+import { Product, ProductVariant } from "@/types";
 
 // --- Types ---
-interface Product {
-  id: string | number;
-  name: string;
-  price: number;
-  stock: number;
-  image?: string;
-}
-
 interface AddToCartButtonProps {
   product: Product;
+  variant?: ProductVariant;
   onAddToCart?: (count: number) => void;
   onStatusChange?: (status: "idle" | "loading" | "success") => void;
   onAnimationEnd?: () => void;
   color?: string;
+  disabled?: boolean;
 }
 
 // --- Components ---
 
-export function AddToCartButton({ product, onAddToCart, onStatusChange, onAnimationEnd, color }: AddToCartButtonProps) {
+export function AddToCartButton({ product, variant, onAddToCart, onStatusChange, onAnimationEnd, color, disabled }: AddToCartButtonProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { items, addItem, updateQuantity } = useCart();
   
   const hasCustomColor = !!color;
+
+  // Check if item is in cart
+  const cartItem = items.find(item => {
+      if (variant) {
+          return item.id === `${product.id}-${variant.id}`;
+      }
+      return item.id === product.id || item.id === `${product.id}`;
+  });
+
+  const quantity = cartItem ? cartItem.quantity : 0;
 
   const updateStatus = (newStatus: "idle" | "loading" | "success") => {
     setStatus(newStatus);
@@ -36,10 +44,14 @@ export function AddToCartButton({ product, onAddToCart, onStatusChange, onAnimat
   };
 
   const handleClick = async () => {
-    if (status !== "idle" || product.stock === 0) return;
+    if (status !== "idle" || product.stock === 0 || disabled) return;
 
     updateStatus("loading");
     await new Promise((resolve) => setTimeout(resolve, 600));
+    
+    // Add to cart
+    addItem(product, 1, variant);
+    
     updateStatus("success");
     if (onAddToCart) onAddToCart(1);
 
@@ -48,6 +60,26 @@ export function AddToCartButton({ product, onAddToCart, onStatusChange, onAnimat
       onAnimationEnd?.();
     }, 750);
   };
+
+  // Show QuantitySelector if item is in cart AND we are not in the middle of an animation
+  if (quantity > 0 && status === "idle") {
+      return (
+          <div className="w-full h-11">
+            <QuantitySelector 
+                value={quantity}
+                onChange={(val) => updateQuantity(cartItem!.id, val)}
+                variant={hasCustomColor ? "primary" : "default"}
+                className={cn(
+                    "w-full h-full justify-between px-4",
+                    hasCustomColor 
+                        ? color 
+                        : "bg-white/80 text-primary border-0 shadow-s1 hover:bg-white"
+                )}
+                max={variant ? variant.stock : product.stock}
+            />
+          </div>
+      );
+  }
 
   return (
     <div className="w-full">
@@ -61,7 +93,7 @@ export function AddToCartButton({ product, onAddToCart, onStatusChange, onAnimat
         <motion.button
           ref={buttonRef}
           onClick={handleClick}
-          disabled={product.stock === 0 || status !== "idle"}
+          disabled={product.stock === 0 || status !== "idle" || disabled}
           className={cn(
             "relative w-full h-11 overflow-hidden rounded-full text-sm font-bold shadow-s1 transition-all focus:outline-none flex items-center justify-center",
             hasCustomColor

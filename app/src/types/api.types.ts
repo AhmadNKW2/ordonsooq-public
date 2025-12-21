@@ -93,6 +93,10 @@ export type ProductAttribute = {
   name_ar?: string;
   value_en?: string;
   value_ar?: string;
+  is_color?: boolean;
+  controls_pricing?: boolean;
+  controls_media?: boolean;
+  controls_weight?: boolean;
 };
 
 export type Product = {
@@ -122,7 +126,15 @@ export type ProductDetail = Product & {
   media: ProductMedia[];
   weights: ProductWeight[];
   variants: ProductVariant[];
-  attributes: ProductAttribute[];
+  attributes: {
+    id: number;
+    product_id: number;
+    attribute_id: number;
+    attribute: ProductAttribute;
+    controls_pricing: boolean;
+    controls_media: boolean;
+    controls_weight: boolean;
+  }[];
   brand?: {
     id: number;
     name_en: string;

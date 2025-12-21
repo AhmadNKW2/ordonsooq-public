@@ -3,7 +3,7 @@
  * This bridges the gap between backend API responses and frontend UI components
  */
 
-import type { Product as FrontendProduct, Category as FrontendCategory, Vendor as FrontendVendor, Banner as FrontendBanner, Brand as FrontendBrand } from '@/types';
+import type { Product as FrontendProduct, Category as FrontendCategory, Vendor as FrontendVendor, Banner as FrontendBanner, Brand as FrontendBrand, ProductDimensions, ProductAttribute } from '@/types';
 import type { Product as ApiProduct, ProductDetail, Category as ApiCategory, CategoryDetail, Vendor as ApiVendor, Banner as ApiBanner, HomeData, HomeCategory, HomeVendor, HomeBanner, HomeBrand } from '@/types/api.types';
 
 // Supported locales
@@ -79,17 +79,52 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   }
 
   // Get price from prices array or direct property
-  const priceData = apiProduct.prices?.[0];
-  const regularPrice = priceData?.price ? parseFloat(String(priceData.price)) : 
-    (apiProduct as { price?: string }).price ? parseFloat((apiProduct as { price?: string }).price!) : 0;
+  const allPrices = (apiProduct as any).prices || [];
   
-  // Get sale price if available - from direct field only (not in prices array)
-  const salePrice = (apiProduct as { sale_price?: string }).sale_price ? 
-    parseFloat((apiProduct as { sale_price?: string }).sale_price!) : undefined;
+  // Find default price (one without group values or just the first one)
+  const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0) || allPrices[0];
   
-  // Determine actual price and compareAtPrice
-  const actualPrice = salePrice && salePrice < regularPrice ? salePrice : regularPrice;
-  const compareAtPrice = salePrice && salePrice < regularPrice ? regularPrice : undefined;
+  const getPriceValues = (entry: any) => {
+    const regPrice = entry?.price ? parseFloat(String(entry.price)) : 0;
+    const sPrice = entry?.sale_price ? parseFloat(String(entry.sale_price)) : undefined;
+    
+    // If sale_price exists and is lower than price, then price is the "compareAt" and sale_price is the "actual"
+    const actual = sPrice && sPrice < regPrice ? sPrice : regPrice;
+    const compare = sPrice && sPrice < regPrice ? regPrice : undefined;
+    
+    return { actual, compare };
+  };
+
+  const { actual: actualPrice, compare: compareAtPrice } = getPriceValues(defaultPriceEntry);
+
+  // Helper to get variant price
+  const getVariantPriceData = (v: any) => {
+    // 1. Check if variant has specific prices array (unlikely in this API but for safety)
+    if (v.prices && v.prices.length > 0) {
+      return getPriceValues(v.prices[0]);
+    }
+
+    // 2. Find matching price in product.prices based on combinations
+    if (allPrices.length > 0 && v.combinations) {
+      const matchingPrice = allPrices.find((p: any) => {
+        if (!p.groupValues || p.groupValues.length === 0) return false;
+        
+        // Check if ALL groupValues in the price entry match the variant's combinations
+        return p.groupValues.every((gv: any) => 
+          v.combinations.some((c: any) => 
+            c.attribute_id === gv.attribute_id && c.attribute_value_id === gv.attribute_value_id
+          )
+        );
+      });
+
+      if (matchingPrice) {
+        return getPriceValues(matchingPrice);
+      }
+    }
+
+    // Fallback to product price
+    return { actual: actualPrice, compare: compareAtPrice };
+  };
 
   // Get stock - handle both array format and direct properties
   let stockQuantity = 0;
@@ -106,6 +141,89 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   // Handle brand data from ProductDetail
   const brandData = 'brand' in apiProduct ? (apiProduct as ProductDetail).brand : undefined;
 
+  // Extract dimensions
+  let dimensions: ProductDimensions | undefined = undefined;
+  if ('weights' in apiProduct && Array.isArray(apiProduct.weights) && apiProduct.weights.length > 0) {
+    const w = apiProduct.weights[0] as any;
+    dimensions = {
+      weight: w.weight ? String(w.weight) : undefined,
+      length: w.length ? String(w.length) : undefined,
+      width: w.width ? String(w.width) : undefined,
+      height: w.height ? String(w.height) : undefined,
+    };
+  }
+
+  // Create a map of variant stock if stock is an array at product level
+  const variantStockMap = new Map<number, number>();
+  if (Array.isArray(apiProduct.stock)) {
+    apiProduct.stock.forEach((s: any) => {
+      if (s.variant_id) {
+        variantStockMap.set(s.variant_id, s.quantity || 0);
+      }
+    });
+  }
+
+  // Extract attributes
+  let attributes: ProductAttribute[] | undefined = undefined;
+  const attributeIdToName = new Map<number, string>();
+
+  if ('attributes' in apiProduct && Array.isArray(apiProduct.attributes)) {
+    attributes = (apiProduct.attributes as any[]).map(attr => {
+      const attrName = getLocalizedText(attr.attribute?.name_en, attr.attribute?.name_ar, locale);
+      attributeIdToName.set(attr.attribute_id, attrName);
+      
+      const valuesMap = new Map<string, { meta?: string, image?: string }>();
+      
+      if ('variants' in apiProduct && Array.isArray(apiProduct.variants)) {
+        (apiProduct.variants as any[]).forEach(v => {
+          if (v.combinations && Array.isArray(v.combinations)) {
+            v.combinations.forEach((c: any) => {
+              if (c.attribute_value?.attribute_id === attr.attribute_id) {
+                const val = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
+                // Use image_url if available (for media control), otherwise color_code
+                // If controls_media is true, we prioritize image_url from the attribute value if it exists
+                // But wait, the attribute value itself might not have the image url directly if it's just a "Color" value definition.
+                // The image is usually in the product media gallery, linked to the attribute value.
+                
+                // Let's check if we can find media linked to this attribute value in the product media
+                let mediaUrl = c.attribute_value.image_url;
+                
+                if (!mediaUrl && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
+                   // Find media that belongs to this attribute value
+                   const matchingMedia = (apiProduct.media as any[]).find(m => 
+                     m.media_group?.groupValues?.some((gv: any) => 
+                       gv.attribute_id === attr.attribute_id && gv.attribute_value_id === c.attribute_value_id
+                     )
+                   );
+                   if (matchingMedia) {
+                     mediaUrl = matchingMedia.url;
+                   }
+                }
+                
+                const meta = c.attribute_value.color_code;
+                valuesMap.set(val, { meta, image: mediaUrl });
+              }
+            });
+          }
+        });
+      }
+      
+      return {
+        id: String(attr.attribute_id),
+        name: attrName,
+        values: Array.from(valuesMap.entries()).map(([value, data]) => ({ 
+          value, 
+          meta: data.meta,
+          image: data.image
+        })),
+        isColor: attr.attribute?.is_color || false,
+        controlsPricing: attr.controls_pricing || false,
+        controlsMedia: attr.controls_media || false,
+        controlsWeight: attr.controls_weight || false
+      };
+    }).filter(a => a.values.length > 0);
+  }
+
   return {
     id: String(apiProduct.id),
     name: getLocalizedText(apiProduct.name_en, apiProduct.name_ar, locale) || 'Unnamed Product',
@@ -114,6 +232,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     description: getLocalizedText(apiProduct.short_description_en, apiProduct.short_description_ar, locale),
     descriptionAr: apiProduct.short_description_ar || undefined,
     longDescription: getLocalizedText(apiProduct.long_description_en, apiProduct.long_description_ar, locale) || undefined,
+    attributes,
+    dimensions,
     price: actualPrice,
     compareAtPrice: compareAtPrice,
     images,
@@ -155,19 +275,34 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       name: getLocalizedText(apiProduct.vendor.name_en, (apiProduct.vendor as { name_ar?: string }).name_ar, locale) || 'Vendor',
       slug: generateSlug(apiProduct.vendor.name_en),
       logo: (apiProduct.vendor as { logo?: string }).logo || undefined,
+      description: getLocalizedText((apiProduct.vendor as any).description_en, (apiProduct.vendor as any).description_ar, locale),
       rating: 0,
       reviewCount: 0,
     } : undefined,
     tags: [],
     variants: 'variants' in apiProduct && apiProduct.variants 
-      ? apiProduct.variants.map(v => ({
-          id: String(v.id),
-          name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
-          price: v.prices?.[0]?.price ? parseFloat(String(v.prices[0].price)) : actualPrice,
-          stock: v.stock?.[0]?.available ?? 0,
-          sku: v.sku || '',
-          attributes: {},
-        }))
+      ? apiProduct.variants.map(v => {
+          const variantAttributes: Record<string, string> = {};
+          if (v.combinations && Array.isArray(v.combinations)) {
+            v.combinations.forEach((c: any) => {
+              const attrId = c.attribute_value?.attribute_id;
+              const attrName = attributeIdToName.get(attrId);
+              if (attrName) {
+                variantAttributes[attrName] = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
+              }
+            });
+          }
+          const priceData = getVariantPriceData(v);
+          return {
+            id: String(v.id),
+            name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
+            price: priceData.actual,
+            compareAtPrice: priceData.compare,
+            stock: variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0),
+            sku: v.sku || '',
+            attributes: variantAttributes,
+          };
+        })
       : undefined,
     stock: stockQuantity,
     sku: apiProduct.sku,

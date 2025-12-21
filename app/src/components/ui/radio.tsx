@@ -83,7 +83,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             className={cn(
               "inline-block py-3 px-5 rounded-full cursor-pointer transition-all duration-300 ease-out select-none",
               "bg-white shadow-sm ring-1 ring-inset ring-gray-200",
-              "hover:bg-gray-50 hover:ring-gray-300",
+              "hover:bg-gray-50 hover:ring-2 hover:ring-secondary/30",
               "peer-focus:outline-none peer-focus-visible:ring-2 peer-checked:text-secondary peer-checked:font-semibold peer-focus-visible:ring-secondary/30 peer-focus-visible:ring-offset-2",
               "peer-checked:ring-2 peer-checked:ring-secondary peer-checked:hover:ring-secondary peer-checked:shadow-[0_1px_2px_1px_rgba(0,0,0,0.1)]",
               "peer-disabled:cursor-not-allowed peer-disabled:opacity-50 peer-disabled:hover:bg-white peer-disabled:hover:ring-gray-200"

@@ -116,7 +116,7 @@ export default function CartPage() {
                       {/* Quantity Selector */}
                       <QuantitySelector
                         value={item.quantity}
-                        onChange={(val) => updateQuantity(item.product.id, val)}
+                        onChange={(val) => updateQuantity(item.id, val)}
                         max={item.product.stock}
                       />
 
@@ -134,7 +134,7 @@ export default function CartPage() {
                         </div>
                         <IconButton
                           icon="trash"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => removeItem(item.id)}
                           variant="wishlist"
                         />
                       </div>

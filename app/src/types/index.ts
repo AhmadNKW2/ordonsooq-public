@@ -1,4 +1,27 @@
 // Product Types
+export interface ProductDimensions {
+  weight?: string;
+  length?: string;
+  width?: string;
+  height?: string;
+}
+
+export interface ProductAttributeValue {
+  value: string;
+  meta?: string;
+  image?: string;
+}
+
+export interface ProductAttribute {
+  id: string;
+  name: string;
+  values: ProductAttributeValue[];
+  isColor: boolean;
+  controlsPricing: boolean;
+  controlsMedia: boolean;
+  controlsWeight: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,6 +41,8 @@ export interface Product {
   otherSellers?: OtherSeller[];
   tags: string[];
   variants?: ProductVariant[];
+  attributes?: ProductAttribute[];
+  dimensions?: ProductDimensions;
   stock: number;
   sku: string;
   rating: number;
@@ -32,6 +57,7 @@ export interface Vendor {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   logo?: string;
   rating: number;
   reviewCount: number;
@@ -48,6 +74,7 @@ export interface ProductVariant {
   id: string;
   name: string;
   price: number;
+  compareAtPrice?: number;
   stock: number;
   sku: string;
   attributes: Record<string, string>;

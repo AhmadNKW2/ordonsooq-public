@@ -102,6 +102,17 @@ export function HeroBanner({
             sizes="100vw"
           />
 
+          {/* Link Overlay */}
+          {banner.link && (
+            <Link
+              href={banner.link}
+              className="absolute inset-0 z-10"
+              aria-label={banner.title || "Banner link"}
+              target="_blank"
+
+            />
+          )}
+
           {/* Overlay
           <div className="absolute inset-0 bg-linear-to-r from-black/60 via-black/30 to-transparent" /> */}
 

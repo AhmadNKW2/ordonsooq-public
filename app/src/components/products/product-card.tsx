@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { Star, ShoppingCart } from "lucide-react";
 import { Product } from "@/types";
 import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
 import { Badge, IconButton } from "@/components/ui";
@@ -25,7 +25,7 @@ export function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
-  const { addItem, openCart } = useCart();
+  const { addItem, openCart, items } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
 
@@ -34,6 +34,10 @@ export function ProductCard({
     : 0;
 
   const inWishlist = isInWishlist(product.id);
+
+  // Check if item is in cart
+  const cartItem = items.find(item => item.id === product.id || item.id === `${product.id}`);
+  const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleCardClick = () => {
     router.push(`/products/${product.slug}`);
@@ -169,11 +173,21 @@ export function ProductCard({
           </div>
         )}
 
+        {/* Cart Badge (Unhovered) */}
+        {showActions && quantity > 0 && (
+          <div className="absolute bottom-3 right-3 z-10 transition-opacity duration-300 opacity-100 group-hover:opacity-0 pointer-events-none">
+            <div className="flex items-center gap-1 bg-secondary/90 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-lg text-xs font-bold">
+              <ShoppingCart size={14} />
+              <span>{quantity}</span>
+            </div>
+          </div>
+        )}
+
         {/* Add to Cart Button */}
         {showActions && (
           <div
             className={cn(
-              "absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/40 to-transparent transition-all duration-500 ease-out",
+              "absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/40 to-transparent transition-all duration-500 ease-out z-20",
               cartButtonStatus === "idle"
                 ? "opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0"
                 : "opacity-100 translate-y-0"
@@ -187,8 +201,7 @@ export function ProductCard({
                 price: product.price,
                 stock: product.stock,
                 image: product.images[0],
-              }}
-              onAddToCart={handleAddToCart}
+              } as any}
               onStatusChange={handleCartButtonStatusChange}
               onAnimationEnd={handleAnimationEnd}
             />
@@ -223,7 +236,7 @@ export function ProductCard({
 
         {/* Price - Always at bottom */}
         <div className="flex items-center justify-center gap-2 mt-auto">
-          <span className="text-lg font-bold text-primary">
+          <span className="text-lg font-bold text-secondary">
             {formatPrice(product.price)}
           </span>
           {product.compareAtPrice && (

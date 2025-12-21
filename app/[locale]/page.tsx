@@ -88,11 +88,11 @@ export default function HomePage() {
     : [];
 
   return (
-    <div>
+    <PageWrapper>
       {/* Hero Banner */}
       <section className="container mx-auto pt-0 mb-12">
         {homeLoading ? (
-          <Skeleton className="h-[400px] md:h-[500px] rounded-2xl" />
+          <Skeleton className="h-100 md:h-125 rounded-2xl" />
         ) : (
           <HeroBanner banners={banners} />
         )}
@@ -188,7 +188,7 @@ export default function HomePage() {
       <section className="container mx-auto mb-12">
         <Newsletter />
       </section>
-    </div>
+    </PageWrapper>
   );
 }
 

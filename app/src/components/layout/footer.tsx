@@ -14,6 +14,7 @@ import { Logo } from "./header-components";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { IconButton, IconName } from "../ui/icon-button";
+import { PageWrapper } from "../ui";
 
 const FEATURES = [
   {
@@ -63,158 +64,169 @@ export function Footer() {
   return (
     <footer className="bg-gray-900 text-third2">
       {/* Features Bar */}
-      <div className="border-b border-gray-800">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-none md:grid-flow-col justify-between gap-5">
-            {FEATURES.map(({ title, description, Icon }) => (
-              <div key={title} className="flex items-center gap-5">
-                <div className="p-3 bg-secondary rounded-full">
-                  <Icon className="w-6 h-6 text-white" />
+      <PageWrapper>
+        <div>
+          <div className="container mx-auto py-5">
+            <div className="grid grid-cols-2 md:grid-cols-none md:grid-flow-col justify-between gap-5">
+              {FEATURES.map(({ title, description, Icon }) => (
+                <div key={title} className="flex items-center gap-5">
+                  <div className="p-3 bg-secondary rounded-full">
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">{title}</h4>
+                    <p className="text-sm text-white/75">{description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-white">{title}</h4>
-                  <p className="text-sm text-white/75">{description}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-gray-800"></div>
+
+        {/* Main Footer */}
+        <div className="container mx-auto py-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            {/* Brand Column */}
+            <div className="lg:col-span-2">
+              <div className="mb-6">
+                <Logo asLink={true} />
+              </div>
+              <p className="text-third2 max-w-md mb-8">
+                {SITE_CONFIG.description}
+              </p>
+              {/* Contact Info */}
+              <div className="flex flex-col gap-3">
+                <a
+                  href={`mailto:${SITE_CONFIG.contact.email}`}
+                  className="flex items-center gap-3 text-third2 hover:text-secondary transition-colors"
+                >
+                  <Mail className="w-5 h-5" />
+                  {SITE_CONFIG.contact.email}
+                </a>
+                <a
+                  href={`tel:${SITE_CONFIG.contact.phone}`}
+                  className="flex items-center gap-3 text-third2 hover:text-secondary transition-colors"
+                >
+                  <Phone className="w-5 h-5" />
+                  {SITE_CONFIG.contact.phone}
+                </a>
+                <div className="flex items-center gap-3 text-third2">
+                  <MapPin className="w-5 h-5 shrink-0" />
+                  <span>{SITE_CONFIG.contact.address}</span>
                 </div>
+              </div>
+              {/* Social Links */}
+              <div className="flex items-center gap-3 mt-6">
+                {SOCIAL_LINKS.filter((s) => !!s.href).map(({ label, href, icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                  >
+                    <IconButton variant="social" size="default" icon={icon} />
+                  </a>
+                ))}
+                <a
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="YouTube"
+                >
+                  <IconButton variant="social" size="default" icon="youtube" />
+                </a>
+              </div>
+            </div>
+
+            {FOOTER_COLUMNS.map((column) => (
+              <div key={column.title}>
+                <h3 className="text-white font-semibold mb-4">{column.title}</h3>
+                <ul className="flex flex-col gap-2">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-third2 hover:text-secondary transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Main Footer */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Brand Column */}
-          <div className="lg:col-span-2">
-            <div className="mb-6">
-              <Logo asLink={true} />
+        {/* Divider */}
+        <div className="h-px bg-gray-800"></div>
+
+        {/* Newsletter */}
+        <div>
+          <div className="container mx-auto py-5">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5">
+              <div>
+                <h3 className="text-white font-semibold text-lg mb-1">Subscribe to our Newsletter</h3>
+                <p className="text-third2 text-sm">Get updates on new products and exclusive offers</p>
+              </div>
+              <form className="flex gap-2 w-full md:w-auto">
+                <Input
+                  type="email"
+                  placeholder="Enter your email..."
+                  className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white"
+                />
+
+                <Button
+                  type="submit"
+                  backgroundColor="var(--color-secondary)"
+                >
+                  Subscribe
+                </Button>
+              </form>
             </div>
-            <p className="text-third2 max-w-md mb-8">
-              {SITE_CONFIG.description}
-            </p>
-            {/* Contact Info */}
-            <div className="flex flex-col gap-3">
-              <a
-                href={`mailto:${SITE_CONFIG.contact.email}`}
-                className="flex items-center gap-3 text-third2 hover:text-secondary transition-colors"
-              >
-                <Mail className="w-5 h-5" />
-                {SITE_CONFIG.contact.email}
-              </a>
-              <a
-                href={`tel:${SITE_CONFIG.contact.phone}`}
-                className="flex items-center gap-3 text-third2 hover:text-secondary transition-colors"
-              >
-                <Phone className="w-5 h-5" />
-                {SITE_CONFIG.contact.phone}
-              </a>
-              <div className="flex items-center gap-3 text-third2">
-                <MapPin className="w-5 h-5 shrink-0" />
-                <span>{SITE_CONFIG.contact.address}</span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-gray-800"></div>
+
+        {/* Bottom Bar */}
+        <div>
+          <div className="container mx-auto py-5">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-sm text-third2">
+              <p>© {currentYear} {SITE_CONFIG.name}. All rights reserved.</p>
+              <div className="flex items-center gap-5">
+                {FOOTER_LINKS.legal.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="hover:text-secondary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+              {/* Payment Icons */}
+              <div className="flex items-center gap-3">
+                {PAYMENT_IMAGES.map((icon) => (
+                  <Image
+                    key={icon.alt}
+                    src={icon.src}
+                    alt={icon.alt}
+                    width={64}
+                    height={32}
+                    className="h-6 w-auto brightness-0 invert opacity-60"
+                  />
+                ))}
               </div>
             </div>
-            {/* Social Links */}
-            <div className="flex items-center gap-3 mt-6">
-              {SOCIAL_LINKS.filter((s) => !!s.href).map(({ label, href, icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                >
-                  <IconButton variant="social" size="default" icon={icon} />
-                </a>
-              ))}
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube"
-              >
-                <IconButton variant="social" size="default" icon="youtube" />
-              </a>
-            </div>
-          </div>
-
-          {FOOTER_COLUMNS.map((column) => (
-            <div key={column.title}>
-              <h3 className="text-white font-semibold mb-4">{column.title}</h3>
-              <ul className="flex flex-col gap-2">
-                {column.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-third2 hover:text-secondary transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Newsletter */}
-      <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-5">
-            <div>
-              <h3 className="text-white font-semibold text-lg mb-1">Subscribe to our Newsletter</h3>
-              <p className="text-third2 text-sm">Get updates on new products and exclusive offers</p>
-            </div>
-            <form className="flex gap-2 w-full md:w-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email..."
-                className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white"
-              />
-
-              <Button
-                type="submit"
-                backgroundColor="var(--color-secondary)"
-              >
-                Subscribe
-              </Button>
-            </form>
           </div>
         </div>
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-sm text-third2">
-            <p>© {currentYear} {SITE_CONFIG.name}. All rights reserved.</p>
-            <div className="flex items-center gap-5">
-              {FOOTER_LINKS.legal.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="hover:text-secondary transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-            {/* Payment Icons */}
-            <div className="flex items-center gap-3">
-              {PAYMENT_IMAGES.map((icon) => (
-                <Image
-                  key={icon.alt}
-                  src={icon.src}
-                  alt={icon.alt}
-                  width={64}
-                  height={32}
-                  className="h-6 w-auto brightness-0 invert opacity-60"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      </ PageWrapper>
     </footer>
   );
 }

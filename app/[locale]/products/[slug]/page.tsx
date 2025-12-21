@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
@@ -31,6 +32,111 @@ export default function ProductPage() {
     { limit: 4, status: 'active' }
   );
 
+  // Transform product data safely
+  const product = useMemo(() => {
+    if (!productData) return null;
+    return transformProduct(productData, locale);
+  }, [productData, locale]);
+
+  // State for selected options
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  // Initialize default options
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0 && Object.keys(selectedOptions).length === 0) {
+      // 1. Try to find the first variant with stock > 0
+      let defaultVariant = product.variants.find(v => v.stock > 0);
+      
+      // 2. If no stock, just take the first variant
+      if (!defaultVariant) {
+        defaultVariant = product.variants[0];
+      }
+      
+      if (defaultVariant) {
+        setSelectedOptions(defaultVariant.attributes);
+      }
+    }
+  }, [product?.variants]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Find matching variant
+  const selectedVariant = useMemo(() => {
+    if (!product?.variants) return undefined;
+    return product.variants.find(v => {
+      return Object.entries(selectedOptions).every(([key, value]) => v.attributes[key] === value);
+    });
+  }, [product?.variants, selectedOptions]);
+
+  // Determine which image index to show
+  const selectedImageIndex = useMemo(() => {
+    if (!product || !product.attributes) return 0;
+    
+    // Find attribute that controls media
+    const mediaAttribute = product.attributes.find(a => a.controlsMedia);
+    if (!mediaAttribute) return 0;
+    
+    // Get selected value for that attribute
+    const selectedValue = selectedOptions[mediaAttribute.name];
+    if (!selectedValue) return 0;
+    
+    // Find the image url for this value
+    const attributeValue = mediaAttribute.values.find(v => v.value === selectedValue);
+    
+    if (attributeValue?.image) {
+       const index = product.images.indexOf(attributeValue.image);
+       return index >= 0 ? index : 0;
+    }
+    
+    return 0;
+  }, [product, selectedOptions]);
+
+  const handleOptionChange = (attributeName: string, value: string) => {
+    if (!product?.variants) {
+      setSelectedOptions(prev => ({ ...prev, [attributeName]: value }));
+      return;
+    }
+
+    const newOptions = { ...selectedOptions, [attributeName]: value };
+
+    // Check if the new combination is valid and in stock
+    const exactMatch = product.variants.find(v => 
+      Object.entries(newOptions).every(([key, val]) => v.attributes[key] === val)
+    );
+
+    if (exactMatch && exactMatch.stock > 0) {
+      setSelectedOptions(newOptions);
+      return;
+    }
+
+    // If exact match is not available, try to find a variant with the new option that IS in stock
+    // Prioritize variants that match the most other currently selected options
+    const bestVariant = product.variants
+      .filter(v => v.attributes[attributeName] === value && v.stock > 0)
+      .sort((a, b) => {
+        const aMatches = Object.entries(selectedOptions).filter(([k, v]) => k !== attributeName && a.attributes[k] === v).length;
+        const bMatches = Object.entries(selectedOptions).filter(([k, v]) => k !== attributeName && b.attributes[k] === v).length;
+        return bMatches - aMatches;
+      })[0];
+
+    if (bestVariant) {
+      setSelectedOptions(bestVariant.attributes);
+    } else {
+      // Fallback: just select the option even if OOS
+      setSelectedOptions(newOptions);
+    }
+  };
+
+  // Check if an option should be disabled
+  const isOptionDisabled = (attributeName: string, value: string) => {
+    if (!product?.variants) return false;
+    
+    // Check if this option value exists in ANY variant that is in stock
+    const hasAnyInStockVariant = product.variants.some(v => 
+      v.attributes[attributeName] === value && v.stock > 0
+    );
+    
+    return !hasAnyInStockVariant;
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -52,17 +158,21 @@ export default function ProductPage() {
     );
   }
 
-  if (error || !productData) {
+  if (error || !product) {
     notFound();
   }
 
-  const product = transformProduct(productData, locale);
   const relatedProducts = relatedData?.data
     ? transformProducts(relatedData.data, locale).filter(p => p.id !== product.id)
     : [];
 
-  const discount = product.compareAtPrice
-    ? calculateDiscount(product.compareAtPrice, product.price)
+  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const currentCompareAtPrice = selectedVariant && selectedVariant.compareAtPrice ? selectedVariant.compareAtPrice : product.compareAtPrice;
+  const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const currentSku = selectedVariant ? selectedVariant.sku : product.sku;
+
+  const discount = currentCompareAtPrice
+    ? calculateDiscount(currentCompareAtPrice, currentPrice)
     : 0;
 
   return (
@@ -87,6 +197,7 @@ export default function ProductPage() {
           <ProductGallery
             images={product.images}
             productName={product.name}
+            initialIndex={selectedImageIndex}
             wishlistButton={
               <IconButton
                 onClick={() => toggleItem(product)}
@@ -110,15 +221,26 @@ export default function ProductPage() {
           <div className="flex items-center gap-2">
             {product.isNew && <Badge variant="new">New Arrival</Badge>}
             {discount > 0 && <Badge variant="sale">-{discount}% OFF</Badge>}
-            {product.stock <= 5 && product.stock > 0 && (
-              <Badge variant="warning">Only {product.stock} left!</Badge>
+            {currentStock <= 5 && currentStock > 0 && (
+              <Badge variant="warning">Only {currentStock} left!</Badge>
             )}
           </div>
 
           {/* Title & Brand */}
           <div>
             {product.brand && (
-              <p className="text-sm text-primary font-medium">{product.brand.name}</p>
+              <div className="flex items-center gap-2 mb-2">
+                {product.brand.logo && (
+                  <Image
+                    src={product.brand.logo}
+                    alt={product.brand.name}
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                  />
+                )}
+                <p className="text-sm text-primary font-medium">{product.brand.name}</p>
+              </div>
             )}
             <h1 className="text-2xl md:text-3xl font-bold text-primary">
               {product.name}
@@ -146,11 +268,11 @@ export default function ProductPage() {
           {/* Price */}
           <div className="flex items-baseline gap-3">
             <span className="text-3xl font-bold text-primary">
-              {formatPrice(product.price)}
+              {formatPrice(currentPrice)}
             </span>
-            {product.compareAtPrice && (
+            {currentCompareAtPrice && (
                 <span className="text-xl text-third opacity-70 line-through">
-                {formatPrice(product.compareAtPrice)}
+                {formatPrice(currentCompareAtPrice)}
               </span>
             )}
           </div>
@@ -161,12 +283,17 @@ export default function ProductPage() {
           </p>
 
           {/* Variants */}
-          {product.variants && product.variants.length > 0 && (
-            <ProductOptions variants={product.variants} />
+          {product.attributes && product.attributes.length > 0 && (
+            <ProductOptions 
+              attributes={product.attributes} 
+              selectedOptions={selectedOptions}
+              onChange={handleOptionChange}
+              isOptionDisabled={isOptionDisabled}
+            />
           )}
 
           {/* Actions */}
-          <ProductActions product={product} />
+          <ProductActions product={product} selectedVariant={selectedVariant} />
 
           {/* Features */}
           <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
@@ -191,42 +318,49 @@ export default function ProductPage() {
         {/* Vendor Info - Column 3 */}
         <div className="lg:col-span-3 flex flex-col gap-5">
           {/* Vendor Card */}
-          <Card className="p-4 flex justify-between">
-            <div className="flex items-center gap-3">
-              {product.vendor?.logo ? (
-                <Image
-                  src={product.vendor.logo}
-                  alt={product.vendor.name}
-                  width={48}
-                  height={48}
-                  className="rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Store className="w-6 h-6 text-third" />
-                </div>
-              )}
-              <div>
-                <p className="text-xs text-third">Sold by</p>
-                <p className="font-semibold text-primary">
-                  {product.vendor?.name || "OrdonSooq"}
-                </p>
-                {product.vendor && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="w-3 h-3 fill-secondary text-secondary" />
-                    <span className="text-xs text-third">
-                      {product.vendor.rating} ({product.vendor.reviewCount} reviews)
-                    </span>
+          <Card className="p-4 flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                {product.vendor?.logo ? (
+                  <Image
+                    src={product.vendor.logo}
+                    alt={product.vendor.name}
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Store className="w-6 h-6 text-third" />
                   </div>
                 )}
+                <div>
+                  <p className="text-xs text-third">Sold by</p>
+                  <p className="font-semibold text-primary">
+                    {product.vendor?.name || "OrdonSooq"}
+                  </p>
+                  {product.vendor && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      <span className="text-xs text-third">
+                        {product.vendor.rating} ({product.vendor.reviewCount} reviews)
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
+              <a
+                href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                Visit Store <ChevronRight className="w-4 h-4" />
+              </a>
             </div>
-            <a
-              href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
-              className="text-sm text-primary hover:underline flex items-center gap-1"
-            >
-              Visit Store <ChevronRight className="w-4 h-4" />
-            </a>
+            {product.vendor?.description && (
+              <p className="text-sm text-third border-t pt-3 mt-1">
+                {product.vendor.description}
+              </p>
+            )}
           </Card>
 
           {/* Other Sellers */}
@@ -263,7 +397,7 @@ export default function ProductPage() {
           {/* SKU & Tags */}
           <Card className="p-4">
             <div className="text-sm text-third flex flex-col gap-2">
-              <p>SKU: <span className="text-primary">{product.sku}</span></p>
+              <p>SKU: <span className="text-primary">{currentSku}</span></p>
               <p>Category: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
               {product.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
@@ -287,7 +421,7 @@ export default function ProductPage() {
       {/* Product Description Section */}
       {product.longDescription && (
         <section >
-          <h2 className="text-2xl font-bold text-primary">Product Description</h2>
+          <h2 className="text-2xl font-bold text-primary mb-1">Product Description</h2>
           <Card className="p-8">
             <div
               className="prose max-w-none prose-headings:text-primary prose-p:text-third prose-a:text-primary"
@@ -307,6 +441,53 @@ export default function ProductPage() {
                 ))}
               </div>
             )}
+          </Card>
+        </section>
+      )}
+
+      {/* Specifications Section */}
+      {(product.attributes || product.dimensions) && (
+        <section >
+          <h2 className="text-2xl font-bold text-primary mb-1 ">Specifications</h2>
+          <Card className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+              {product.attributes?.map((attr) => (
+                <div key={attr.name} className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                  <span className="text-third font-medium">{attr.name}</span>
+                  <span className="text-primary font-semibold">
+                    {selectedOptions[attr.name] || attr.values.map(v => v.value).join(', ')}
+                  </span>
+                </div>
+              ))}
+              {product.dimensions && (
+                <>
+                  {product.dimensions.weight && (
+                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                      <span className="text-third font-medium">Weight</span>
+                      <span className="text-primary font-semibold">{product.dimensions.weight} kg</span>
+                    </div>
+                  )}
+                  {product.dimensions.length && (
+                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                      <span className="text-third font-medium">Length</span>
+                      <span className="text-primary font-semibold">{product.dimensions.length} cm</span>
+                    </div>
+                  )}
+                  {product.dimensions.width && (
+                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                      <span className="text-third font-medium">Width</span>
+                      <span className="text-primary font-semibold">{product.dimensions.width} cm</span>
+                    </div>
+                  )}
+                  {product.dimensions.height && (
+                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                      <span className="text-third font-medium">Height</span>
+                      <span className="text-primary font-semibold">{product.dimensions.height} cm</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </Card>
         </section>
       )}

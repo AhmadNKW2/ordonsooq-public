@@ -25,7 +25,7 @@ export function ViewAllLink({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors",
+        "inline-flex items-center gap-2 text-primary hover:text-secondary font-medium transition-all hover:-translate-x-2",
         className
       )}
     >

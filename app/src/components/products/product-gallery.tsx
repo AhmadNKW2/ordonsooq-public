@@ -10,10 +10,11 @@ interface ProductGalleryProps {
   images: string[];
   productName: string;
   wishlistButton?: React.ReactNode;
+  initialIndex?: number;
 }
 
-export function ProductGallery({ images, productName, wishlistButton }: ProductGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+export function ProductGallery({ images, productName, wishlistButton, initialIndex = 0 }: ProductGalleryProps) {
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [direction, setDirection] = useState(0);
   const [showScrollUp, setShowScrollUp] = useState(false);
@@ -83,6 +84,11 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
     return () => clearTimeout(timer);
   }, [images.length, checkScrollPosition]);
 
+  // Update selected index when initialIndex changes (e.g. variant change)
+  useEffect(() => {
+    setSelectedIndex(initialIndex);
+  }, [initialIndex]);
+
   const slideVariants = useMemo(() => ({
     enter: (dir: number) => ({
       opacity: 0,
@@ -105,7 +111,7 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
 
   return (
     <>
-      <div className="flex gap-5 w-full h-150">
+      <div className="flex gap-2 w-full h-150">
         {/* Thumbnails - Left Side */}
         {images.length > 1 && (
           <div className="relative shrink-0 group h-[600px]">
@@ -131,10 +137,10 @@ export function ProductGallery({ images, productName, wishlistButton }: ProductG
                   key={index}
                   onClick={() => handleThumbnailClick(index)}
                   className={cn(
-                    "relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 shrink-0",
+                    "relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 shrink-0 ring-2",
                     selectedIndex === index
-                      ? "ring-2 ring-primary ring-offset-2"
-                      : "opacity-60 hover:opacity-100"
+                      ? "ring-secondary ring-offset-2"
+                      : "opacity-60 ring-primary/20 hover:opacity-100 hover:ring-secondary/50"
                   )}
                 >
                   <Image

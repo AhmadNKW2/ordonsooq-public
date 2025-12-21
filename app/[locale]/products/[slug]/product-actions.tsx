@@ -1,49 +1,37 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { AddToCartButton } from "@/components";
 import { Button } from "@/components/ui";
-import { QuantitySelector } from "@/components/ui/quantity-selector";
 import { useCart } from "@/hooks/use-cart";
-import { Product } from "@/types";
+import { Product, ProductVariant } from "@/types";
 
 interface ProductActionsProps {
   product: Product;
+  selectedVariant?: ProductVariant;
 }
 
-export function ProductActions({ product }: ProductActionsProps) {
-  const [quantity, setQuantity] = useState(1);
+export function ProductActions({ product, selectedVariant }: ProductActionsProps) {
   const { addItem, openCart } = useCart();
   const router = useRouter();
 
-  const handleAddToCart = (count: number) => {
-    // AddToCartButton passes 1 by default, but we want to use the selected quantity
-    // We can ignore the count passed by the button and use our state
-    addItem(product, quantity);
-  };
-
   const handleCheckout = () => {
-    addItem(product, quantity);
+    addItem(product, 1, selectedVariant);
     router.push("/checkout");
   };
 
+  const maxStock = selectedVariant ? selectedVariant.stock : product.stock;
+
   return (
     <div className="flex flex-col sm:flex-row gap-5 pt-4 w-full">
-      <div className="shrink-0">
-        <QuantitySelector 
-          value={quantity} 
-          onChange={setQuantity} 
-          max={product.stock > 0 ? product.stock : 1}
-        />
-      </div>
       <div className="flex-1 flex gap-5">
         <div className="flex-1">
           <AddToCartButton 
             product={product} 
+            variant={selectedVariant}
             color="bg-primary" 
-            onAddToCart={() => handleAddToCart(quantity)}
             onAnimationEnd={openCart}
+            disabled={maxStock === 0}
           />
         </div>
         <div className="flex-1">
