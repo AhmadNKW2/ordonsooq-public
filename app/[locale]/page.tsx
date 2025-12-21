@@ -90,7 +90,7 @@ export default function HomePage() {
   return (
     <PageWrapper>
       {/* Hero Banner */}
-      <section className="container mx-auto pt-0 mb-12">
+      <section className="container mx-auto pt-0">
         {homeLoading ? (
           <Skeleton className="h-100 md:h-125 rounded-2xl" />
         ) : (
@@ -99,7 +99,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Carousel */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -117,7 +117,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         {featuredLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -130,12 +130,12 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         <FeaturesSection />
       </section>
 
       {/* Brands Section */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -153,7 +153,7 @@ export default function HomePage() {
       </section>
 
       {/* Vendors Section */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -171,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* New Arrivals */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         {newLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -185,7 +185,7 @@ export default function HomePage() {
       </section>
 
       {/* Newsletter */}
-      <section className="container mx-auto mb-12">
+      <section className="container mx-auto">
         <Newsletter />
       </section>
     </PageWrapper>

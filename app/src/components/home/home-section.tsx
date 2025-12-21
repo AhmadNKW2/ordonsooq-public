@@ -71,7 +71,7 @@ function SectionHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+    <div className="flex flex-col md:flex-row md:items-center justify-between mb-2">
       <div>
         <h2 className="text-2xl md:text-3xl font-bold text-primary">{title}</h2>
         {subtitle ? <p className="text-secondary mt-1">{subtitle}</p> : null}
@@ -364,7 +364,7 @@ export function HomeSection(props: HomeSectionProps) {
       )}
 
       {canShowLoadMore ? (
-        <div className="flex justify-center pt-10">
+        <div className="flex justify-center pt-10 pb-5">
           <Button
             variant="pill"
             size="lg"
