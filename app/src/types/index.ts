@@ -41,6 +41,12 @@ export interface Product {
   otherSellers?: OtherSeller[];
   tags: string[];
   variants?: ProductVariant[];
+  /** Variant IDs from API list responses (e.g. variants_ids). */
+  variantIds?: string[];
+  /** Convenience flag to indicate product requires option selection. */
+  hasVariants?: boolean;
+  /** If set, this card represents a specific variant ID (used for deep-linking). */
+  defaultVariantId?: string;
   attributes?: ProductAttribute[];
   dimensions?: ProductDimensions;
   stock: number;
@@ -102,22 +108,169 @@ export interface Brand {
   description?: string;
 }
 
-// Cart Types
-export interface CartItem {
-  id: string;
-  product: Product;
+// Order Types
+export interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  street: string;
+  city: string;
+  country: string;
+}
+
+export interface ApiOrderItem {
+  id?: string | number;
+  productId: string | number;
+  variantId?: string | number;
   quantity: number;
-  variant?: ProductVariant;
-  selectedAttributes?: Record<string, string>;
+  price?: number;
+  product?: Product;
+}
+
+export interface ApiOrder {
+  id: string | number;
+  items: ApiOrderItem[];
+  paymentMethod: string;
+  shippingAddress: ShippingAddress;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOrderPayload {
+  items: {
+    productId: string | number;
+    quantity: number;
+    variantId?: string | number;
+  }[];
+  paymentMethod: string;
+  shippingAddress: ShippingAddress;
+}
+
+export interface OrderResponse {
+  data: ApiOrder[];
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Wallet Types
+export interface Wallet {
+  id: string | number;
+  balance: number;
+  currency: string;
+  userId: string | number;
+}
+
+export interface WalletTransaction {
+  id: string | number;
+  amount: number;
+  type: 'credit' | 'debit';
+  description: string;
+  createdAt: string;
+  referenceId?: string;
+}
+
+export interface AddFundsPayload {
+  amount: number;
+  description: string;
+}
+
+export interface TransactionFilterPayload {
+  type?: 'credit' | 'debit';
+  from_date?: string;
+  to_date?: string;
+}
+
+export interface WalletResponse {
+  data: Wallet;
+}
+
+export interface TransactionsResponse {
+  data: WalletTransaction[];
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Cart Types
+export interface CartVariantAttribute {
+  attribute_name_en: string;
+  value_en: string;
+  color_code?: string;
+}
+
+export interface CartVariant {
+  id: number;
+  sku: string;
+  price: number;
+  sale_price?: number;
+  attributes: CartVariantAttribute[];
+  compareAtPrice?: number;
+  stock?: number;
+}
+
+export interface CartProduct {
+  id: number;
+  name_en: string;
+  price: number;
+  sale_price?: number;
+  image: string;
+  compareAtPrice?: number;
+  slug?: string;
+  stock?: number;
+}
+
+export interface CartItem {
+  id: number;
+  product_id: number;
+  variant_id: number | null;
+  quantity: number;
+  product: CartProduct;
+  variant: CartVariant | null;
 }
 
 export interface Cart {
+  id: number;
+  user_id: number;
+  total_amount: number;
   items: CartItem[];
-  subtotal: number;
-  discount: number;
-  shipping: number;
-  tax: number;
+}
+
+// Wishlist Types
+export interface WishlistProduct {
+  id: number;
+  name_en: string;
+  name_ar: string;
+  price: number;
+  image: string;
+  vendor?: any;
+}
+
+export interface WishlistItem {
+  id: number;
+  product_id: number;
+  created_at: string;
+  product: WishlistProduct;
+}
+
+export interface WishlistResponse {
+  data: WishlistItem[];
   total: number;
+}
+
+export interface WishlistUpdateResponse {
+  message: string;
+  items: {
+    data: WishlistItem[];
+    total: number;
+  };
 }
 
 // User Types
@@ -126,10 +279,19 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  role: 'admin' | 'user' | 'vendor'; // Added from Postman
   phone?: string;
   avatar?: string;
-  addresses: Address[];
-  createdAt: string;
+  addresses?: Address[];
+  createdAt?: string;
+}
+
+export interface AuthResponse {
+  data: {
+    user: User;
+    access_token: string;
+  };
+  token?: string; // Sometimes APIs return token at root
 }
 
 export interface Address {
@@ -197,13 +359,6 @@ export interface Review {
   isVerified: boolean;
   helpful: number;
   createdAt: string;
-}
-
-// Wishlist Types
-export interface WishlistItem {
-  id: string;
-  product: Product;
-  addedAt: string;
 }
 
 // Search & Filter Types

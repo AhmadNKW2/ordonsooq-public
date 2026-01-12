@@ -104,7 +104,7 @@ export function Modal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "absolute inset-0 bg-black/80 backdrop-blur-sm",
+              "absolute inset-0 bg-black/50 backdrop-blur-sm",
               backdropClassName
             )}
             onClick={closeOnBackdropClick ? onClose : undefined}

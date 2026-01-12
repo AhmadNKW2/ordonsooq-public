@@ -301,15 +301,20 @@ export default function CheckoutPage() {
                       <div key={item.product.id} className="flex items-center gap-5 p-3 bg-gray-50 rounded-lg">
                         <div className="relative w-16 h-16 shrink-0">
                           <Image
-                            src={item.product.images[0]}
-                            alt={item.product.name}
+                            src={item.product.image || '/placeholder.svg'}
+                            alt={item.product.name_en}
                             fill
                             className="object-cover rounded-lg"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-primary truncate">{item.product.name}</p>
+                          <p className="font-medium text-primary truncate">{item.product.name_en}</p>
                           <p className="text-sm text-third">Qty: {item.quantity}</p>
+                          {item.variant && item.variant.attributes && item.variant.attributes.length > 0 && (
+                            <p className="text-xs text-third mt-1">
+                                {item.variant.attributes.map(a => a.value_en).join(', ')}
+                            </p>
+                          )}
                         </div>
                         <p className="font-semibold text-primary">
                           {formatPrice(item.product.price * item.quantity)}
@@ -334,8 +339,8 @@ export default function CheckoutPage() {
                 <div key={item.product.id} className="flex items-center gap-3">
                   <div className="relative w-12 h-12 shrink-0">
                     <Image
-                      src={item.product.images[0]}
-                      alt={item.product.name}
+                      src={item.product.image || '/placeholder.svg'}
+                      alt={item.product.name_en}
                       fill
                       className="object-cover rounded"
                     />
@@ -344,7 +349,7 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-primary truncate">{item.product.name}</p>
+                    <p className="text-sm font-medium text-primary truncate">{item.product.name_en}</p>
                   </div>
                   <p className="text-sm font-semibold text-primary">
                     {formatPrice(item.product.price * item.quantity)}

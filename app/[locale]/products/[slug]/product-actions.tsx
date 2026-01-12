@@ -16,7 +16,7 @@ export function ProductActions({ product, selectedVariant }: ProductActionsProps
   const router = useRouter();
 
   const handleCheckout = () => {
-    addItem(product, 1, selectedVariant);
+    addItem(product, 1, selectedVariant?.id);
     router.push("/checkout");
   };
 

@@ -62,7 +62,130 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   let images: string[] = [];
   
   if ('media' in apiProduct && apiProduct.media && apiProduct.media.length > 0) {
-    images = apiProduct.media.map(m => m.url).filter(url => url && typeof url === 'string' && url.trim() !== '');
+    const mediaItems = [...apiProduct.media]
+      .filter((m: any) => m?.url && typeof m.url === 'string' && m.url.trim() !== '');
+
+    const groupKeyOf = (m: any) => {
+      const groupValues = m?.media_group?.groupValues;
+      if (!Array.isArray(groupValues) || groupValues.length === 0) return 'ungrouped';
+      return [...groupValues]
+        .map((gv: any) => ({ a: gv?.attribute_id, v: gv?.attribute_value_id }))
+        .filter((x) => x.a != null && x.v != null)
+        .sort((x, y) => (x.a - y.a) || (x.v - y.v))
+        .map((x) => `${x.a}:${x.v}`)
+        .join('|') || 'ungrouped';
+    };
+
+    const mediaSort = (a: any, b: any) => {
+      const aGroupPrimary = a?.is_group_primary ? 1 : 0;
+      const bGroupPrimary = b?.is_group_primary ? 1 : 0;
+      if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
+
+      const aPrimary = a?.is_primary ? 1 : 0;
+      const bPrimary = b?.is_primary ? 1 : 0;
+      if (bPrimary !== aPrimary) return bPrimary - aPrimary;
+
+      const aOrder = typeof a?.sort_order === 'number' ? a.sort_order : 0;
+      const bOrder = typeof b?.sort_order === 'number' ? b.sort_order : 0;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return (a?.id ?? 0) - (b?.id ?? 0);
+    };
+
+    // Group media by media_group keys and sort within each group
+    const groups = new Map<string, any[]>();
+    for (const m of mediaItems) {
+      const key = groupKeyOf(m);
+      const list = groups.get(key) ?? [];
+      list.push(m);
+      groups.set(key, list);
+    }
+    for (const [key, list] of groups.entries()) {
+      groups.set(key, [...list].sort(mediaSort));
+    }
+
+    // The first media group must be the group that contains the globally primary media.
+    const primaryMedia = mediaItems.find((m: any) => m?.is_primary);
+    const primaryGroupKey = primaryMedia ? groupKeyOf(primaryMedia) : undefined;
+
+    // We prefer ordering groups according to the controlsMedia attribute value order.
+    // Those values' `image` URLs are already mapped to the group's primary image.
+    const preferredPrimaryImages: string[] = [];
+    const mediaAttribute = (('attributes' in apiProduct ? (apiProduct as any).attributes : undefined) as any[] | undefined)
+      ?.find((a) => a?.controls_media);
+
+    if (mediaAttribute && Array.isArray((apiProduct as any).variants)) {
+      // This is a best-effort hint; the authoritative value order comes from the attribute_value.sort_order
+      // we observe in variant combinations.
+      const id = mediaAttribute.attribute_id;
+      const seenValueIds = new Set<number>();
+      const orderedValueIds: Array<{ valueId: number; sortOrder: number }> = [];
+
+      for (const v of (apiProduct as any).variants as any[]) {
+        for (const c of (v?.combinations ?? []) as any[]) {
+          const attrId = c?.attribute_value?.attribute_id;
+          const valueId = c?.attribute_value_id;
+          if (attrId == id && typeof valueId === 'number' && !seenValueIds.has(valueId)) {
+            seenValueIds.add(valueId);
+            orderedValueIds.push({ valueId, sortOrder: c?.attribute_value?.sort_order ?? 0 });
+          }
+        }
+      }
+
+      orderedValueIds
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .forEach(({ valueId }) => {
+          const match = mediaItems
+            .filter((m: any) => m?.media_group?.groupValues?.some((gv: any) => gv.attribute_id == id && gv.attribute_value_id == valueId))
+            .sort(mediaSort)[0];
+          if (match?.url) preferredPrimaryImages.push(match.url);
+        });
+    }
+
+    const groupEntries = Array.from(groups.entries());
+
+    const groupPrimaryUrl = (list: any[]) => list?.[0]?.url as string | undefined;
+
+    // Order groups: by preferredPrimaryImages first, then remaining (stable by primary sort_order/id)
+    const preferredIndex = new Map<string, number>();
+    preferredPrimaryImages.forEach((url, idx) => preferredIndex.set(url, idx));
+
+    groupEntries.sort(([aKey, aList], [bKey, bList]) => {
+      if (primaryGroupKey) {
+        if (aKey === primaryGroupKey && bKey !== primaryGroupKey) return -1;
+        if (bKey === primaryGroupKey && aKey !== primaryGroupKey) return 1;
+      }
+
+      const aPrimaryUrl = groupPrimaryUrl(aList);
+      const bPrimaryUrl = groupPrimaryUrl(bList);
+      const aPref = aPrimaryUrl ? preferredIndex.get(aPrimaryUrl) : undefined;
+      const bPref = bPrimaryUrl ? preferredIndex.get(bPrimaryUrl) : undefined;
+
+      if (aPref != null && bPref != null) return aPref - bPref;
+      if (aPref != null) return -1;
+      if (bPref != null) return 1;
+
+      const aOrder = typeof aList?.[0]?.sort_order === 'number' ? aList[0].sort_order : 0;
+      const bOrder = typeof bList?.[0]?.sort_order === 'number' ? bList[0].sort_order : 0;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return aKey.localeCompare(bKey);
+    });
+
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const [, list] of groupEntries) {
+      // list is already sorted with group-primary first
+      for (const m of list) {
+        const url = m?.url;
+        if (typeof url === 'string' && url.trim() && !seen.has(url)) {
+          seen.add(url);
+          out.push(url);
+        }
+      }
+    }
+
+    images = out;
   }
   
   // Try to get primary image (can be string or object with url)
@@ -126,11 +249,11 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         if (!p.groupValues || p.groupValues.length === 0) return false;
         
         // Check if ALL groupValues in the price entry match the variant's combinations
-        return p.groupValues.every((gv: any) => 
-          v.combinations.some((c: any) => 
-            // Use loose equality to handle string/number mismatches
-            c.attribute_id == gv.attribute_id && c.attribute_value_id == gv.attribute_value_id
-          )
+        return p.groupValues.every((gv: any) =>
+          (v.combinations as any[]).some((c: any) => {
+            const combAttrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
+            return combAttrId == gv.attribute_id && c?.attribute_value_id == gv.attribute_value_id;
+          })
         );
       });
 
@@ -148,7 +271,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   if (Array.isArray(apiProduct.stock) && apiProduct.stock.length > 0) {
     // Sum up quantities from all stock entries
     stockQuantity = apiProduct.stock.reduce((total: number, s: any) => {
-      return total + (s.quantity || 0);
+      const qty = s?.quantity ?? 0;
+      const reserved = s?.reserved_quantity ?? 0;
+      return total + Math.max(0, qty - reserved);
     }, 0);
   } else if (apiProduct.stock && typeof apiProduct.stock === 'object') {
     const stockData = apiProduct.stock as { total_quantity?: number; available?: number; quantity?: number; in_stock?: boolean };
@@ -175,7 +300,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   if (Array.isArray(apiProduct.stock)) {
     apiProduct.stock.forEach((s: any) => {
       if (s.variant_id) {
-        variantStockMap.set(s.variant_id, s.quantity || 0);
+        const qty = s?.quantity ?? 0;
+        const reserved = s?.reserved_quantity ?? 0;
+        variantStockMap.set(s.variant_id, Math.max(0, qty - reserved));
       }
     });
   }
@@ -209,13 +336,28 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
                 
                 if (!mediaUrl && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
                    // Find media that belongs to this attribute value
-                   const matchingMedia = (apiProduct.media as any[]).find(m => 
-                     m.media_group?.groupValues?.some((gv: any) => 
-                       gv.attribute_id === attr.attribute_id && gv.attribute_value_id === c.attribute_value_id
+                   const matchingMedia = (apiProduct.media as any[])
+                     .filter(m => 
+                       m?.media_group?.groupValues?.some((gv: any) => 
+                         gv.attribute_id === attr.attribute_id && gv.attribute_value_id === c.attribute_value_id
+                       )
                      )
-                   );
-                   if (matchingMedia) {
-                     mediaUrl = matchingMedia.url;
+                     .sort((a: any, b: any) => {
+                       const aGroupPrimary = a?.is_group_primary ? 1 : 0;
+                       const bGroupPrimary = b?.is_group_primary ? 1 : 0;
+                       if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
+
+                       const aPrimary = a?.is_primary ? 1 : 0;
+                       const bPrimary = b?.is_primary ? 1 : 0;
+                       if (bPrimary !== aPrimary) return bPrimary - aPrimary;
+
+                       const aOrder = typeof a?.sort_order === 'number' ? a.sort_order : 0;
+                       const bOrder = typeof b?.sort_order === 'number' ? b.sort_order : 0;
+                       return aOrder - bOrder;
+                     });
+
+                   if (matchingMedia.length > 0) {
+                     mediaUrl = matchingMedia[0].url;
                    }
                 }
                 
@@ -245,6 +387,35 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       };
     }).filter(a => a.values.length > 0);
   }
+
+  const variantIds = Array.isArray((apiProduct as any).variants_ids)
+    ? (apiProduct as any).variants_ids.map((id: any) => String(id))
+    : [];
+
+  const mappedVariants = 'variants' in apiProduct && apiProduct.variants
+    ? apiProduct.variants.map(v => {
+        const variantAttributes: Record<string, string> = {};
+        if (v.combinations && Array.isArray(v.combinations)) {
+          v.combinations.forEach((c: any) => {
+            const attrId = c.attribute_value?.attribute_id;
+            const attrName = attributeIdToName.get(attrId);
+            if (attrName) {
+              variantAttributes[attrName] = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
+            }
+          });
+        }
+        const priceData = getVariantPriceData(v);
+        return {
+          id: String(v.id),
+          name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
+          price: priceData.actual,
+          compareAtPrice: priceData.compare,
+          stock: variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0),
+          sku: v.sku || '',
+          attributes: variantAttributes,
+        };
+      })
+    : undefined;
 
   return {
     id: String(apiProduct.id),
@@ -302,30 +473,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       reviewCount: 0,
     } : undefined,
     tags: [],
-    variants: 'variants' in apiProduct && apiProduct.variants 
-      ? apiProduct.variants.map(v => {
-          const variantAttributes: Record<string, string> = {};
-          if (v.combinations && Array.isArray(v.combinations)) {
-            v.combinations.forEach((c: any) => {
-              const attrId = c.attribute_value?.attribute_id;
-              const attrName = attributeIdToName.get(attrId);
-              if (attrName) {
-                variantAttributes[attrName] = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
-              }
-            });
-          }
-          const priceData = getVariantPriceData(v);
-          return {
-            id: String(v.id),
-            name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
-            price: priceData.actual,
-            compareAtPrice: priceData.compare,
-            stock: variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0),
-            sku: v.sku || '',
-            attributes: variantAttributes,
-          };
-        })
-      : undefined,
+    variants: mappedVariants,
+    variantIds,
+    hasVariants: (mappedVariants?.length ?? 0) > 0 || variantIds.length > 0,
     stock: stockQuantity,
     sku: apiProduct.sku,
     rating: typeof apiProduct.average_rating === 'string' ? parseFloat(apiProduct.average_rating) : apiProduct.average_rating,
@@ -387,6 +537,28 @@ function isNewProduct(createdAt: string): boolean {
  */
 export function transformProducts(apiProducts: ApiProduct[], locale: Locale = 'en'): FrontendProduct[] {
   return apiProducts.map(p => transformProduct(p, locale));
+}
+
+/**
+ * Transform products for listing grids.
+ *
+ * If a product has `variantIds` (from list responses like `variants_ids`), expand it into one
+ * item per variant so it can appear as multiple cards. Each expanded card sets `defaultVariantId`
+ * which is used to deep-link to the product page with `?variant=<id>`.
+ */
+export function transformProductsForListing(apiProducts: ApiProduct[], locale: Locale = 'en'): FrontendProduct[] {
+  const base = transformProducts(apiProducts, locale);
+
+  return base.flatMap((p) => {
+    const ids = Array.isArray(p.variantIds) ? p.variantIds : [];
+    if (ids.length === 0) return [p];
+
+    return ids.map((id) => ({
+      ...p,
+      hasVariants: true,
+      defaultVariantId: String(id),
+    }));
+  });
 }
 
 /**

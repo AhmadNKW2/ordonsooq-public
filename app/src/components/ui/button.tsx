@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "solid" | "outline" | "pill";
+type ButtonVariant = "solid" | "outline" | "pill" | "ghost";
 
 type ButtonColorValue = `#${string}` | `var(--${string})`;
 
@@ -39,6 +39,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   solid: "bg-primary text-white hover:bg-primary/90 shadow-primary/25",
   outline: "bg-transparent border border-primary text-primary hover:bg-primary/10 shadow-none hover:shadow-none",
   pill: "bg-primary text-white hover:bg-primary/90 shadow-primary/25 rounded-full",
+  ghost: "bg-transparent text-gray-700 hover:bg-gray-100 shadow-none hover:shadow-none",
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

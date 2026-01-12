@@ -9,8 +9,8 @@ import {
   Newsletter,
 } from "@/components/home";
 import type { ShopByItem } from "@/components/home/shop-by-section";
-import { useProducts, useHome } from "@/hooks";
-import { transformProducts, transformHomeData, type Locale } from "@/lib/transformers";
+import { useProducts, useHome, useListingVariantProducts } from "@/hooks";
+import { transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { PageWrapper } from "@/components/ui";
 
@@ -79,13 +79,13 @@ export default function HomePage() {
     image: vendor.logo,
     isCategory: false,
   }));
-  // Transform and filter out of stock products with locale
-  const featuredProducts = featuredData?.data
-    ? transformProducts(featuredData.data, locale).filter(p => p.stock > 0) 
-    : [];
-  const newProducts = newData?.data
-    ? transformProducts(newData.data, locale).filter(p => p.stock > 0) 
-    : [];
+  const { products: featuredProductsRaw, isLoading: featuredVariantsLoading } =
+    useListingVariantProducts(featuredData?.data, locale);
+  const { products: newProductsRaw, isLoading: newVariantsLoading } =
+    useListingVariantProducts(newData?.data, locale);
+
+  const featuredProducts = featuredProductsRaw.filter((p) => p.stock > 0);
+  const newProducts = newProductsRaw.filter((p) => p.stock > 0);
 
   return (
     <PageWrapper>
@@ -118,7 +118,7 @@ export default function HomePage() {
 
       {/* Featured Products */}
       <section className="container mx-auto">
-        {featuredLoading ? (
+        {featuredLoading || featuredVariantsLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
           <ProductsSection
@@ -172,7 +172,7 @@ export default function HomePage() {
 
       {/* New Arrivals */}
       <section className="container mx-auto">
-        {newLoading ? (
+        {newLoading || newVariantsLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
           <ProductsSection

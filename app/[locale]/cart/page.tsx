@@ -6,11 +6,37 @@ import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight } from "lucide-r
 import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
+import { formatPrice, calculateDiscount, cn, slugify } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalPrice } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+
+  const getEffectivePricing = (entity: unknown): { price: number; compareAtPrice?: number } => {
+    const e = entity as any;
+    const price = toNumber(e?.price);
+    const compareAtPrice = toNumber(e?.compareAtPrice);
+    const salePrice = toNumber(e?.sale_price);
+
+    if (Number.isFinite(salePrice) && Number.isFinite(price) && salePrice > 0 && salePrice < price) {
+      return { price: salePrice, compareAtPrice: price };
+    }
+
+    const normalizedCompareAt = Number.isFinite(compareAtPrice) && Number.isFinite(price) && compareAtPrice > price
+      ? compareAtPrice
+      : undefined;
+
+    return { price: Number.isFinite(price) ? price : 0, compareAtPrice: normalizedCompareAt };
+  };
 
   const shipping = totalPrice > 50 ? 0 : 9.99;
   const tax = totalPrice * 0.1;
@@ -67,19 +93,27 @@ export default function CartPage() {
         {/* Cart Items */}
         <div className="lg:col-span-2 flex flex-col gap-5">
           {items.map((item) => {
-            const price = item.variant ? item.variant.price : item.product.price;
-            const compareAtPrice = item.variant?.compareAtPrice || item.product.compareAtPrice;
-            const discount = compareAtPrice ? calculateDiscount(compareAtPrice, price) : 0;
+            const productPricing = getEffectivePricing(item.product);
+            const variantPricing = item.variant ? getEffectivePricing(item.variant) : undefined;
+
+            const unitPrice = (variantPricing?.price ?? productPricing.price) || 0;
+            const unitCompareAtPrice = variantPricing?.compareAtPrice ?? productPricing.compareAtPrice;
+
+            const discount = unitCompareAtPrice ? calculateDiscount(unitCompareAtPrice, unitPrice) : 0;
+            const productSlug = item.product.slug || `${slugify(item.product.name_en)}-${item.product_id}`;
+            const productHref = item.variant_id
+              ? `/products/${productSlug}?variant=${item.variant_id}`
+              : `/products/${productSlug}`;
 
             return (
               <Card key={item.id} className="overflow-hidden">
                 <div className="p-0">
                   <div className="flex flex-col sm:flex-row gap-5 p-4">
                     {/* Product Image */}
-                    <Link href={`/products/${item.product.slug}`} className="relative w-full sm:w-32 h-32 shrink-0">
+                    <Link href={productHref} className="relative w-full sm:w-32 h-32 shrink-0">
                       <Image
-                        src={item.product.images?.[0] || '/placeholder.svg'}
-                        alt={item.product.name}
+                        src={item.product.image || '/placeholder.svg'}
+                        alt={item.product.name_en}
                         fill
                         className="object-cover rounded-lg"
                       />
@@ -89,19 +123,21 @@ export default function CartPage() {
                     <div className="flex-1 flex flex-col justify-between">
                       <div className="flex justify-between items-start">
                         <div>
-                          <Link href={`/products/${item.product.slug}`}>
+                          <Link href={productHref}>
                             <h3 className="font-semibold text-primary hover:text-primary transition-colors">
-                              {item.product.name}
+                              {item.product.name_en}
                             </h3>
                           </Link>
+                          {/* Brand - unavailable in CartProduct currently
                           {item.product.brand && (
                             <p className="text-sm text-third">{item.product.brand.name}</p>
                           )}
-                          {item.variant && (
+                          */}
+                          {item.variant && item.variant.attributes && (
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {Object.entries(item.variant.attributes).map(([key, value]) => (
-                                <span key={key} className="text-xs text-third bg-gray-100 px-2 py-1 rounded">
-                                  {key}: {value}
+                              {item.variant.attributes.map((attr, idx) => (
+                                <span key={idx} className="text-xs text-third bg-gray-100 px-2 py-1 rounded">
+                                  {attr.attribute_name_en}: {attr.value_en}
                                 </span>
                               ))}
                             </div>
@@ -111,9 +147,9 @@ export default function CartPage() {
                         {/* Price Display (Top Right) */}
                         <div className="flex flex-col gap-3 text-right">
                           <div className="flex gap-2 items-center justify-center">
-                            {compareAtPrice && (
+                            {unitCompareAtPrice && (
                               <span className="text-xs text-third line-through">
-                                {formatPrice(compareAtPrice * item.quantity)}
+                                {formatPrice(unitCompareAtPrice * item.quantity)}
                               </span>
                             )}
                             {discount > 0 && (
@@ -124,11 +160,11 @@ export default function CartPage() {
                           </div>
 
                           <span className="font-bold text-primary text-lg">
-                            {formatPrice(price * item.quantity)}
+                            {formatPrice(unitPrice * item.quantity)}
                           </span>
                           {item.quantity > 1 && (
                             <p className="text-xs text-third mt-1">
-                              {formatPrice(price)} each
+                              {formatPrice(unitPrice)} each
                             </p>
                           )}
                         </div>

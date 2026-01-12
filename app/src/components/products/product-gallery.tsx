@@ -131,7 +131,7 @@ export function ProductGallery({
 
   return (
     <>
-      <div className="flex gap-2 w-full h-[600px]">
+      <div className="flex gap-2 w-full h-150">
         {/* Thumbnails - Left Side */}
         {images.length > 1 && (
           <div className="relative shrink-0 group h-full">
@@ -160,7 +160,7 @@ export function ProductGallery({
                   key={index}
                   onClick={() => handleThumbnailClick(index)}
                   className={cn(
-                    "relative w-20 h-20 rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
+                    "relative w-15 h-15 rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
                     selectedIndex === index
                       ? "ring-blue-500 ring-offset-2 opacity-100 scale-105"
                       : "opacity-60 ring-gray-300 hover:opacity-100 hover:ring-blue-300 hover:scale-105"
@@ -221,7 +221,7 @@ export function ProductGallery({
                   src={image}
                   alt={`${productName} - Image ${index + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-contain object-top"
                   priority={index === 0}
                 />
               </div>
@@ -287,7 +287,7 @@ export function ProductGallery({
 
           <div className="relative w-full h-full max-w-6xl flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
             {/* Main Image Container */}
-            <div className="relative w-full flex-1 overflow-hidden rounded-lg">
+            <div className="relative w-full flex-1 overflow-hidden rounded-lg border border-secondary/50">
               {images.map((image, index) => (
                 <div
                   key={index}
@@ -342,7 +342,7 @@ export function ProductGallery({
 
             {/* Thumbnails in Modal */}
             {images.length > 1 && (
-              <div className="mt-4 flex gap-2 overflow-x-auto max-w-full px-4 z-50 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="mt-4 flex gap-2 overflow-x-auto max-w-full px-4 py-2 z-50 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {images.map((image, index) => (
                   <button
                     key={index}

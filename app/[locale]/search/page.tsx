@@ -7,8 +7,8 @@ import { Search as SearchIcon, X, SlidersHorizontal } from "lucide-react";
 import { Input, Button, Badge, Select, PageWrapper } from "@/components/ui";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
-import { useProductSearch, useCategories } from "@/hooks";
-import { transformProducts, transformCategories, type Locale } from "@/lib/transformers";
+import { useProductSearch, useCategories, useListingVariantProducts } from "@/hooks";
+import { transformCategories, type Locale } from "@/lib/transformers";
 import { SORT_OPTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { ProductFilters as ApiProductFilters } from "@/types/api.types";
@@ -63,7 +63,7 @@ function SearchPageContent() {
     sortOrder: 'ASC'
   });
 
-  const searchResults = searchData?.data ? transformProducts(searchData.data, locale) : [];
+  const { products: searchResults, isLoading: variantsLoading } = useListingVariantProducts(searchData?.data, locale);
   const categories = categoriesData?.data ? transformCategories(categoriesData.data, locale) : [];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -245,7 +245,7 @@ function SearchPageContent() {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {searchLoading ? (
+              {searchLoading || variantsLoading ? (
                 <ProductGridSkeleton count={8} />
               ) : searchResults.length > 0 ? (
                 <ProductGrid products={searchResults} columns={4} />

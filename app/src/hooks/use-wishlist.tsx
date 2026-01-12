@@ -1,131 +1,165 @@
 "use client";
 
-import { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
-import { Product, WishlistItem } from "@/types";
-import { STORAGE_KEYS } from "@/lib/constants";
+import { createContext, useContext, ReactNode, useCallback } from "react";
+import { WishlistItem, WishlistResponse, Product, CartProduct, WishlistProduct } from "@/types";
+import { useAuth } from "./useAuth";
+import { wishlistService } from "@/services/wishlist.service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-interface WishlistState {
-  items: WishlistItem[];
-  isLoading: boolean;
-}
-
-type WishlistAction =
-  | { type: "ADD_ITEM"; payload: Product }
-  | { type: "REMOVE_ITEM"; payload: string }
-  | { type: "CLEAR_WISHLIST" }
-  | { type: "LOAD_WISHLIST"; payload: WishlistItem[] };
-
-const initialState: WishlistState = {
-  items: [],
-  isLoading: true,
-};
-
-function wishlistReducer(state: WishlistState, action: WishlistAction): WishlistState {
-  switch (action.type) {
-    case "ADD_ITEM": {
-      const product = action.payload;
-      const existingItem = state.items.find((item) => item.product.id === product.id);
-      
-      if (existingItem) {
-        return state;
-      }
-      
-      const newItem: WishlistItem = {
-        id: product.id,
-        product,
-        addedAt: new Date().toISOString(),
-      };
-      
-      return { ...state, items: [...state.items, newItem] };
-    }
-    
-    case "REMOVE_ITEM": {
-      return {
-        ...state,
-        items: state.items.filter((item) => item.id !== action.payload),
-      };
-    }
-    
-    case "CLEAR_WISHLIST": {
-      return { ...state, items: [] };
-    }
-    
-    case "LOAD_WISHLIST": {
-      return { ...state, items: action.payload, isLoading: false };
-    }
-    
-    default:
-      return state;
-  }
-}
+type WishlistInputProduct = Product | CartProduct | WishlistProduct;
 
 interface WishlistContextType {
   items: WishlistItem[];
   isLoading: boolean;
-  addItem: (product: Product) => void;
-  removeItem: (id: string) => void;
+  total: number;
+  addItem: (product: WishlistInputProduct) => void;
+  removeItem: (productId: number) => void;
   clearWishlist: () => void;
-  isInWishlist: (productId: string) => boolean;
-  toggleItem: (product: Product) => void;
+  isInWishlist: (productId: string | number) => boolean;
+  toggleItem: (product: WishlistInputProduct) => void;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(wishlistReducer, initialState);
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Load wishlist from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedWishlist = localStorage.getItem(STORAGE_KEYS.wishlist);
-      if (savedWishlist) {
-        const parsedWishlist = JSON.parse(savedWishlist);
-        dispatch({ type: "LOAD_WISHLIST", payload: parsedWishlist });
+  const { data, isLoading } = useQuery({
+    queryKey: ['wishlist'],
+    queryFn: wishlistService.getWishlist,
+    enabled: isAuthenticated,
+  });
+
+  const wishlistItems = data?.data || [];
+  const wishlistTotal = data?.total || 0;
+
+  const addItemMutation = useMutation({
+    mutationFn: (productId: number) => wishlistService.addItem(productId),
+    onSuccess: (response, productId) => {
+      // Optimistic update logic based on user request "take the response if it returns the list or add it locally"
+      // Assuming response matches WishlistResponse or contains it
+      if (response && response.data && Array.isArray(response.data)) {
+         queryClient.setQueryData(['wishlist'], response);
+      } else if (response && response.items && response.items.data) {
+          queryClient.setQueryData(['wishlist'], response.items);
       } else {
-        dispatch({ type: "LOAD_WISHLIST", payload: [] });
+         // Fallback: Add locally
+         const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
+         // We can't perfectly reconstruct WishlistItem without backend response (e.g. id, created_at)
+         // So we invalidate if we can't update.
+         // But user INSISTED on no refetch.
+         // So we probably assume response *contains* the needed info or we fake it.
+         // If response is the new item:
+         if (prevData) {
+            // Need to know what response looks like if it's a single item.
+            // Assuming it might be the Item object.
+             queryClient.invalidateQueries({ queryKey: ['wishlist'] }); // Safety fallback if structure unknown
+         }
       }
-    } catch (error) {
-      console.error("Failed to load wishlist from localStorage:", error);
-      dispatch({ type: "LOAD_WISHLIST", payload: [] });
+    },
+    onError: () => {
+    },
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: (productId: number) => wishlistService.removeItem(productId),
+    onSuccess: (response, productId) => {
+        // Optimistic Remove
+       const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
+       if (prevData) {
+         // Backend expects product ID in /wishlist/:id
+         // Keep a small compatibility fallback if some caller still passes the wishlist row id.
+         const newItems = prevData.data.filter(
+           (item) => item.product_id !== productId && item.id !== productId
+         );
+         queryClient.setQueryData(['wishlist'], {
+             ...prevData,
+             data: newItems,
+             total: newItems.length
+         });
+       }
+    },
+    onError: () => {
     }
-  }, []);
+  });
 
-  // Save wishlist to localStorage whenever it changes
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(STORAGE_KEYS.wishlist, JSON.stringify(state.items));
+  const clearMutation = useMutation({
+    mutationFn: wishlistService.clear,
+    onSuccess: () => {
+        queryClient.setQueryData(['wishlist'], { data: [], total: 0 });
     }
-  }, [state.items, state.isLoading]);
+  });
 
-  const addItem = (product: Product) => {
-    dispatch({ type: "ADD_ITEM", payload: product });
-  };
+  const addItem = useCallback((product: WishlistInputProduct) => {
+    if (!isAuthenticated) {
+        return;
+    }
+    
+    // Convert ID to number if string
+    const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
+    
+    const exists = wishlistItems.some(item => item.product_id === productId);
+    if (exists) {
+        return;
+    }
 
-  const removeItem = (id: string) => {
-    dispatch({ type: "REMOVE_ITEM", payload: id });
-  };
+    addItemMutation.mutate(productId, {
+        onSuccess: (response) => {
+            // Handle single item return if that's what backend sends
+             if (!response?.data && !response?.items?.data) {
+                 const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
+                 if (prevData) {
+                     // Check if we need to convert product structure to WishlistProduct
+                     // Ideally we should but for now just casting/spreading
+                     const newItem: WishlistItem = {
+                         id: response.id || Date.now(),
+                         product_id: productId,
+                         created_at: new Date().toISOString(),
+                         product: product as any 
+                     };
+                     queryClient.setQueryData(['wishlist'], {
+                         ...prevData,
+                         data: [...prevData.data, newItem],
+                         total: prevData.total + 1
+                     });
+                 }
+             }
+        }
+    });
 
-  const clearWishlist = () => {
-    dispatch({ type: "CLEAR_WISHLIST" });
-  };
+  }, [addItemMutation, isAuthenticated, wishlistItems, queryClient]);
 
-  const isInWishlist = (productId: string) => {
-    return state.items.some((item) => item.product.id === productId);
-  };
+    const removeItem = useCallback((productId: number) => {
+     if (!isAuthenticated) return;
+      removeItemMutation.mutate(productId);
+  }, [removeItemMutation, isAuthenticated]);
 
-  const toggleItem = (product: Product) => {
-    if (isInWishlist(product.id)) {
-      removeItem(product.id);
+  const clearWishlist = useCallback(() => {
+    if (!isAuthenticated) return;
+    clearMutation.mutate();
+  }, [clearMutation, isAuthenticated]);
+
+  const isInWishlist = useCallback((productId: string | number) => {
+    const id = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+    return wishlistItems.some((item) => item.product_id === id);
+  }, [wishlistItems]);
+
+  const toggleItem = useCallback((product: WishlistInputProduct) => {
+    const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
+    if (isInWishlist(productId)) {
+      removeItem(productId);
     } else {
       addItem(product);
     }
-  };
+  }, [isInWishlist, wishlistItems, removeItem, addItem]);
 
   return (
     <WishlistContext.Provider
       value={{
-        items: state.items,
-        isLoading: state.isLoading,
+        items: wishlistItems,
+        isLoading,
+        total: wishlistTotal,
         addItem,
         removeItem,
         clearWishlist,

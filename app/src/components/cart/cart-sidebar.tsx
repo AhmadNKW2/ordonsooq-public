@@ -6,21 +6,61 @@ import { X, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice, slugify } from "@/lib/utils";
 
 export function CartSidebar() {
   const { 
     items, 
     isOpen, 
-    closeCart, 
+    setIsOpen,
     removeItem, 
     updateQuantity, 
-    subtotal 
+    totalAmount
   } = useCart();
   
+  const closeCart = () => setIsOpen(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+
+  const getEffectiveUnitPrice = (item: any): number => {
+    const variant = item?.variant;
+    const product = item?.product;
+
+    const pick = (entity: any): number => {
+      const price = toNumber(entity?.price);
+      const salePrice = toNumber(entity?.sale_price);
+      if (Number.isFinite(salePrice) && Number.isFinite(price) && salePrice > 0 && salePrice < price) return salePrice;
+      return Number.isFinite(price) ? price : 0;
+    };
+
+    return variant ? pick(variant) : pick(product);
+  };
+
+  const getCompareAtUnitPrice = (item: any): number | undefined => {
+    const variant = item?.variant;
+    const product = item?.product;
+
+    const pickCompare = (entity: any): number | undefined => {
+      const price = toNumber(entity?.price);
+      const salePrice = toNumber(entity?.sale_price);
+      const compareAtPrice = toNumber(entity?.compareAtPrice);
+
+      if (Number.isFinite(salePrice) && Number.isFinite(price) && salePrice > 0 && salePrice < price) return price;
+      if (Number.isFinite(compareAtPrice) && Number.isFinite(price) && compareAtPrice > price) return compareAtPrice;
+      return undefined;
+    };
+
+    return variant ? pickCompare(variant) : pickCompare(product);
+  };
 
   // Close on click outside
   useEffect(() => {
@@ -62,7 +102,7 @@ export function CartSidebar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-[3px]"
+            className="fixed inset-0 bg-black/50 z-60 backdrop-blur-[3px]"
           />
 
           {/* Sidebar */}
@@ -72,7 +112,7 @@ export function CartSidebar() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-[70] flex flex-col"
+            className="fixed top-0 right-0 h-full w-full sm:w-100 bg-white shadow-2xl z-70 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -91,7 +131,7 @@ export function CartSidebar() {
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
               {items.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center flex flex-col gap-5">
+                <div className="h-full flex flex-col items-center justify-center text-center gap-5">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                     <ShoppingBag className="w-8 h-8 text-gray-400" />
                   </div>
@@ -106,12 +146,19 @@ export function CartSidebar() {
               ) : (
                 items.map((item) => (
                   <div key={item.id} className="flex gap-5 bg-white p-3 rounded-xl border border-gray-100 hover:border-primary/20 transition-colors">
+                    {(() => {
+                      const productSlug = item.product.slug || `${slugify(item.product.name_en)}-${item.product_id}`;
+                      const productHref = item.variant_id
+                        ? `/products/${productSlug}?variant=${item.variant_id}`
+                        : `/products/${productSlug}`;
+                      return (
+                        <>
                     {/* Image */}
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      {item.product.images?.[0] ? (
+                    <Link href={productHref} onClick={closeCart} className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      {item.product.image ? (
                         <img 
-                          src={item.product.images[0]} 
-                          alt={item.product.name} 
+                          src={item.product.image} 
+                          alt={item.product.name_en} 
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -119,15 +166,15 @@ export function CartSidebar() {
                           <ShoppingBag className="w-8 h-8" />
                         </div>
                       )}
-                    </div>
+                    </Link>
 
                     {/* Details */}
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
-                          <h3 className="font-medium text-gray-900 line-clamp-2 text-sm">
-                            {item.product.name}
-                          </h3>
+                          <Link href={productHref} onClick={closeCart} className="font-medium text-gray-900 line-clamp-2 text-sm hover:underline">
+                            {item.product.name_en}
+                          </Link>
                           <button 
                             onClick={() => removeItem(item.id)}
                             className="text-gray-400 hover:text-danger transition-colors p-1"
@@ -137,7 +184,7 @@ export function CartSidebar() {
                         </div>
                         {item.variant && (
                           <p className="text-xs text-gray-500 mt-1">
-                            {item.variant.name}
+                            {item.variant.attributes.map(attr => `${attr.value_en}`).join(', ')}
                           </p>
                         )}
                       </div>
@@ -148,11 +195,30 @@ export function CartSidebar() {
                           onChange={(val) => updateQuantity(item.id, val)}
                           size="sm"
                         />
-                        <div className="font-bold text-primary">
-                          ${((item.variant?.price ?? item.product.price) * item.quantity).toFixed(2)}
-                        </div>
+                        {(() => {
+                          const unitPrice = getEffectiveUnitPrice(item);
+                          const unitCompareAt = getCompareAtUnitPrice(item);
+
+                          return (
+                            <div className="flex gap-2 items-center leading-tight">
+                              <div className="flex items-center gap-2">
+                                {unitCompareAt && (
+                                  <span className="text-xs text-gray-500 line-through">
+                                    {formatPrice(unitCompareAt * item.quantity)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-bold text-primary">
+                                {formatPrice(unitPrice * item.quantity)}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ))
               )}
@@ -164,7 +230,7 @@ export function CartSidebar() {
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Subtotal</span>
-                    <span className="font-bold text-gray-900">${subtotal.toFixed(2)}</span>
+                    <span className="font-bold text-gray-900">{formatPrice(totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Shipping</span>

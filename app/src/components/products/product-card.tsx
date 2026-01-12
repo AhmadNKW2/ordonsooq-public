@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Star, ShoppingCart } from "lucide-react";
 import { Product } from "@/types";
@@ -25,9 +25,15 @@ export function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
-  const { addItem, openCart, items } = useCart();
+  const { addItem, items, openCart } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
+
+  const hasVariants =
+    !!product.hasVariants ||
+    (product.variants?.length ?? 0) > 0 ||
+    (((product as any).variantIds?.length ?? 0) > 0) ||
+    (((product as any).variants_ids?.length ?? 0) > 0);
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.compareAtPrice, product.price)
@@ -35,12 +41,35 @@ export function ProductCard({
 
   const inWishlist = isInWishlist(product.id);
 
+  const variantAttributesSummary = useMemo(() => {
+    if (!product.defaultVariantId || !product.variants || product.variants.length === 0) return "";
+
+    const variant = product.variants.find((v) => String(v.id) === String(product.defaultVariantId));
+    if (!variant) return "";
+
+    const orderedNames = product.attributes?.map((a) => a.name) ?? Object.keys(variant.attributes);
+    const parts = orderedNames
+      .map((name) => {
+        const value = variant.attributes[name];
+        return value ? `${name}: ${value}` : null;
+      })
+      .filter(Boolean) as string[];
+
+    return parts.join(", ");
+  }, [product.defaultVariantId, product.variants, product.attributes]);
+
+  const productHref = product.defaultVariantId
+    ? `/products/${product.slug}?variant=${product.defaultVariantId}`
+    : `/products/${product.slug}`;
+
   // Check if item is in cart
-  const cartItem = items.find(item => item.id === product.id || item.id === `${product.id}`);
+  const cartItem = items.find(
+    (item) => String(item.product_id) === String(product.id) && item.variant_id == null
+  );
   const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleCardClick = () => {
-    router.push(`/products/${product.slug}`);
+    router.push(productHref);
   };
 
   const handleAddToCart = (quantity: number) => {
@@ -77,6 +106,9 @@ export function ProductCard({
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-primary group-hover:text-primary transition-colors line-clamp-1">
             {product.name}
+            {variantAttributesSummary ? (
+              <span className="">{" "}({variantAttributesSummary})</span>
+            ) : null}
           </h3>
           <p className="text-sm text-third line-clamp-2 mt-1">
             {product.description}
@@ -120,6 +152,9 @@ export function ProductCard({
         <div className="mt-2">
           <h3 className="text-sm font-medium text-primary line-clamp-1">
             {product.name}
+            {variantAttributesSummary ? (
+              <span className="font-normal text-third">{" "}({variantAttributesSummary})</span>
+            ) : null}
           </h3>
           <p className="text-sm font-bold text-primary mt-1">
             {formatPrice(product.price)}
@@ -194,17 +229,29 @@ export function ProductCard({
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <AddToCartButton
-              product={{
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                stock: product.stock,
-                image: product.images[0],
-              } as any}
-              onStatusChange={handleCartButtonStatusChange}
-              onAnimationEnd={handleAnimationEnd}
-            />
+            {hasVariants ? (
+              <button
+                type="button"
+                className="w-full h-11 rounded-full bg-white/80 text-primary hover:bg-white hover:scale-103 transition-all text-sm font-bold shadow-s1 flex items-center justify-center gap-2"
+                onClick={() => router.push(productHref)}
+                aria-label={t('product.chooseOptions')}
+              >
+                <ShoppingCart size={18} />
+                <span>{t('product.chooseOptions')}</span>
+              </button>
+            ) : (
+              <AddToCartButton
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  stock: product.stock,
+                  image: product.images?.[0] || (product as any).image,
+                } as any}
+                onStatusChange={handleCartButtonStatusChange}
+                onAnimationEnd={handleAnimationEnd}
+              />
+            )}
           </div>
         )}
       </div>
@@ -214,6 +261,9 @@ export function ProductCard({
         {/* Name */}
         <h3 className="font-medium text-sm text-primary group-hover:text-primary transition-colors line-clamp-2 text-center">
           {product.name}
+          {variantAttributesSummary ? (
+            <span className="font-normal text-third">{" "}({variantAttributesSummary})</span>
+          ) : null}
         </h3>
 
         {/* Brand/Vendor - if available */}
@@ -247,11 +297,6 @@ export function ProductCard({
         </div>
 
         {/* Stock Status */}
-        {product.stock <= 5 && product.stock > 0 && (
-          <p className="text-xs text-secondary mt-2 text-center">
-            {t('product.lowStock')} - {product.stock} {t('product.itemsLeft', { count: product.stock })}
-          </p>
-        )}
         {product.stock === 0 && (
           <p className="text-xs text-third mt-2 text-center">
             {t('product.outOfStock')}

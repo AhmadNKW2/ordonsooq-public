@@ -30,10 +30,14 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
 
   // Check if item is in cart
   const cartItem = items.find(item => {
+      // Convert string IDs to numbers for comparison
+      const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
+      // New logic for checking based on product_id and variant
       if (variant) {
-          return item.id === `${product.id}-${variant.id}`;
+          const variantId = typeof variant.id === 'string' ? parseInt(variant.id, 10) : variant.id;
+          return item.product_id === productId && item.variant_id === variantId;
       }
-      return item.id === product.id || item.id === `${product.id}`;
+      return item.product_id === productId && !item.variant_id;
   });
 
   const quantity = cartItem ? cartItem.quantity : 0;
@@ -50,7 +54,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
     await new Promise((resolve) => setTimeout(resolve, 600));
     
     // Add to cart
-    addItem(product, 1, variant);
+    addItem(product, 1, variant?.id);
     
     updateStatus("success");
     if (onAddToCart) onAddToCart(1);

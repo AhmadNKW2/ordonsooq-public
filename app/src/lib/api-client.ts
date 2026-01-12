@@ -3,9 +3,23 @@ type ApiClientConfig = {
   headers?: HeadersInit;
 };
 
+export class ApiError extends Error {
+  status: number;
+  payload: unknown;
+
+  constructor(status: number, message: string, payload?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 class ApiClient {
   private baseUrl: string;
   private defaultHeaders: HeadersInit;
+  private refreshInFlight: Promise<boolean> | null = null;
+  private hardLogoutTriggered = false;
 
   constructor(config?: ApiClientConfig) {
     this.baseUrl = config?.baseUrl || process.env.NEXT_PUBLIC_API_URL || '';
@@ -15,23 +29,64 @@ class ApiClient {
     };
   }
 
-  private getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token');
+  private async refreshSession(): Promise<boolean> {
+    if (this.refreshInFlight) return this.refreshInFlight;
+
+    this.refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            ...this.defaultHeaders,
+          },
+        });
+
+        if (!response.ok) return false;
+
+        // Backend sets new cookies via Set-Cookie. Body is optional.
+        return true;
+      } catch {
+        return false;
+      } finally {
+        this.refreshInFlight = null;
+      }
+    })();
+
+    return this.refreshInFlight;
+  }
+
+  private handleHardLogout() {
+    if (typeof window === "undefined") return;
+    if (this.hardLogoutTriggered) return;
+    this.hardLogoutTriggered = true;
+
+    window.dispatchEvent(new CustomEvent("auth:logout"));
+
+    // Avoid redirect loops if already on login.
+    const path = window.location?.pathname || "";
+    if (!path.includes("/login")) {
+      // Locale-aware login route (app has /[locale]/login)
+      const firstSeg = path.split("/").filter(Boolean)[0];
+      const localePrefix = firstSeg && firstSeg.length === 2 ? `/${firstSeg}` : "";
+      window.location.assign(`${localePrefix}/login`);
+    }
   }
 
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
+    meta?: { hasRetriedAfterRefresh?: boolean }
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const token = this.getAuthToken();
 
     const config: RequestInit = {
       ...options,
+      // Backend uses HttpOnly cookies (access_token/refresh_token)
+      // so requests must include credentials for cookies to be sent/stored.
+      credentials: "include",
       headers: {
         ...this.defaultHeaders,
-        ...(token && { Authorization: `Bearer ${token}` }),
         ...options?.headers,
       },
     };
@@ -39,8 +94,34 @@ class ApiClient {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP Error: ${response.status}`);
+      // If access token expired, try refresh once and retry the original request.
+      const shouldAttemptRefresh =
+        response.status === 401 &&
+        !meta?.hasRetriedAfterRefresh &&
+        // Don't recurse on auth endpoints.
+        !endpoint.startsWith("/auth/login") &&
+        !endpoint.startsWith("/auth/register") &&
+        !endpoint.startsWith("/auth/refresh") &&
+        !endpoint.startsWith("/auth/logout");
+
+      if (shouldAttemptRefresh) {
+        const refreshed = await this.refreshSession();
+        if (refreshed) {
+          return this.request<T>(endpoint, options, { hasRetriedAfterRefresh: true });
+        }
+
+        // Refresh failed => session is dead.
+        this.handleHardLogout();
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      const message =
+        (payload && typeof payload === "object" &&
+          (((payload as any).message as string | undefined) ||
+            ((payload as any).error?.message as string | undefined))) ||
+        `HTTP Error: ${response.status}`;
+
+      throw new ApiError(response.status, String(message), payload);
     }
 
     // Handle empty responses (204 No Content)

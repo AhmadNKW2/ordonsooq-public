@@ -34,7 +34,7 @@ export function ProductGrid({
     <div className={`grid ${gridCols[columns]} gap-5`}>
       {products.map((product) => (
         <ProductCard 
-          key={product.id} 
+          key={`${product.id}-${product.defaultVariantId ?? "base"}`} 
           product={product} 
           showActions={showActions}
         />

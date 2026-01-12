@@ -343,7 +343,7 @@ export function HomeSection(props: HomeSectionProps) {
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {visibleProducts.map((product) => (
-            <div key={product.id} className="w-70 shrink-0">
+            <div key={`${product.id}-${product.defaultVariantId ?? "base"}`} className="w-70 shrink-0">
               <ProductCard product={product} />
             </div>
           ))}
@@ -352,7 +352,7 @@ export function HomeSection(props: HomeSectionProps) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {visibleProducts.map((product) => (
             <motion.div
-              key={product.id}
+              key={`${product.id}-${product.defaultVariantId ?? "base"}`}
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.35, ease: "easeOut" }}

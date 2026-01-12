@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-react";
-import { useProduct, useProductsByCategory } from "@/hooks";
+import { useProduct, useProductsByCategory, useListingVariantProducts } from "@/hooks";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { transformProduct, transformProducts, type Locale } from "@/lib/transformers";
+import { transformProduct, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
 import { Badge, Card, IconButton, PageWrapper, Breadcrumb } from "@/components/ui";
@@ -17,8 +17,15 @@ export default function ProductPage() {
   const locale = useLocale() as Locale;
   const t = useTranslations();
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = params.slug as string;
   const { toggleItem, isInWishlist } = useWishlist();
+
+  const requestedVariantId = useMemo(() => {
+    const raw = searchParams.get("variant") ?? searchParams.get("variantId");
+    const id = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(id) ? String(id) : undefined;
+  }, [searchParams]);
 
   // Extract product ID from slug (format: product-name-ID)
   const productId = parseInt(slug.split('-').pop() || '0', 10);
@@ -38,25 +45,44 @@ export default function ProductPage() {
     return transformProduct(productData, locale);
   }, [productData, locale]);
 
+  // Related products (must be a hook call before any early return)
+  const { products: relatedProductsRaw } = useListingVariantProducts(relatedData?.data, locale);
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+    return relatedProductsRaw.filter((p) => p.id !== product.id).slice(0, 4);
+  }, [relatedProductsRaw, product]);
+
   // State for selected options
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
-  // Initialize default options
+  // Initialize options (prefer variant from URL when provided)
   useEffect(() => {
-    if (product?.variants && product.variants.length > 0 && Object.keys(selectedOptions).length === 0) {
-      // 1. Try to find the first variant with stock > 0
-      let defaultVariant = product.variants.find(v => v.stock > 0);
+    if (!product?.variants || product.variants.length === 0) return;
 
-      // 2. If no stock, just take the first variant
-      if (!defaultVariant) {
-        defaultVariant = product.variants[0];
-      }
-
-      if (defaultVariant) {
-        setSelectedOptions(defaultVariant.attributes);
+    // If a variant is specified in the URL (e.g., coming from cart), apply it only once.
+    // Otherwise it would override user changes on every re-render.
+    if (requestedVariantId && Object.keys(selectedOptions).length === 0) {
+      const match = product.variants.find(v => String(v.id) === requestedVariantId);
+      if (match) {
+        setSelectedOptions(match.attributes);
+        return;
       }
     }
-  }, [product?.variants]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    if (Object.keys(selectedOptions).length > 0) return;
+
+    // 1. Try to find the first variant with stock > 0
+    let defaultVariant = product.variants.find(v => v.stock > 0);
+
+    // 2. If no stock, just take the first variant
+    if (!defaultVariant) {
+      defaultVariant = product.variants[0];
+    }
+
+    if (defaultVariant) {
+      setSelectedOptions(defaultVariant.attributes);
+    }
+  }, [product?.variants, requestedVariantId, selectedOptions]);
 
   // Find matching variant
   const selectedVariant = useMemo(() => {
@@ -65,6 +91,19 @@ export default function ProductPage() {
       return Object.entries(selectedOptions).every(([key, value]) => v.attributes[key] === value);
     });
   }, [product?.variants, selectedOptions]);
+
+  const selectedOptionsSummary = useMemo(() => {
+    if (!product?.attributes || product.attributes.length === 0) return "";
+
+    const parts = product.attributes
+      .map((attr) => {
+        const value = selectedOptions[attr.name];
+        return value ? `${attr.name}: ${value}` : null;
+      })
+      .filter(Boolean) as string[];
+
+    return parts.join(" • ");
+  }, [product?.attributes, selectedOptions]);
 
   // Determine which image index to show
   const selectedImageIndex = useMemo(() => {
@@ -162,10 +201,6 @@ export default function ProductPage() {
     notFound();
   }
 
-  const relatedProducts = relatedData?.data
-    ? transformProducts(relatedData.data, locale).filter(p => p.id !== product.id)
-    : [];
-
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentCompareAtPrice = selectedVariant && selectedVariant.compareAtPrice ? selectedVariant.compareAtPrice : product.compareAtPrice;
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
@@ -176,7 +211,7 @@ export default function ProductPage() {
     : 0;
 
   return (
-    <PageWrapper className="container mx-auto">
+    <PageWrapper>
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -240,6 +275,11 @@ export default function ProductPage() {
             )}
             <h1 className="text-2xl md:text-3xl font-bold text-primary">
               {product.name}
+              {selectedOptionsSummary ? (
+                <span className="font-medium text-third text-sm md:text-base">
+                  {" "}({selectedOptionsSummary})
+                </span>
+              ) : null}
             </h1>
           </div>
 
@@ -324,9 +364,15 @@ export default function ProductPage() {
                       <span className="text-xs text-third">
                         {product.vendor.rating} ({product.vendor.reviewCount} reviews)
                       </span>
-                      <span className="text-green-600 font-medium text-xs ml-1">
-                        ({Math.round((product.vendor.rating / 5) * 100)}% positive)
-                      </span>
+                      {(() => {
+                        const positivePercent = Math.round((product.vendor.rating / 5) * 100);
+                        if (!(positivePercent > 75)) return null;
+                        return (
+                          <span className="text-green-600 font-medium text-xs ml-1">
+                            ({positivePercent}% positive)
+                          </span>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

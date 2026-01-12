@@ -5,8 +5,8 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
-import { useCategory, useProductsByCategory } from "@/hooks";
-import { transformCategory, transformProducts, type Locale } from "@/lib/transformers";
+import { useCategory, useProductsByCategory, useListingVariantProducts } from "@/hooks";
+import { transformCategory, type Locale } from "@/lib/transformers";
 import { ProductGrid } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { PageWrapper, Breadcrumb } from "@/components/ui";
@@ -40,7 +40,7 @@ export default function CategoryPage() {
   }
 
   const category = transformCategory(categoryData, locale);
-  const products = productsData?.data ? transformProducts(productsData.data, locale) : [];
+  const { products, isLoading: variantsLoading } = useListingVariantProducts(productsData?.data, locale);
   const subcategories = category.children || [];
 
   // Get parent category for breadcrumb
@@ -118,7 +118,7 @@ export default function CategoryPage() {
           </span>
         </div>
         
-        {productsLoading ? (
+        {productsLoading || variantsLoading ? (
           <ProductGridSkeleton count={8} />
         ) : products.length > 0 ? (
           <ProductGrid products={products} columns={4} />

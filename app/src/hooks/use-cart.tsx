@@ -1,189 +1,285 @@
 "use client";
 
-import { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
-import { Product, ProductVariant, CartItem } from "@/types";
-import { STORAGE_KEYS } from "@/lib/constants";
-
-interface CartState {
-  items: CartItem[];
-  isLoading: boolean;
-  isOpen: boolean;
-}
-
-type CartAction =
-  | { type: "ADD_ITEM"; payload: { product: Product; quantity: number; variant?: ProductVariant } }
-  | { type: "REMOVE_ITEM"; payload: string }
-  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "CLEAR_CART" }
-  | { type: "LOAD_CART"; payload: CartItem[] }
-  | { type: "SET_IS_OPEN"; payload: boolean };
-
-const initialState: CartState = {
-  items: [],
-  isLoading: true,
-  isOpen: false,
-};
-
-function cartReducer(state: CartState, action: CartAction): CartState {
-  switch (action.type) {
-    case "ADD_ITEM": {
-      const { product, quantity, variant } = action.payload;
-      const itemId = variant ? `${product.id}-${variant.id}` : product.id;
-      
-      const existingItemIndex = state.items.findIndex((item) => item.id === itemId);
-      
-      let newItems;
-      if (existingItemIndex > -1) {
-        const updatedItems = [...state.items];
-        updatedItems[existingItemIndex].quantity += quantity;
-        newItems = updatedItems;
-      } else {
-        const newItem: CartItem = {
-          id: itemId,
-          product,
-          quantity,
-          variant,
-        };
-        newItems = [...state.items, newItem];
-      }
-      
-      return { ...state, items: newItems };
-    }
-    
-    case "REMOVE_ITEM": {
-      return {
-        ...state,
-        items: state.items.filter((item) => item.id !== action.payload),
-      };
-    }
-    
-    case "UPDATE_QUANTITY": {
-      const { id, quantity } = action.payload;
-      if (quantity <= 0) {
-        return {
-          ...state,
-          items: state.items.filter((item) => item.id !== id),
-        };
-      }
-      
-      return {
-        ...state,
-        items: state.items.map((item) =>
-          item.id === id ? { ...item, quantity } : item
-        ),
-      };
-    }
-    
-    case "CLEAR_CART": {
-      return { ...state, items: [] };
-    }
-    
-    case "LOAD_CART": {
-      return { ...state, items: action.payload, isLoading: false };
-    }
-
-    case "SET_IS_OPEN": {
-      return { ...state, isOpen: action.payload };
-    }
-    
-    default:
-      return state;
-  }
-}
+import { createContext, useContext, ReactNode, useCallback, useMemo, useState } from "react";
+import { useLocale } from "next-intl";
+import { Cart, CartItem, Product, ProductVariant } from "@/types";
+import { useAuth } from "./useAuth";
+import { cartService } from "@/services/cart.service";
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
+import { productService } from "@/services/product.service";
+import { PRODUCT_QUERY_KEYS } from "@/hooks/useProducts";
+import { transformProduct, type Locale } from "@/lib/transformers";
 
 interface CartContextType {
   items: CartItem[];
+  cart: Cart | undefined;
   isLoading: boolean;
   isOpen: boolean;
   totalItems: number;
-  subtotal: number;
-  totalPrice: number;
-  addItem: (product: Product, quantity?: number, variant?: ProductVariant) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  totalAmount: number;
+  addItem: (product: Product, quantity: number, variantId?: number | string) => void;
+  removeItem: (itemId: number) => void;
+  updateQuantity: (itemId: number, quantity: number) => void;
   clearCart: () => void;
-  isInCart: (productId: string) => boolean;
+  setIsOpen: (isOpen: boolean) => void;
+  // Aliases/Helpers for backward compatibility
+  toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
-  toggleCart: () => void;
+  totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+  const activeLocale = useLocale();
+  const locale: Locale = activeLocale === "ar" ? "ar" : "en";
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem(STORAGE_KEYS.cart);
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        dispatch({ type: "LOAD_CART", payload: parsedCart });
+  const { data: cart, isLoading } = useQuery({
+    queryKey: ['cart'],
+    queryFn: cartService.getCart,
+    enabled: isAuthenticated,
+  });
+
+  const cartItems = cart?.items || [];
+
+  const getVariantPrimaryImage = (product: Product, variant: ProductVariant): string | undefined => {
+    const mainImage = product.images?.[0];
+    const mediaAttribute = product.attributes?.find((a) => a.controlsMedia);
+    if (!mediaAttribute) return mainImage;
+
+    const selectedValue = variant.attributes?.[mediaAttribute.name];
+    if (!selectedValue) return mainImage;
+
+    const attributeValue = mediaAttribute.values.find((v) => v.value === selectedValue);
+    return attributeValue?.image || mainImage;
+  };
+
+  const cartVariantProductIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const item of cartItems) {
+      if (item?.variant_id) ids.add(item.product_id);
+    }
+    return Array.from(ids);
+  }, [cartItems]);
+
+  const cartVariantDetailQueries = useQueries({
+    queries: cartVariantProductIds.map((id) => ({
+      queryKey: PRODUCT_QUERY_KEYS.detail(id),
+      queryFn: () => productService.getById(id),
+      enabled: isAuthenticated && cartVariantProductIds.length > 0,
+    })),
+  });
+
+  const enrichedCartItems = useMemo(() => {
+    if (cartItems.length === 0) return cartItems;
+    if (cartVariantProductIds.length === 0) return cartItems;
+
+    const detailById = new Map<number, any>();
+    for (const q of cartVariantDetailQueries) {
+      const d = q.data as any;
+      if (d && typeof d.id === "number") detailById.set(d.id, d);
+    }
+
+    return cartItems.map((item) => {
+      if (!item?.variant_id) return item;
+
+      const detail = detailById.get(item.product_id);
+      if (!detail) return item;
+
+      const full = transformProduct(detail, locale);
+      const variant = full.variants?.find((v) => String(v.id) === String(item.variant_id));
+      if (!variant) return item;
+
+      const variantImage = getVariantPrimaryImage(full, variant);
+      if (!variantImage) return item;
+
+      return {
+        ...item,
+        product: {
+          ...item.product,
+          image: variantImage,
+        },
+      };
+    });
+  }, [cartItems, cartVariantDetailQueries, cartVariantProductIds.length, locale]);
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    return NaN;
+  };
+
+  const getEffectiveUnitPrice = (item: CartItem): number => {
+    const variant: any = (item as any)?.variant;
+    const product: any = (item as any)?.product;
+
+    const pick = (entity: any): number => {
+      const price = toNumber(entity?.price);
+      const salePrice = toNumber(entity?.sale_price);
+      if (Number.isFinite(salePrice) && Number.isFinite(price) && salePrice > 0 && salePrice < price) return salePrice;
+      return Number.isFinite(price) ? price : 0;
+    };
+
+    return variant ? pick(variant) : pick(product);
+  };
+
+  const computedTotalAmount = cartItems.reduce((sum, item) => sum + getEffectiveUnitPrice(item) * item.quantity, 0);
+  const totalAmount = cartItems.length > 0 ? computedTotalAmount : (cart?.total_amount || 0);
+  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  // Helpers
+  const toggleCart = () => setIsOpen(prev => !prev);
+  const openCart = () => setIsOpen(true);
+  const closeCart = () => setIsOpen(false);
+
+  const setCartCache = useCallback(
+    (updater: (old: Cart | undefined) => Cart | undefined) => {
+      queryClient.setQueryData(["cart"], updater);
+    },
+    [queryClient]
+  );
+
+  const addItemMutation = useMutation({
+    mutationFn: (data: { product: Product; quantity: number; variantId?: number | string }) => {
+      const vId = data.variantId
+        ? typeof data.variantId === "string"
+          ? parseInt(data.variantId, 10)
+          : data.variantId
+        : undefined;
+
+      return cartService.addItem({
+        product_id: parseInt(String(data.product.id), 10),
+        quantity: data.quantity,
+        variant_id: vId,
+      });
+    },
+    onSuccess: (response, variables) => {
+      if (response && (response as any).items) {
+        setCartCache(() => response as any);
       } else {
-        dispatch({ type: "LOAD_CART", payload: [] });
+        // Best-effort optimistic update without triggering extra requests
+        setCartCache((old) => {
+          if (!old) return old;
+          const productId = parseInt(String(variables.product.id), 10);
+          const variantId = variables.variantId
+            ? typeof variables.variantId === "string"
+              ? parseInt(variables.variantId, 10)
+              : variables.variantId
+            : null;
+
+          const nextItems = old.items.map((i) => ({ ...i }));
+          const existing = nextItems.find(
+            (i) => i.product_id === productId && (i.variant_id ?? null) === (variantId ?? null)
+          );
+
+          if (existing) {
+            existing.quantity += variables.quantity;
+          }
+
+          return { ...old, items: nextItems };
+        });
       }
-    } catch (error) {
-      console.error("Failed to load cart from localStorage:", error);
-      dispatch({ type: "LOAD_CART", payload: [] });
-    }
-  }, []);
 
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(state.items));
-    }
-  }, [state.items, state.isLoading]);
+      setIsOpen(true);
+    },
+  });
 
-  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
-  
-  const subtotal = state.items.reduce((sum, item) => {
-    const price = item.variant?.price ?? item.product.price;
-    return sum + price * item.quantity;
-  }, 0);
+  const updateQuantityMutation = useMutation({
+    mutationFn: (data: { itemId: number; quantity: number }) =>
+      cartService.updateItem(data.itemId, data.quantity),
+    onSuccess: (response, variables) => {
+      if (response && (response as any).items) {
+        setCartCache(() => response as any);
+        return;
+      }
 
-  const addItem = (product: Product, quantity = 1, variant?: ProductVariant) => {
-    dispatch({ type: "ADD_ITEM", payload: { product, quantity, variant } });
-  };
+      setCartCache((old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((i) => (i.id === variables.itemId ? { ...i, quantity: variables.quantity } : i)),
+        };
+      });
+    },
+  });
 
-  const removeItem = (id: string) => {
-    dispatch({ type: "REMOVE_ITEM", payload: id });
-  };
+  const removeItemMutation = useMutation({
+    mutationFn: (itemId: number) => cartService.removeItem(itemId),
+    onSuccess: (response, itemId) => {
+      if (response && (response as any).items) {
+        setCartCache(() => response as any);
+        return;
+      }
 
-  const updateQuantity = (id: string, quantity: number) => {
-    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
-  };
+      setCartCache((old) => {
+        if (!old) return old;
+        return { ...old, items: old.items.filter((i) => i.id !== itemId) };
+      });
+    },
+  });
 
-  const clearCart = () => {
-    dispatch({ type: "CLEAR_CART" });
-  };
+  const clearCartMutation = useMutation({
+    mutationFn: cartService.clear,
+    onSuccess: () => {
+      setCartCache((old) => {
+        if (!old) return old;
+        return { ...old, items: [], total_amount: 0 };
+      });
+    },
+  });
 
-  const isInCart = (productId: string) => {
-    return state.items.some((item) => item.product.id === productId);
-  };
+  const addItem = useCallback(
+    (product: Product, quantity: number, variantId?: number | string) => {
+      if (!isAuthenticated) return;
+      addItemMutation.mutate({ product, quantity, variantId });
+    },
+    [addItemMutation, isAuthenticated]
+  );
 
-  const openCart = () => dispatch({ type: "SET_IS_OPEN", payload: true });
-  const closeCart = () => dispatch({ type: "SET_IS_OPEN", payload: false });
-  const toggleCart = () => dispatch({ type: "SET_IS_OPEN", payload: !state.isOpen });
+  const updateQuantity = useCallback((itemId: number, quantity: number) => {
+      if (!isAuthenticated) return;
+      if (quantity <= 0) {
+          removeItemMutation.mutate(itemId);
+          return;
+      }
+      updateQuantityMutation.mutate({ itemId, quantity });
+  }, [updateQuantityMutation, removeItemMutation, isAuthenticated]);
+
+  const removeItem = useCallback((itemId: number) => {
+      if (!isAuthenticated) return;
+      removeItemMutation.mutate(itemId);
+  }, [removeItemMutation, isAuthenticated]);
+
+  const clearCart = useCallback(() => {
+      if (!isAuthenticated) return;
+      clearCartMutation.mutate();
+  }, [clearCartMutation, isAuthenticated]);
 
   return (
     <CartContext.Provider
       value={{
-        items: state.items,
-        isLoading: state.isLoading,
-        isOpen: state.isOpen,
+        items: enrichedCartItems,
+        cart,
+        isLoading,
+        isOpen,
         totalItems,
-        subtotal,
-        totalPrice: subtotal,
+        totalAmount,
         addItem,
         removeItem,
         updateQuantity,
         clearCart,
-        isInCart,
+        setIsOpen,
+        toggleCart,
         openCart,
         closeCart,
-        toggleCart,
+        totalPrice: totalAmount,
       }}
     >
       {children}

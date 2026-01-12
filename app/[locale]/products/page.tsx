@@ -6,8 +6,8 @@ import { SlidersHorizontal, Grid3X3, Grid2X2, List, X } from "lucide-react";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
 import { Button, Badge, Card, Select, PageWrapper } from "@/components/ui";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
-import { useProducts, useCategories } from "@/hooks";
-import { transformProducts, transformCategories, type Locale } from "@/lib/transformers";
+import { useProducts, useCategories, useListingVariantProducts } from "@/hooks";
+import { transformCategories, type Locale } from "@/lib/transformers";
 import { SORT_OPTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { ProductFilters as ApiProductFilters } from "@/types/api.types";
@@ -64,7 +64,7 @@ export default function ProductsPage() {
   });
 
   // Transform data with locale
-  const products = data?.data ? transformProducts(data.data, locale) : [];
+  const { products: products, isLoading: variantsLoading } = useListingVariantProducts(data?.data, locale);
   const categories = categoriesData?.data ? transformCategories(categoriesData.data, locale) : [];
   const totalProducts = data?.meta?.total || 0;
   const totalPages = data?.meta?.totalPages || 1;
@@ -76,7 +76,7 @@ export default function ProductsPage() {
     (filters.rating ? 1 : 0);
 
   return (
-    <PageWrapper className="container mx-auto">
+    <PageWrapper>
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary mb-2">All Products</h1>
@@ -105,7 +105,7 @@ export default function ProductsPage() {
 
           {/* Results Count */}
           <span className="text-sm text-third">
-            {isLoading ? 'Loading...' : `${totalProducts} products found`}
+            {isLoading || variantsLoading ? 'Loading...' : `${products.length} products found`}
           </span>
         </div>
 
@@ -137,7 +137,7 @@ export default function ProductsPage() {
                   ? "bg-primary text-third"
                   : "hover:bg-gray-100"
               )}
-              aria-label="Grid 4 columns"
+              aria-label="Grid 5 columns"
             >
               <Grid3X3 className="w-4 h-4" />
             </button>
@@ -149,7 +149,7 @@ export default function ProductsPage() {
                   ? "bg-primary text-third"
                   : "hover:bg-gray-100"
               )}
-              aria-label="Grid 3 columns"
+              aria-label="Grid 4 columns"
             >
               <Grid2X2 className="w-4 h-4" />
             </button>
@@ -234,7 +234,7 @@ export default function ProductsPage() {
             <>
               <ProductGrid
                 products={products}
-                columns={viewMode === "grid-4" ? 4 : viewMode === "grid-3" ? 3 : 2}
+                columns={viewMode === "grid-4" ? 5 : viewMode === "grid-3" ? 4 : 2}
               />
               {/* Pagination */}
               {totalPages > 1 && (
