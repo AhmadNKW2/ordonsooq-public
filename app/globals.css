@@ -96,7 +96,7 @@
   :lang(ar),
   [lang^="ar"],
   [dir="rtl"] {
-    font-family: 'Almarai', var(--font-figtree), sans-serif;
+    font-family: var(--font-almarai), var(--font-figtree), sans-serif;
   }
 
   .custom-scrollbar::-webkit-scrollbar {

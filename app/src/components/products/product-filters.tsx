@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button, Badge, Card, Checkbox, Radio } from "@/components/ui";
 import { Category, Brand } from "@/types";
@@ -100,6 +101,8 @@ export function ProductFilters({
     onFilterChange(newFilters);
   };
 
+  const t = useTranslations();
+
   const activeFiltersCount =
     filters.categories.length +
     filters.brands.length +
@@ -110,16 +113,17 @@ export function ProductFilters({
     <Card className={cn("p-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-primary">Filters</h3>
+        <h3 className="font-semibold text-primary">{t('common.filters')}</h3>
         {activeFiltersCount > 0 && (
           <button
             onClick={clearAllFilters}
             className="text-sm text-primary hover:underline"
           >
-            Clear all ({activeFiltersCount})
+            {t('common.clearAll', { count: activeFiltersCount })}
           </button>
         )}
       </div>
+
 
       {/* Active Filters */}
       {activeFiltersCount > 0 && (

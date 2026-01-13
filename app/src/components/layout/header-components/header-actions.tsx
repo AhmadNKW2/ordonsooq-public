@@ -5,8 +5,9 @@ import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { IconButton } from "@/components/ui/icon-button";
+import { Select } from "@/components/ui";
 import { LanguageSwitcher } from "./language-switcher";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthModal } from "@/components/auth/auth-modal";
 
@@ -22,24 +23,25 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
   const { items: wishlistItems } = useWishlist();
   const { user, isAuthenticated, logout } = useAuth();
 
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleLogout = async () => {
     await logout();
-    setIsUserMenuOpen(false);
     router.push('/');
+  };
+
+  const profileOptions = [
+    { value: "/profile", label: t("myProfile") },
+    { value: "/orders", label: t("myOrders") },
+    { value: "logout", label: t("logout") }
+  ];
+
+  const handleProfileChange = (value: string) => {
+    if (value === "logout") {
+      handleLogout();
+    } else {
+      router.push(value);
+    }
   };
 
   return (
@@ -71,60 +73,20 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
       <div className="w-px h-8 bg-white/10"></div>
 
       {/* User Account */}
-      <div className="relative hidden sm:block" ref={menuRef}>
+      <div className="relative hidden sm:block">
         {isAuthenticated ? (
-          <div className="relative">
-            <div 
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            >
-                <IconButton
-                  variant="header"
-                  aria-label="Account"
-                  icon="user"
-                  className={isUserMenuOpen ? "bg-gray-100" : ""}
-                />
-                <span className="text-sm font-medium text-white hidden md:block select-none">
-                    {t("hi")} {user?.firstName}
-                </span>
-            </div>
-
-            {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
-                <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                  <p className="font-medium text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
-                  <p className="text-gray-500 text-xs truncate">{user?.email}</p>
-                </div>
-
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  {t("myProfile")}
-                </Link>
-                <Link
-                  href="/orders"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  {t("myOrders")}
-                </Link>
-
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                >
-                  {t("logout")}
-                </button>
-              </div>
-            )}
-          </div>
+          <Select
+            options={profileOptions}
+            value=""
+            onChange={handleProfileChange}
+            placeholder={`${t("hi")} ${user?.firstName}`}
+            className="w-48"
+          />
         ) : (
           <div className="flex items-center gap-1 cursor-pointer" onClick={() => setIsAuthModalOpen(true)}
           >
             <span
-              className="text-white text-sm font-medium hover:text-primary hidden lg:block"
+              className="text-white text-sm font-medium hidden lg:block px-1"
             >
               {t("login")}
             </span>

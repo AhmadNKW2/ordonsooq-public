@@ -24,6 +24,8 @@ const SORT_MAP: Record<string, { sortBy: ApiProductFilters['sortBy']; sortOrder:
 export default function ProductsPage() {
   const locale = useLocale() as Locale;
   const t = useTranslations('product');
+  const tCommon = useTranslations('common');
+  const tRoot = useTranslations();
   const [viewMode, setViewMode] = useState<"grid-4" | "grid-3" | "list">("grid-4");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(false);
@@ -79,10 +81,8 @@ export default function ProductsPage() {
     <PageWrapper>
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">All Products</h1>
-        <p className="text-third">
-          Discover our wide selection of quality products
-        </p>
+        <h1 className="text-3xl font-bold text-primary mb-2">{t('allProductsTitle')}</h1>
+        <p className="text-third">{t('allProductsSubtitle')}</p>
       </div>
 
       {/* Toolbar */}
@@ -95,7 +95,7 @@ export default function ProductsPage() {
             onClick={() => setShowFilters(!showFilters)}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            Filters
+            {t('filtersTitle')}
             {activeFiltersCount > 0 && (
               <Badge variant="default" className="ml-2">
                 {activeFiltersCount}
@@ -105,7 +105,9 @@ export default function ProductsPage() {
 
           {/* Results Count */}
           <span className="text-sm text-third">
-            {isLoading || variantsLoading ? 'Loading...' : `${products.length} products found`}
+            {isLoading || variantsLoading
+              ? tCommon('loading')
+              : t('productsFound', { count: products.length })}
           </span>
         </div>
 
@@ -113,14 +115,14 @@ export default function ProductsPage() {
           {/* Sort */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-third hidden sm:inline">
-              Sort by:
+              {t('sortBy')}:
             </span>
             <Select
               value={sortBy}
               onChange={setSortBy}
               options={SORT_OPTIONS.map((option) => ({
                 value: option.value,
-                label: option.label,
+                label: tRoot(option.label),
               }))}
               className="w-40"
               size="sm"
@@ -200,7 +202,7 @@ export default function ProductsPage() {
             )}
           >
             <div className="sticky top-0 flex items-center justify-between p-4 bg-white border-b border-gray-100">
-              <h2 className="font-semibold text-lg">Filters</h2>
+              <h2 className="font-semibold text-lg">{t('filtersTitle')}</h2>
               <button
                 onClick={() => setShowFilters(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -224,11 +226,11 @@ export default function ProductsPage() {
             <ProductGridSkeleton count={12} />
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-secondary">Error loading products. Please try again.</p>
+              <p className="text-secondary">{t('errorLoadingProducts')}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-third">No products found matching your criteria.</p>
+              <p className="text-third">{t('noProductsFound')}</p>
             </div>
           ) : (
             <>
@@ -244,17 +246,15 @@ export default function ProductsPage() {
                     disabled={page === 1}
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                   >
-                    Previous
+                    {tCommon('previous')}
                   </Button>
-                  <span className="text-sm text-third">
-                    Page {page} of {totalPages}
-                  </span>
+                  <span className="text-sm text-third">{t('pagination', { page, totalPages })}</span>
                   <Button
                     color="white"
                     disabled={page >= totalPages}
                     onClick={() => setPage(p => p + 1)}
                   >
-                    Next
+                    {tCommon('next')}
                   </Button>
                 </div>
               )}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight } from "lucide-react";
 import { Button, Input, Card, PageWrapper, Radio } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
@@ -12,6 +13,8 @@ import { SHIPPING_OPTIONS, PAYMENT_METHODS } from "@/lib/constants";
 type CheckoutStep = "shipping" | "payment" | "review";
 
 export default function CheckoutPage() {
+  const t = useTranslations('checkout');
+  const tProfile = useTranslations('profile');
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
   const [shippingMethod, setShippingMethod] = useState(SHIPPING_OPTIONS[0].id);
@@ -50,21 +53,21 @@ export default function CheckoutPage() {
   };
 
   const steps = [
-    { id: "shipping", label: "Shipping", icon: Truck },
-    { id: "payment", label: "Payment", icon: CreditCard },
-    { id: "review", label: "Review", icon: Check },
+    { id: "shipping", label: t('steps.shipping'), icon: Truck },
+    { id: "payment", label: t('steps.payment'), icon: CreditCard },
+    { id: "review", label: t('steps.review'), icon: Check },
   ];
 
   if (items.length === 0 && !orderComplete) {
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center">
-          <h1 className="text-2xl font-bold text-primary mb-4">No Items in Cart</h1>
+          <h1 className="text-2xl font-bold text-primary mb-4">{t('noItems')}</h1>
           <p className="text-third mb-8">
-            Please add some items to your cart before checking out.
+            {t('noItemsDesc')}
           </p>
           <Link href="/products">
-            <Button size="lg">Browse Products</Button>
+            <Button size="lg">{t('browseProducts')}</Button>
           </Link>
         </div>
       </div>
@@ -78,9 +81,9 @@ export default function CheckoutPage() {
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-success" />
           </div>
-          <h1 className="text-2xl font-bold text-primary mb-2">Order Confirmed!</h1>
+          <h1 className="text-2xl font-bold text-primary mb-2">{t('orderConfirmed')}</h1>
           <p className="text-third mb-2">
-            Thank you for your purchase. Your order number is:
+            {t('orderConfirmedDesc')}
           </p>
           <p className="text-xl font-bold text-primary mb-6">#ORD-{Date.now().toString().slice(-8)}</p>
           <p className="text-third mb-8">
@@ -92,10 +95,10 @@ export default function CheckoutPage() {
                 variant="solid"
                 className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
               >
-                Continue Shopping
+                {t('continueShopping')}
               </Button>
             </Link>
-            <Button>Track Order</Button>
+            <Button>{t('trackOrder')}</Button>
           </div>
         </div>
       </div>
@@ -171,16 +174,16 @@ export default function CheckoutPage() {
               <div className="flex flex-col gap-5">
                 <h2 className="text-xl font-bold text-primary flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-primary" />
-                  Shipping Information
+                  {t('shippingInfo')}
                 </h2>
 
                 {/* Contact Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {[
-                    { name: "firstName", label: "First Name", placeholder: "John" },
-                    { name: "lastName", label: "Last Name", placeholder: "Doe" },
-                    { name: "email", label: "Email", type: "email", placeholder: "john@example.com" },
-                    { name: "phone", label: "Phone", type: "tel", placeholder: "0791234567" },
+                    { name: "firstName", label: t('firstName'), placeholder: "John" },
+                    { name: "lastName", label: t('lastName'), placeholder: "Doe" },
+                    { name: "email", label: t('email'), type: "email", placeholder: "john@example.com" },
+                    { name: "phone", label: t('phone'), type: "tel", placeholder: "0791234567" },
                   ].map((field) => (
                     <Input
                       key={field.name}
@@ -196,7 +199,7 @@ export default function CheckoutPage() {
 
                 {/* Address */}
                 <Input
-                  label="Address"
+                  label={t('address')}
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
@@ -205,10 +208,10 @@ export default function CheckoutPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-2 gap-5">
                   {[
-                    { name: "building", label: "Building Number", placeholder: "12" },
-                    { name: "floor", label: "Floor", placeholder: "3" },
-                    { name: "apartment", label: "Apartment Number", placeholder: "4B" },
-                    { name: "city", label: "City", placeholder: "Amman" },
+                    { name: "building", label: t('building'), placeholder: "12" },
+                    { name: "floor", label: t('floor'), placeholder: "3" },
+                    { name: "apartment", label: t('apartment'), placeholder: "4B" },
+                    { name: "city", label: t('city'), placeholder: "Amman" },
                   ].map((field) => (
                     <Input
                       key={field.name}
@@ -228,7 +231,7 @@ export default function CheckoutPage() {
               <div className="flex flex-col gap-5">
                 <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
                   <CreditCard className="w-5 h-5 text-primary" />
-                  Payment Information
+                  {t('paymentInfo')}
                 </h2>
 
                 {/* Payment Methods */}
@@ -242,7 +245,7 @@ export default function CheckoutPage() {
                     label={
                       <span className="flex items-center gap-3">
                         <span className="text-2xl">💵</span>
-                        <span>Cash on Delivery</span>
+                        <span>{t('cod')}</span>
                       </span>
                     }
                   />
@@ -255,18 +258,18 @@ export default function CheckoutPage() {
               <div className="flex flex-col gap-5">
                 <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
                   <Check className="w-5 h-5 text-primary" />
-                  Review Your Order
+                  {t('reviewOrder')}
                 </h2>
 
                 {/* Shipping Summary */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-primary">Shipping Address</h3>
+                    <h3 className="font-semibold text-primary">{t('shippingAddress')}</h3>
                     <button
                       onClick={() => setCurrentStep("shipping")}
                       className="text-sm text-primary hover:underline"
                     >
-                      Edit
+                      {t('edit')}
                     </button>
                   </div>
                   <p className="text-third">
@@ -280,22 +283,22 @@ export default function CheckoutPage() {
                 {/* Payment Summary */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-primary">Payment Method</h3>
+                    <h3 className="font-semibold text-primary">{t('paymentMethod')}</h3>
                     <button
                       onClick={() => setCurrentStep("payment")}
                       className="text-sm text-primary hover:underline"
                     >
-                      Edit
+                      {t('edit')}
                     </button>
                   </div>
                   <p className="text-third">
-                    Cash on Delivery
+                    {t('cod')}
                   </p>
                 </div>
 
                 {/* Order Items */}
                 <div>
-                  <h3 className="font-semibold text-primary">Order Items</h3>
+                  <h3 className="font-semibold text-primary">{t('orderItems')}</h3>
                   <div className="flex flex-col gap-3">
                     {items.map((item) => (
                       <div key={item.product.id} className="flex items-center gap-5 p-3 bg-gray-50 rounded-lg">
@@ -331,7 +334,7 @@ export default function CheckoutPage() {
         {/* Order Summary Sidebar */}
         <div className="lg:col-span-1">
           <Card className="sticky top-46 flex flex-col gap-5">
-            <h2 className="text-xl font-bold text-primary">Order Summary</h2>
+            <h2 className="text-xl font-bold text-primary">{t('orderSummary')}</h2>
 
             {/* Items Preview */}
             <div className="flex flex-col gap-3 pb-5 border-b border-gray-100">
@@ -358,7 +361,7 @@ export default function CheckoutPage() {
               ))}
               {items.length > 3 && (
                 <p className="text-sm text-third text-center">
-                  +{items.length - 3} more items
+                  {t('moreItems', { count: items.length - 3 })}
                 </p>
               )}
             </div>
@@ -366,24 +369,24 @@ export default function CheckoutPage() {
             {/* Summary */}
             <div className="flex flex-col gap-3 pb-5 border-b border-gray-100">
               <div className="flex justify-between text-third">
-                <span>Subtotal ({totalItems} items)</span>
+                <span>{t('subtotalWithCount', { count: totalItems })}</span>
                 <span>{formatPrice(totalPrice)}</span>
               </div>
               <div className="flex justify-between text-third">
-                <span>Shipping</span>
+                <span>{t('shipping')}</span>
                 <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
-                  {shipping === 0 ? "FREE" : formatPrice(shipping)}
+                  {shipping === 0 ? t('free') : formatPrice(shipping)}
                 </span>
               </div>
               <div className="flex justify-between text-third">
-                <span>Tax (10%)</span>
+                <span>{t('tax')}</span>
                 <span>{formatPrice(tax)}</span>
               </div>
             </div>
 
             {/* Total */}
             <div className="flex justify-between text-lg font-bold text-primary">
-              <span>Total</span>
+              <span>{t('total')}</span>
               <span className="text-primary">{formatPrice(finalTotal)}</span>
             </div>
 
@@ -410,9 +413,9 @@ export default function CheckoutPage() {
                 }}
                 isLoading={isProcessing}
               >
-                {currentStep === "shipping" && "Continue to Payment"}
-                {currentStep === "payment" && "Review Order"}
-                {currentStep === "review" && "Place Order"}
+                {currentStep === "shipping" && t('continueToPayment')}
+                {currentStep === "payment" && t('reviewOrderAction')}
+                {currentStep === "review" && t('placeOrder')}
                 {currentStep !== "review" && <ChevronRight className="w-5 h-5" />}
                 {currentStep === "review" && <Lock className="w-5 h-5" />}
               </Button>
@@ -422,7 +425,7 @@ export default function CheckoutPage() {
             {/* Security Badge */}
             <div className="flex items-center justify-center gap-2 text-sm text-third pt-5 border-t border-gray-100">
               <Lock className="w-4 h-4" />
-              <span>Secure checkout</span>
+              <span>{t('secureCheckout')}</span>
             </div>
 
           </Card>

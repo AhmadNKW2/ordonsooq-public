@@ -5,7 +5,7 @@ import { type User } from "@/types";
 import { authService } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ApiError } from "@/lib/api-client";
+import { apiClient, ApiError } from "@/lib/api-client";
 
 const AUTH_KEYS = {
   user: ["auth", "user"],
@@ -56,8 +56,17 @@ export function useAuth() {
       // If backend also returns the user in body, this still works.
       const anyResponse = response as any;
       const nextUser = anyResponse?.data?.user || anyResponse?.user;
-      if (nextUser) queryClient.setQueryData(AUTH_KEYS.user, nextUser);
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.user });
+      
+      // Store token if available
+      const token = anyResponse?.data?.access_token || anyResponse?.access_token;
+      if (token) apiClient.setAccessToken(token);
+
+      if (nextUser) {
+        queryClient.setQueryData(AUTH_KEYS.user, nextUser);
+      } else {
+        // Only invalidate if we didn't get the user from the login response
+        queryClient.invalidateQueries({ queryKey: AUTH_KEYS.user });
+      }
     },
   });
 
@@ -66,14 +75,23 @@ export function useAuth() {
     onSuccess: (response) => {
       const anyResponse = response as any;
       const nextUser = anyResponse?.data?.user || anyResponse?.user;
-      if (nextUser) queryClient.setQueryData(AUTH_KEYS.user, nextUser);
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.user });
+
+      // Store token if available
+      const token = anyResponse?.data?.access_token || anyResponse?.access_token;
+      if (token) apiClient.setAccessToken(token);
+
+      if (nextUser) {
+        queryClient.setQueryData(AUTH_KEYS.user, nextUser);
+      } else {
+        queryClient.invalidateQueries({ queryKey: AUTH_KEYS.user });
+      }
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
     onSettled: () => {
+      apiClient.clearAccessToken();
       queryClient.setQueryData(AUTH_KEYS.user, null);
       queryClient.invalidateQueries(); // Invalidate all queries on logout to clear sensitive data
       router.push("/");

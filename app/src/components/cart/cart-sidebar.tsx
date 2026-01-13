@@ -8,8 +8,10 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
 import { cn, formatPrice, slugify } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function CartSidebar() {
+  const tCart = useTranslations("cart");
   const { 
     items, 
     isOpen, 
@@ -118,7 +120,7 @@ export function CartSidebar() {
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold text-gray-900">Shopping Cart ({items.length})</h2>
+                <h2 className="text-lg font-bold text-gray-900">{tCart("title")} ({items.length})</h2>
               </div>
               <button 
                 onClick={closeCart}
@@ -136,11 +138,10 @@ export function CartSidebar() {
                     <ShoppingBag className="w-8 h-8 text-gray-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">Your cart is empty</h3>
-                    <p className="text-gray-500 mt-1">Looks like you haven't added anything yet.</p>
+                    <h3 className="text-lg font-medium text-gray-900">{tCart("empty")}</h3>
                   </div>
                   <Button onClick={closeCart} variant="outline">
-                    Start Shopping
+                    {tCart("continueShopping")}
                   </Button>
                 </div>
               ) : (
@@ -229,24 +230,24 @@ export function CartSidebar() {
               <div className="flex flex-col gap-5 p-4 border-t border-gray-100 bg-gray-50/50">
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Subtotal</span>
+                        <span className="text-gray-500">{tCart("subtotal")}</span>
                     <span className="font-bold text-gray-900">{formatPrice(totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Shipping</span>
-                    <span className="text-green-600 font-medium">Free</span>
+                        <span className="text-gray-500">{tCart("shipping")}</span>
+                        <span className="text-green-600 font-medium">{tCart("freeShipping")}</span>
                   </div>
                 </div>
                 
                 <div className="flex flex-col gap-2">
                   <Link href="/checkout" onClick={closeCart}>
                     <Button className="w-full gap-2" size="lg">
-                      Checkout <ArrowRight className="w-4 h-4" />
+                          {tCart("checkout")} <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
                   <Link href="/cart" onClick={closeCart}>
                     <Button variant="outline" className="w-full" size="lg">
-                      View Cart
+                          {tCart("viewCart")}
                     </Button>
                   </Link>
                 </div>

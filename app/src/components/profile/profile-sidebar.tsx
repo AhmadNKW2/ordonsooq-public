@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslations } from "next-intl";
 import { 
   User, 
   Package, 
@@ -14,17 +15,20 @@ import {
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Dashboard", href: "/profile", icon: LayoutDashboard },
-  { name: "My Orders", href: "/profile/orders", icon: Package },
-  { name: "My Wallet", href: "/profile/wallet", icon: CreditCard },
-  { name: "Wishlist", href: "/profile/wishlist", icon: Heart },
-  { name: "Addresses", href: "/profile/addresses", icon: MapPin },
-  { name: "Account Details", href: "/profile/account", icon: User },
+  { key: "dashboard", href: "/profile", icon: LayoutDashboard },
+  { key: "myOrders", href: "/profile/orders", icon: Package },
+  { key: "myWallet", href: "/profile/wallet", icon: CreditCard },
+  { key: "wishlist", href: "/profile/wishlist", icon: Heart },
+  { key: "addresses", href: "/profile/addresses", icon: MapPin },
+  { key: "accountDetails", href: "/profile/account", icon: User },
 ];
 
 export function ProfileSidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const tProfile = useTranslations("profile");
+  const tAuth = useTranslations("auth");
+  const tNav = useTranslations("nav");
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -34,7 +38,7 @@ export function ProfileSidebar() {
             {user?.firstName?.[0] || "U"}
           </div>
           <div>
-            <p className="font-medium text-gray-900">Hello,</p>
+            <p className="font-medium text-gray-900">{tProfile("hello")}</p>
             <h3 className="font-bold text-lg text-primary">{user?.firstName} {user?.lastName}</h3>
           </div>
         </div>
@@ -43,9 +47,19 @@ export function ProfileSidebar() {
       <nav className="p-2 space-y-1">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
+
+          const label =
+            item.key === "dashboard" ? tProfile("dashboard") :
+            item.key === "accountDetails" ? tProfile("accountDetails") :
+            item.key === "addresses" ? tProfile("addresses") :
+            item.key === "myOrders" ? tProfile("myOrders") :
+            item.key === "myWallet" ? tProfile("myWallet") :
+            item.key === "wishlist" ? tProfile("wishlist") :
+            item.key;
+
           return (
             <Link
-              key={item.name}
+              key={item.key}
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
@@ -55,7 +69,7 @@ export function ProfileSidebar() {
               )}
             >
               <item.icon className={cn("h-5 w-5", isActive ? "text-white" : "text-gray-400 group-hover:text-primary")} />
-              {item.name}
+              {label}
             </Link>
           );
         })}
@@ -65,7 +79,7 @@ export function ProfileSidebar() {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger hover:bg-red-50 transition-colors mt-4"
         >
           <LogOut className="h-5 w-5" />
-          Logout
+          {tAuth("logout")}
         </button>
       </nav>
     </div>

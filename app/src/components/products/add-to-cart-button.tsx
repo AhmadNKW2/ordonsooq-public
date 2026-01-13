@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Check, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
@@ -22,6 +23,7 @@ interface AddToCartButtonProps {
 // --- Components ---
 
 export function AddToCartButton({ product, variant, onAddToCart, onStatusChange, onAnimationEnd, color, disabled }: AddToCartButtonProps) {
+  const t = useTranslations('product');
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { items, addItem, updateQuantity } = useCart();
@@ -158,7 +160,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
                   <div className="rounded-full bg-white/20 p-1">
                     <Check size={16} strokeWidth={4} />
                   </div>
-                  <span>Added!</span>
+                  <span>{t('addedToCart')}</span>
                 </motion.div>
               )}
             </AnimatePresence>

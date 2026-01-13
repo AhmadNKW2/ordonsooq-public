@@ -5,9 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { addressService } from "@/services/address.service";
 import { Plus, MapPin, Trash2, Edit2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 export default function AddressesPage() {
   const { user } = useAuth();
+  const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
   
   const { data: addresses, isLoading } = useQuery({
     queryKey: ['addresses', user?.id],
@@ -24,9 +27,9 @@ export default function AddressesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">My Addresses</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('myAddresses')}</h1>
         <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary2 transition-colors">
-          <Plus size={16} /> Add New Address
+          <Plus size={16} /> {t('addNewAddress')}
         </button>
       </div>
 
@@ -42,7 +45,7 @@ export default function AddressesPage() {
                      <span className="font-bold text-gray-900 uppercase text-sm tracking-wide">{address.type}</span>
                   </div>
                   {address.isDefault && (
-                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Default</Badge>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{t('default')}</Badge>
                   )}
                </div>
                
@@ -57,11 +60,11 @@ export default function AddressesPage() {
 
                <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
                   <button className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors">
-                    <Edit2 size={14} /> Edit
+                    <Edit2 size={14} /> {tCommon('edit')}
                   </button>
                   <div className="w-px h-4 bg-gray-200"></div>
                   <button className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-danger hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={14} /> {tCommon('delete')}
                   </button>
                </div>
             </div>
@@ -71,10 +74,10 @@ export default function AddressesPage() {
             <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
               <MapPin size={32} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No addresses saved</h3>
-            <p className="text-gray-500 mb-6">Add an address to speed up checkout.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">{t('noAddresses')}</h3>
+            <p className="text-gray-500 mb-6">{t('addAddressDesc')}</p>
             <button className="text-primary font-medium hover:underline">
-              Add your first address
+              {t('addFirstAddress')}
             </button>
           </div>
         )}

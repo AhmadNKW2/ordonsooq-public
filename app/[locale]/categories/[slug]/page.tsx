@@ -26,6 +26,11 @@ export default function CategoryPage() {
     status: 'active'
   });
 
+  const { products, isLoading: variantsLoading } = useListingVariantProducts(
+    productsData?.data, 
+    locale
+  );
+
   if (categoryLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -40,7 +45,6 @@ export default function CategoryPage() {
   }
 
   const category = transformCategory(categoryData, locale);
-  const { products, isLoading: variantsLoading } = useListingVariantProducts(productsData?.data, locale);
   const subcategories = category.children || [];
 
   // Get parent category for breadcrumb
@@ -56,7 +60,7 @@ export default function CategoryPage() {
       <div className="mb-6">
         <Breadcrumb 
           items={[
-            { label: "Categories", href: "/categories" },
+            { label: t('nav.categories'), href: "/categories" },
             ...(parentCategory ? [{ label: parentCategory.name, href: `/categories/${parentCategory.slug}` }] : []),
             { label: category.name }
           ]} 
@@ -77,7 +81,7 @@ export default function CategoryPage() {
             {category.name}
           </h1>
           <p className="text-third opacity-80">
-            {products.length > 0 ? `${products.length} products available` : 'Browse products'}
+            {products.length > 0 ? t('categories.itemCount', { count: products.length }) : t('categories.browseAll')}
           </p>
         </div>
       </div>
@@ -85,7 +89,7 @@ export default function CategoryPage() {
       {/* Subcategories */}
       {subcategories.length > 0 && (
         <div className="mb-12">
-          <h2 className="text-xl font-bold text-primary mb-4">Shop by Subcategory</h2>
+          <h2 className="text-xl font-bold text-primary mb-4">{t('categories.shopBySubcategory')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {subcategories.map((sub) => (
               <Link
@@ -111,10 +115,10 @@ export default function CategoryPage() {
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-primary">
-            All {category.name} Products
+            {t('categories.allCategoryProducts', { category: category.name })}
           </h2>
           <span className="text-sm text-third">
-            {productsLoading ? 'Loading...' : `${products.length} products found`}
+            {productsLoading ? t('common.loading') : t('categories.foundCount', { count: products.length })}
           </span>
         </div>
         
@@ -124,9 +128,9 @@ export default function CategoryPage() {
           <ProductGrid products={products} columns={4} />
         ) : (
           <div className="text-center py-16">
-            <p className="text-third">No products found in this category yet.</p>
+            <p className="text-third">{t('categories.noProducts')}</p>
             <Link href="/products" className="text-primary hover:underline">
-              Browse all products
+              {t('categories.browseAll')}
             </Link>
           </div>
         )}

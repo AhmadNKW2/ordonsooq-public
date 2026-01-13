@@ -6,7 +6,7 @@ import { Button, PageWrapper } from "@/components/ui";
 import { ProductGrid } from "@/components/products";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { Product } from "@/types";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 function toNumber(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
@@ -17,6 +17,7 @@ function toNumber(value: unknown): number | undefined {
 export default function WishlistPage() {
   const { items, clearWishlist } = useWishlist();
   const locale = useLocale();
+  const t = useTranslations('wishlist');
 
   // Convert wishlist items to products format for ProductGrid
   const wishlistProducts = items.map((item) => ({
@@ -48,14 +49,14 @@ export default function WishlistPage() {
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Heart className="w-12 h-12 text-third" />
           </div>
-          <h1 className="text-2xl font-bold text-primary mb-4">Your Wishlist is Empty</h1>
+          <h1 className="text-2xl font-bold text-primary mb-4">{t('empty.title')}</h1>
           <p className="text-third mb-8">
-            Save items you love by clicking the heart icon on any product. Your wishlist will be waiting for you!
+            {t('empty.description')}
           </p>
           <Link href="/products">
             <Button size="lg">
               <ShoppingBag className="w-5 h-5" />
-              Browse Products
+              {t('empty.browseProducts')}
             </Button>
           </Link>
         </div>
@@ -68,8 +69,8 @@ export default function WishlistPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-primary mb-2">My Wishlist</h1>
-          <p className="text-third">{items.length} items saved</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">{t('title')}</h1>
+          <p className="text-third">{t('itemsSaved', {count: items.length})}</p>
         </div>
         <Button
           variant="solid"
@@ -77,7 +78,7 @@ export default function WishlistPage() {
           className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-secondary hover:text-secondary"
         >
           <Trash2 className="w-4 h-4" />
-          Clear Wishlist
+          {t('clearWishlist')}
         </Button>
       </div>
 

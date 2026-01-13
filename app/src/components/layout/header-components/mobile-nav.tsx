@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { Heart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
+import { useTranslations } from "next-intl";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
+  const t = useTranslations();
+
   return (
     <div
       className={cn(
@@ -26,7 +29,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             className="block px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
             onClick={onClose}
           >
-            {link.label}
+            {t(link.label)}
           </Link>
         ))}
         <hr className="my-4" />
@@ -36,7 +39,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           onClick={onClose}
         >
           <Heart size={20} />
-          Wishlist
+          {t('nav.wishlist')}
         </Link>
         <Link
           href="/account"
@@ -44,7 +47,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           onClick={onClose}
         >
           <User size={20} />
-          My Account
+          {t('nav.myAccount')}
         </Link>
       </nav>
     </div>

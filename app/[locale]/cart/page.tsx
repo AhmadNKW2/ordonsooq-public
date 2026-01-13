@@ -7,8 +7,10 @@ import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton, Breadcr
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { formatPrice, calculateDiscount, cn, slugify } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export default function CartPage() {
+  const t = useTranslations('cart');
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalPrice } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
 
@@ -49,14 +51,14 @@ export default function CartPage() {
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingBag className="w-12 h-12 text-third" />
           </div>
-          <h1 className="text-2xl font-bold text-primary mb-4">Your Cart is Empty</h1>
+          <h1 className="text-2xl font-bold text-primary mb-4">{t('empty')}</h1>
           <p className="text-third mb-8">
-            Looks like you haven&apos;t added anything to your cart yet. Start shopping and find something you love!
+            {t('emptyDesc')}
           </p>
           <Link href="/products">
             <Button size="lg">
               <ShoppingBag className="w-5 h-5" />
-              Start Shopping
+              {t('startShopping')}
             </Button>
           </Link>
         </div>
@@ -69,15 +71,15 @@ export default function CartPage() {
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
-          { label: "Cart" }
+          { label: t('title') }
         ]}
       />
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary mb-2">Shopping Cart</h1>
-          <p className="text-third">{totalItems} items in your cart</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">{t('title')}</h1>
+          <p className="text-third">{t('itemsInCart', { count: totalItems })}</p>
         </div>
         <Button
           variant="solid"
@@ -85,7 +87,7 @@ export default function CartPage() {
           className="bg-gray-100 hover:bg-gray-200 shadow-gray-200/50 text-secondary hover:text-secondary"
         >
           <Trash2 className="w-4 h-4" />
-          Clear Cart
+          {t('clearCart')}
         </Button>
       </div>
 
@@ -212,40 +214,40 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <Card className="sticky top-46">
             <div className="flex flex-col gap-5">
-              <h2 className="text-xl font-bold text-primary">Order Summary</h2>
+              <h2 className="text-xl font-bold text-primary">{t('orderSummary')}</h2>
 
               {/* Coupon Code */}
               <div className="flex gap-2">
-                <Input placeholder="Coupon code" icon={Tag} />
+                <Input placeholder={t('couponCode')} icon={Tag} />
                 <Button
                   variant="solid"
                   className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
                 >
-                  Apply
+                  {t('apply')}
                 </Button>
               </div>
 
               {/* Summary Items */}
               <div className="flex flex-col gap-5 pb-5 border-b border-gray-100">
                 <div className="flex justify-between text-third">
-                  <span>Subtotal ({totalItems} items)</span>
+                  <span>{t('subtotalWithCount', { count: totalItems })}</span>
                   <span>{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-third">
-                  <span>Shipping</span>
+                  <span>{t('shipping')}</span>
                   <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
-                    {shipping === 0 ? "FREE" : formatPrice(shipping)}
+                    {shipping === 0 ? t('free') : formatPrice(shipping)}
                   </span>
                 </div>
                 <div className="flex justify-between text-third">
-                  <span>Tax (10%)</span>
+                  <span>{t('tax', { rate: 10 })}</span>
                   <span>{formatPrice(tax)}</span>
                 </div>
               </div>
 
               {/* Total */}
               <div className="flex justify-between text-lg font-bold text-primary">
-                <span>Total</span>
+                <span>{t('total')}</span>
                 <span className="text-primary">{formatPrice(finalTotal)}</span>
               </div>
 
@@ -255,9 +257,8 @@ export default function CartPage() {
                   <Truck className="w-4 h-4 text-secondary" />
                   <p className="text-sm font-medium text-primary flex-1">
                     {totalPrice >= 50
-                      ? "Free shipping unlocked!"
-                      : `Add ${formatPrice(50 - totalPrice)} for `}
-                    spa
+                      ? t('freeShippingUnlocked')
+                      : t('addMoreForFreeShipping', { amount: formatPrice(50 - totalPrice) })}
                   </p>
                   <span className="text-xs font-bold text-secondary">{Math.min(Math.round((totalPrice / 50) * 100), 100)}%</span>
                 </div>
@@ -272,14 +273,14 @@ export default function CartPage() {
               {/* Checkout Button */}
               <Link href="/checkout">
                 <Button size="lg" className="w-full">
-                  Proceed to Checkout
+                  {t('proceedToCheckout')}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
 
               {/* Secure Checkout Notice */}
               <p className="text-center text-sm text-third">
-                🔒 Secure checkout powered by Stripe
+                {t('secureCheckout')}
               </p>
             </div>
           </Card>

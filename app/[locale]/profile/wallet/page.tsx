@@ -6,9 +6,12 @@ import { formatPrice } from "@/lib/utils";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Wallet, Plus } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslations } from "next-intl";
 
 export default function WalletPage() {
   const { user } = useAuth();
+  const t = useTranslations('profile');
+
   const { data: wallet, isLoading: walletLoading } = useQuery({
     queryKey: ["wallet", user?.id],
     queryFn: () => walletService.getWallet(),
@@ -23,7 +26,7 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('myWallet')}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Balance Card */}
@@ -33,7 +36,7 @@ export default function WalletPage() {
           </div>
           
           <div className="relative z-10">
-            <p className="text-blue-100 font-medium mb-2">Available Balance</p>
+            <p className="text-blue-100 font-medium mb-2">{t('availableBalance')}</p>
             <div className="text-4xl font-bold mb-8">
               {walletLoading ? "..." : formatPrice(wallet?.balance || 0)}
             </div>
@@ -47,7 +50,7 @@ export default function WalletPage() {
                 <ArrowDownLeft size={20} />
               </div>
               <div>
-                <p className="text-sm text-green-600 font-medium">Total Credited</p>
+                <p className="text-sm text-green-600 font-medium">{t('totalCredited')}</p>
                 <p className="font-bold text-lg">{formatPrice(0)}</p>
               </div>
            </div>
@@ -57,7 +60,7 @@ export default function WalletPage() {
                 <ArrowUpRight size={20} />
               </div>
               <div>
-                <p className="text-sm text-red-600 font-medium">Total Spent</p>
+                <p className="text-sm text-red-600 font-medium">{t('totalSpent')}</p>
                 <p className="font-bold text-lg">{formatPrice(0)}</p>
               </div>
            </div>
@@ -67,11 +70,11 @@ export default function WalletPage() {
       {/* Transaction History */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="font-bold text-lg text-gray-900">Transaction History</h2>
+          <h2 className="font-bold text-lg text-gray-900">{t('transactionHistory')}</h2>
         </div>
 
         {historyLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading history...</div>
+          <div className="p-8 text-center text-gray-500">{t('loadingHistory')}</div>
         ) : transactions && transactions.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {transactions.map((tx) => (
@@ -98,7 +101,8 @@ export default function WalletPage() {
             <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
               <CreditCard size={32} />
             </div>
-            <p className="text-gray-500">No transactions found.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">{t('noTransactions')}</h3>
+            <p className="text-gray-500">{t('noTransactionsDesc')}</p>
           </div>
         )}
       </div>

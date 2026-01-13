@@ -4,6 +4,7 @@ import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -122,6 +123,7 @@ type ProductsVariantProps = BaseSectionProps & {
 export type HomeSectionProps = ShopByVariantProps | ProductsVariantProps;
 
 export function HomeSection(props: HomeSectionProps) {
+  const t = useTranslations("common");
   const showViewAll = props.showViewAll ?? true;
 
   if (props.variant === "shopBy") {
@@ -377,7 +379,7 @@ export function HomeSection(props: HomeSectionProps) {
             disabled={isLoading}
             className="min-w-50 bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
           >
-            {isLoading ? "Loading..." : "Load More Products"}
+            {isLoading ? t("loading") : t("loadMoreProducts")}
           </Button>
         </div>
       ) : null}

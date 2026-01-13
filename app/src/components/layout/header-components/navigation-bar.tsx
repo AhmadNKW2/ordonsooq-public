@@ -1,80 +1,65 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Link } from "@/i18n/navigation";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
-
-// Mega menu content for different nav items
-const MEGA_MENU_CONTENT: Record<string, { title: string; links: { label: string; href: string; description?: string }[] }[]> = {
-  "/categories": [
-    {
-      title: "Electronics",
-      links: [
-        { label: "Smartphones", href: "/categories/smartphones", description: "Latest mobile devices" },
-        { label: "Laptops", href: "/categories/laptops", description: "Portable computers" },
-        { label: "Tablets", href: "/categories/tablets", description: "Touch screen devices" },
-        { label: "Headphones", href: "/categories/headphones", description: "Audio accessories" },
-        { label: "Cameras", href: "/categories/cameras", description: "Photography gear" },
-      ]
-    },
-    {
-      title: "Fashion",
-      links: [
-        { label: "Men's Clothing", href: "/categories/mens-clothing", description: "Stylish menswear" },
-        { label: "Women's Clothing", href: "/categories/womens-clothing", description: "Trendy womenswear" },
-        { label: "Shoes", href: "/categories/shoes", description: "Footwear collection" },
-        { label: "Accessories", href: "/categories/accessories", description: "Fashion extras" },
-        { label: "Watches", href: "/categories/watches", description: "Timepieces" },
-      ]
-    },
-    {
-      title: "Home & Living",
-      links: [
-        { label: "Furniture", href: "/categories/furniture", description: "Home furnishings" },
-        { label: "Decor", href: "/categories/decor", description: "Decorative items" },
-        { label: "Kitchen", href: "/categories/kitchen", description: "Kitchen essentials" },
-        { label: "Bedding", href: "/categories/bedding", description: "Bedroom comfort" },
-        { label: "Lighting", href: "/categories/lighting", description: "Light fixtures" },
-      ]
-    },
-    {
-      title: "Sports & Outdoors",
-      links: [
-        { label: "Fitness Equipment", href: "/categories/fitness", description: "Workout gear" },
-        { label: "Outdoor Gear", href: "/categories/outdoor", description: "Adventure essentials" },
-        { label: "Sports Wear", href: "/categories/sportswear", description: "Athletic clothing" },
-        { label: "Bikes", href: "/categories/bikes", description: "Cycling products" },
-        { label: "Camping", href: "/categories/camping", description: "Camping supplies" },
-      ]
-    },
-  ],
-  "/products": [
-    {
-      title: "Shop By",
-      links: [
-        { label: "New Arrivals", href: "/products?filter=new", description: "Fresh additions" },
-        { label: "Best Sellers", href: "/products?filter=bestsellers", description: "Top picks" },
-        { label: "On Sale", href: "/products?filter=sale", description: "Great deals" },
-        { label: "Top Rated", href: "/products?sort=rating", description: "Customer favorites" },
-      ]
-    },
-    {
-      title: "Price Range",
-      links: [
-        { label: "Under $25", href: "/products?maxPrice=25", description: "Budget friendly" },
-        { label: "$25 - $50", href: "/products?minPrice=25&maxPrice=50", description: "Mid-range" },
-        { label: "$50 - $100", href: "/products?minPrice=50&maxPrice=100", description: "Premium picks" },
-        { label: "Over $100", href: "/products?minPrice=100", description: "Luxury items" },
-      ]
-    },
-  ],
-};
-
-const MENU_KEYS = Object.keys(MEGA_MENU_CONTENT);
+import { useTranslations, useLocale } from "next-intl";
+import { useRootCategories } from "@/hooks/useCategories";
+import type { Category } from "@/types/api.types";
 
 export function NavigationBar() {
+  const t = useTranslations("navigation");
+  const navT = useTranslations(); // For top level nav links
+  const locale = useLocale();
+  const isAr = locale === 'ar';
+  
+  const { data: categoriesData } = useRootCategories();
+  const categories = categoriesData?.data || [];
+
+
+  // Mega menu content for different nav items
+  const MEGA_MENU_CONTENT: Record<string, { title: string; links: { label: string; href: string; description?: string }[] }[]> = useMemo(() => {
+    // Dynamic Categories
+    const dynamicCategories = categories.slice(0, 4).map((category: Category) => ({
+      title: isAr ? category.name_ar : category.name_en,
+      links: (category.children || []).slice(0, 5).map((child) => ({
+        label: isAr ? child.name_ar : child.name_en,
+        href: `/categories/${child.id}`,
+        description: "" // Description not available in basic child type
+      }))
+    }));
+
+    return {
+    "/categories": dynamicCategories.length > 0 ? dynamicCategories : [
+      // Fallback or Empty state if needed, or keeping structure empty.
+      // But user wants dynamic data only.
+    ],
+    "/products": [
+      {
+        title: t("shopBy"),
+        links: [
+          { label: t("newArrivals"), href: "/products?filter=new", description: t("newArrivalsDesc") },
+          { label: t("bestSellers"), href: "/products?filter=bestsellers", description: t("bestSellersDesc") },
+          { label: t("onSale"), href: "/products?filter=sale", description: t("onSaleDesc") },
+          { label: t("topRated"), href: "/products?sort=rating", description: t("topRatedDesc") },
+        ]
+      },
+      {
+        title: t("priceRange"),
+        links: [
+          { label: t("under25"), href: "/products?maxPrice=25", description: t("budgetFriendly") },
+          { label: t("range25to50"), href: "/products?minPrice=25&maxPrice=50", description: t("midRange") },
+          { label: t("range50to100"), href: "/products?minPrice=50&maxPrice=100", description: t("premiumPicks") },
+          { label: t("over100"), href: "/products?minPrice=100", description: t("luxuryItems") },
+        ]
+      },
+    ]
+  }}, [t, isAr, categories]);
+
+  const MENU_KEYS = Object.keys(MEGA_MENU_CONTENT);
+
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
@@ -198,7 +183,7 @@ export function NavigationBar() {
                     : "text-third hover:text-primary"
                 )}
               >
-                {link.label}
+                {navT(link.label)}
                 {MEGA_MENU_CONTENT[link.href] && (
                   <ChevronDown 
                     className={cn(

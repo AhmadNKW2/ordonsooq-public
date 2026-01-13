@@ -35,7 +35,10 @@ const generateMockReviews = (count: number): Review[] => {
     }));
 };
 
+import { useTranslations } from "next-intl";
+
 export function ProductReviews({ rating, reviewCount, reviews: initialReviews }: ProductReviewsProps) {
+    const t = useTranslations('product');
     const [reviews] = useState<Review[]>(initialReviews || generateMockReviews(Math.min(reviewCount, 5)));
 
     // Calculate rating distribution (mock data or 0 if no reviews)
@@ -55,7 +58,7 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
 
     return (
         <div>
-            <h2 className="text-2xl font-bold text-primary mb-1">Customer Reviews</h2>
+            <h2 className="text-2xl font-bold text-primary mb-1">{t('customerReviews')}</h2>
 
             <Card className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Rating Summary */}
@@ -101,9 +104,9 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-primary">Review this product</h3>
-                        <p className="text-sm text-third">Share your thoughts with other customers</p>
-                        <Button className="w-full">Write a Review</Button>
+                        <h3 className="font-semibold text-primary">{t('reviewThisProduct')}</h3>
+                        <p className="text-sm text-third">{t('shareThoughts')}</p>
+                        <Button className="w-full">{t('writeReview')}</Button>
                     </div>
                 </div>
 
@@ -114,11 +117,11 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-sm mb-4">
                                 <MessageSquare className="w-8 h-8 text-gray-300" />
                             </div>
-                            <h3 className="text-lg font-semibold text-primary mb-2">No reviews yet</h3>
+                            <h3 className="text-lg font-semibold text-primary mb-2">{t('noReviews')}</h3>
                             <p className="text-third mb-6 max-w-md mx-auto">
-                                Be the first to review this product and help others make a decision.
+                                {t('beFirstToReview')}
                             </p>
-                            <Button variant="outline">Write a Review</Button>
+                            <Button variant="outline">{t('writeReview')}</Button>
                         </div>
                     ) : (
                         <>
@@ -134,7 +137,7 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
                                                     <h4 className="font-semibold text-primary">{review.author}</h4>
                                                     {review.verified && (
                                                         <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium">
-                                                            Verified Purchase
+                                                            {t('verifyPurchase')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -168,11 +171,11 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
                                         <div className="flex items-center gap-4">
                                             <button className="flex items-center gap-1.5 text-sm text-third hover:text-primary transition-colors group">
                                                 <ThumbsUp className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                                <span>Helpful ({review.likes})</span>
+                                                <span>{t('helpful', { count: review.likes })}</span>
                                             </button>
                                             <button className="flex items-center gap-1.5 text-sm text-third hover:text-primary transition-colors group">
                                                 <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                                <span>Comment</span>
+                                                <span>{t('comment')}</span>
                                             </button>
                                         </div>
                                     </div>
@@ -182,7 +185,7 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
                             {reviewCount > 5 && (
                                 <div className="pt-4 text-center">
                                     <Button variant="outline" className="min-w-[200px]">
-                                        Load More Reviews
+                                        {t('loadMoreReviews')}
                                     </Button>
                                 </div>
                             )}

@@ -77,7 +77,6 @@ function SearchPageContent() {
   const activeFiltersCount =
     filters.categories.length +
     filters.brands.length +
-    (filters.priceRange ? 1 : 0) +
     (filters.rating ? 1 : 0);
 
   return (
@@ -89,7 +88,7 @@ function SearchPageContent() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for products, brands, categories..."
+              placeholder={t('search.placeholder')}
               className="pl-12 pr-12 py-4 text-lg"
               icon={SearchIcon}
             />
@@ -110,12 +109,12 @@ function SearchPageContent() {
           <p className="text-center text-third mt-4">
             {searchResults.length > 0 ? (
               <>
-                Found <span className="font-semibold text-primary">{searchResults.length}</span> results for{" "}
+                {t('search.found')} <span className="font-semibold text-primary">{searchResults.length}</span> {t('search.resultsFor')}{" "}
                 <span className="font-semibold text-primary">&quot;{query}&quot;</span>
               </>
             ) : (
               <>
-                No results found for <span className="font-semibold text-primary">&quot;{query}&quot;</span>
+                {t('search.noResultsFor')} <span className="font-semibold text-primary">&quot;{query}&quot;</span>
               </>
             )}
           </p>
@@ -128,12 +127,12 @@ function SearchPageContent() {
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <SearchIcon className="w-12 h-12 text-third" />
           </div>
-          <h2 className="text-xl font-bold text-primary mb-2">Start Searching</h2>
+          <h2 className="text-xl font-bold text-primary mb-2">{t('search.startSearching')}</h2>
           <p className="text-third mb-8">
-            Enter a search term to find products, brands, and more
+            {t('search.startSearchingDesc')}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <span className="text-sm text-third">Popular searches:</span>
+            <span className="text-sm text-third">{t('search.popularSearches')}</span>
             {["Electronics", "Laptop", "Headphones", "Camera", "Watch"].map((term) => (
               <button
                 key={term}
@@ -160,7 +159,7 @@ function SearchPageContent() {
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <SlidersHorizontal className="w-4 h-4" />
-                Filters
+                {t('search.filters')}
                 {activeFiltersCount > 0 && (
                   <Badge variant="default" className="ml-2">
                     {activeFiltersCount}
@@ -170,7 +169,7 @@ function SearchPageContent() {
 
               {/* Results Count */}
               <span className="text-sm text-third">
-                {searchResults.length} products found
+                {t('search.resultsFound', { count: searchResults.length })}
               </span>
             </div>
 
@@ -178,14 +177,14 @@ function SearchPageContent() {
               {/* Sort */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-third hidden sm:inline">
-                  Sort by:
+                  {t('search.sortBy')}
                 </span>
                 <Select
                   value={sortBy}
                   onChange={setSortBy}
                   options={SORT_OPTIONS.map((option) => ({
                     value: option.value,
-                    label: option.label,
+                    label: t(option.label as any),
                   }))}
                   className="w-40"
                   size="sm"
@@ -225,7 +224,7 @@ function SearchPageContent() {
                 )}
               >
                 <div className="sticky top-0 flex items-center justify-between p-4 bg-white border-b border-gray-100">
-                  <h2 className="font-semibold text-lg">Filters</h2>
+                  <h2 className="font-semibold text-lg">{t('search.filters')}</h2>
                   <button
                     onClick={() => setShowFilters(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -252,7 +251,7 @@ function SearchPageContent() {
               ) : (
                 <div className="text-center py-16">
                   <p className="text-third">
-                    No products match your search criteria.
+                    {t('search.noProductsMatch')}
                   </p>
                   <Button
                     color="white"
@@ -265,7 +264,7 @@ function SearchPageContent() {
                       })
                     }
                   >
-                    Clear Filters
+                    {t('search.clearFilters')}
                   </Button>
                 </div>
               )}

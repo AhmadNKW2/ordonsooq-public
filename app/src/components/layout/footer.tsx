@@ -15,34 +15,35 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { IconButton, IconName } from "../ui/icon-button";
 import { PageWrapper } from "../ui";
+import { useTranslations } from "next-intl";
 
 const FEATURES = [
   {
-    title: "Free Shipping",
-    description: "On orders over $50",
+    title: "features.freeShipping",
+    description: "features.freeShippingDesc",
     Icon: Truck,
   },
   {
-    title: "Secure Payment",
-    description: "100% protected",
+    title: "features.securePayment",
+    description: "features.securePaymentDesc",
     Icon: ShieldCheck,
   },
   {
-    title: "24/7 Support",
-    description: "Dedicated support",
+    title: "features.support",
+    description: "features.supportDesc",
     Icon: HeadphonesIcon,
   },
   {
-    title: "Easy Returns",
-    description: "30-day returns",
+    title: "features.easyReturns",
+    description: "features.easyReturnsDesc",
     Icon: CreditCard,
   },
 ] as const;
 
 const FOOTER_COLUMNS = [
-  { title: "Shop", links: FOOTER_LINKS.shop },
-  { title: "Support", links: FOOTER_LINKS.support },
-  { title: "Company", links: FOOTER_LINKS.company },
+  { title: "footer.links.shop", links: FOOTER_LINKS.shop },
+  { title: "footer.links.support", links: FOOTER_LINKS.support },
+  { title: "footer.links.company", links: FOOTER_LINKS.company },
 ] as const;
 
 const SOCIAL_LINKS: { label: string; href: string; icon: IconName }[] = [
@@ -60,6 +61,7 @@ const PAYMENT_IMAGES = [
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const t = useTranslations();
 
   return (
     <footer className="bg-gray-900 text-third2">
@@ -74,8 +76,8 @@ export function Footer() {
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-white">{title}</h4>
-                    <p className="text-sm text-white/75">{description}</p>
+                    <h4 className="font-semibold text-white">{t(title)}</h4>
+                    <p className="text-sm text-white/75">{t(description)}</p>
                   </div>
                 </div>
               ))}
@@ -95,7 +97,7 @@ export function Footer() {
                 <Logo asLink={true} />
               </div>
               <p className="text-third2 max-w-md mb-8">
-                {SITE_CONFIG.description}
+                {t('footer.description')}
               </p>
               {/* Contact Info */}
               <div className="flex flex-col gap-3">
@@ -144,7 +146,7 @@ export function Footer() {
 
             {FOOTER_COLUMNS.map((column) => (
               <div key={column.title}>
-                <h3 className="text-white font-semibold mb-4">{column.title}</h3>
+                <h3 className="text-white font-semibold mb-4">{t(column.title)}</h3>
                 <ul className="flex flex-col gap-2">
                   {column.links.map((link) => (
                     <li key={link.href}>
@@ -152,7 +154,7 @@ export function Footer() {
                         href={link.href}
                         className="text-third2 hover:text-secondary transition-colors"
                       >
-                        {link.label}
+                        {t(link.label)}
                       </Link>
                     </li>
                   ))}
@@ -170,13 +172,13 @@ export function Footer() {
           <div className="container mx-auto py-5">
             <div className="flex flex-col md:flex-row items-center justify-between gap-5">
               <div>
-                <h3 className="text-white font-semibold text-lg mb-1">Subscribe to our Newsletter</h3>
-                <p className="text-third2 text-sm">Get updates on new products and exclusive offers</p>
+                <h3 className="text-white font-semibold text-lg mb-1">{t('footer.subscribeTitle')}</h3>
+                <p className="text-third2 text-sm">{t('footer.subscribeDesc')}</p>
               </div>
               <form className="flex gap-2 w-full md:w-auto">
                 <Input
                   type="email"
-                  placeholder="Enter your email..."
+                  placeholder={t('footer.emailPlaceholder')}
                   className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white"
                 />
 
@@ -184,7 +186,7 @@ export function Footer() {
                   type="submit"
                   backgroundColor="var(--color-secondary)"
                 >
-                  Subscribe
+                  {t('footer.subscribeButton')}
                 </Button>
               </form>
             </div>
@@ -206,7 +208,7 @@ export function Footer() {
                     href={link.href}
                     className="hover:text-secondary transition-colors"
                   >
-                    {link.label}
+                    {t(link.label)}
                   </Link>
                 ))}
               </div>

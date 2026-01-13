@@ -215,7 +215,7 @@ export default function ProductPage() {
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
-          { label: "Products", href: "/products" },
+          { label: t('nav.products'), href: "/products" },
           { label: product.category.name, href: `/categories/${product.category.slug}` },
           { label: product.name }
         ]}
@@ -237,7 +237,7 @@ export default function ProductPage() {
                   "shadow-lg hover:scale-110",
                   !isInWishlist(product.id) && "bg-white/90 backdrop-blur-sm"
                 )}
-                aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}
                 icon="heart"
                 shape="circle"
                 variant="wishlist"
@@ -250,10 +250,10 @@ export default function ProductPage() {
         <div className="lg:col-span-4 flex flex-col gap-5">
           {/* Badges */}
           <div className="flex items-center gap-2">
-            {product.isNew && <Badge variant="new">New Arrival</Badge>}
-            {discount > 0 && <Badge variant="sale">-{discount}% OFF</Badge>}
+            {product.isNew && <Badge variant="new">{t('product.new')}</Badge>}
+            {discount > 0 && <Badge variant="sale">{t('product.off', { percent: discount })}</Badge>}
             {currentStock <= 5 && currentStock > 0 && (
-              <Badge variant="warning">Only {currentStock} left!</Badge>
+              <Badge variant="warning">{t('product.onlyLeft', { count: currentStock })}</Badge>
             )}
           </div>
 
@@ -297,7 +297,7 @@ export default function ProductPage() {
               ))}
             </div>
             <span className="text-third">
-              {product.rating} ({product.reviewCount} reviews)
+              {product.rating} {t('product.reviewCount', { count: product.reviewCount })}
             </span>
           </div>
 
@@ -350,7 +350,7 @@ export default function ProductPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-third">Sold by</p>
+                  <p className="text-xs text-third">{t('product.soldBy')}</p>
                   <a
                     href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
                     className="font-semibold text-primary hover:text-secondary hover:translate-x-1.5 transition-all flex items-center gap-1"
@@ -362,14 +362,14 @@ export default function ProductPage() {
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="w-3 h-3 fill-secondary text-secondary" />
                       <span className="text-xs text-third">
-                        {product.vendor.rating} ({product.vendor.reviewCount} reviews)
+                        {product.vendor.rating} {t('product.reviewCount', { count: product.vendor.reviewCount })}
                       </span>
                       {(() => {
                         const positivePercent = Math.round((product.vendor.rating / 5) * 100);
                         if (!(positivePercent > 75)) return null;
                         return (
                           <span className="text-green-600 font-medium text-xs ml-1">
-                            ({positivePercent}% positive)
+                             {t('product.positiveFeedback', { percent: positivePercent })}
                           </span>
                         );
                       })()}
@@ -384,7 +384,7 @@ export default function ProductPage() {
           {product.otherSellers && product.otherSellers.length > 0 && (
             <Card className="p-4">
               <h3 className="font-semibold text-primary">
-                Check offers from {product.otherSellers.length} other sellers
+                {t('product.otherSellers', { count: product.otherSellers.length })}
               </h3>
               <div className="flex flex-col gap-3">
                 {product.otherSellers.map((seller) => (
@@ -402,7 +402,7 @@ export default function ProductPage() {
                     <div className="text-right">
                       <p className="font-bold text-primary">{formatPrice(seller.price)}</p>
                       <button className="text-xs text-primary hover:underline">
-                        View offer
+                        {t('product.viewOffer')}
                       </button>
                     </div>
                   </div>
@@ -414,11 +414,11 @@ export default function ProductPage() {
           {/* SKU & Tags */}
           <Card className="p-4">
             <div className="text-sm text-third flex flex-col gap-2">
-              <p>SKU: <span className="text-primary">{currentSku}</span></p>
-              <p>Category: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
+              <p>{t('product.sku')}: <span className="text-primary">{currentSku}</span></p>
+              <p>{t('product.category')}: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
               {product.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span>Tags:</span>
+                  <span>{t('product.tags')}:</span>
                   {product.tags.map((tag) => (
                     <a
                       key={tag}
@@ -430,7 +430,7 @@ export default function ProductPage() {
                   ))}
                 </div>
               )}
-                <p>Brand: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
+                <p>{t('product.brand')}: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
 
             </div>
           </Card>
@@ -447,25 +447,25 @@ export default function ProductPage() {
       <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
         <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
           <Truck className="w-6 h-6 text-primary" />
-          <span className="text-sm font-medium">Free Shipping</span>
-          <span className="text-xs text-third">Orders over $50</span>
+          <span className="text-sm font-medium">{t('product.features.freeShipping')}</span>
+          <span className="text-xs text-third">{t('product.features.freeShippingDesc')}</span>
         </div>
         <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
           <RotateCcw className="w-6 h-6 text-primary" />
-          <span className="text-sm font-medium">Easy Returns</span>
-          <span className="text-xs text-third">30-day policy</span>
+          <span className="text-sm font-medium">{t('product.features.returns')}</span>
+          <span className="text-xs text-third">{t('product.features.returnsDesc')}</span>
         </div>
         <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
           <Shield className="w-6 h-6 text-primary" />
-          <span className="text-sm font-medium">Secure</span>
-          <span className="text-xs text-third">Safe checkout</span>
+          <span className="text-sm font-medium">{t('product.features.secure')}</span>
+          <span className="text-xs text-third">{t('product.features.secureDesc')}</span>
         </div>
       </div>
 
       {/* Product Description Section */}
       {product.longDescription && (
         <section >
-          <h2 className="text-2xl font-bold text-primary mb-1">Product Description</h2>
+          <h2 className="text-2xl font-bold text-primary mb-1">{t('product.description')}</h2>
           <Card className="p-8">
             <div
               className="prose max-w-none prose-headings:text-primary prose-p:text-third prose-a:text-primary"
@@ -492,7 +492,7 @@ export default function ProductPage() {
       {/* Specifications Section */}
       {(product.attributes || product.dimensions) && (
         <section >
-          <h2 className="text-2xl font-bold text-primary mb-1 ">Specifications</h2>
+          <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
           <Card className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
               {product.attributes?.map((attr) => (
@@ -507,25 +507,25 @@ export default function ProductPage() {
                 <>
                   {product.dimensions.weight && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
-                      <span className="text-third font-medium">Weight</span>
+                      <span className="text-third font-medium">{t('product.dims.weight')}</span>
                       <span className="text-primary font-semibold">{product.dimensions.weight} kg</span>
                     </div>
                   )}
                   {product.dimensions.length && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
-                      <span className="text-third font-medium">Length</span>
+                      <span className="text-third font-medium">{t('product.dims.length')}</span>
                       <span className="text-primary font-semibold">{product.dimensions.length} cm</span>
                     </div>
                   )}
                   {product.dimensions.width && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
-                      <span className="text-third font-medium">Width</span>
+                      <span className="text-third font-medium">{t('product.dims.width')}</span>
                       <span className="text-primary font-semibold">{product.dimensions.width} cm</span>
                     </div>
                   )}
                   {product.dimensions.height && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
-                      <span className="text-third font-medium">Height</span>
+                      <span className="text-third font-medium">{t('product.dims.height')}</span>
                       <span className="text-primary font-semibold">{product.dimensions.height} cm</span>
                     </div>
                   )}
@@ -549,8 +549,8 @@ export default function ProductPage() {
         <section>
           <ProductsSection
             products={relatedProducts}
-            title="Related Products"
-            subtitle="You might also like these"
+            title={t('product.relatedProducts')}
+            subtitle={t('product.relatedProductsSubtitle')}
             viewAllHref={`/categories/${product.category.slug}`}
             showLoadMore={false}
             showNavArrows={true}

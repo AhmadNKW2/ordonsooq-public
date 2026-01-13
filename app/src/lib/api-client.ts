@@ -20,6 +20,7 @@ class ApiClient {
   private defaultHeaders: HeadersInit;
   private refreshInFlight: Promise<boolean> | null = null;
   private hardLogoutTriggered = false;
+  private accessToken: string | null = null;
 
   constructor(config?: ApiClientConfig) {
     this.baseUrl = config?.baseUrl || process.env.NEXT_PUBLIC_API_URL || '';
@@ -27,6 +28,26 @@ class ApiClient {
       'Content-Type': 'application/json',
       ...config?.headers,
     };
+    
+    // Attempt to hydrate token from localStorage if available
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('access_token');
+      if (stored) this.accessToken = stored;
+    }
+  }
+
+  public setAccessToken(token: string) {
+    this.accessToken = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('access_token', token);
+    }
+  }
+
+  public clearAccessToken() {
+    this.accessToken = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+    }
   }
 
   private async refreshSession(): Promise<boolean> {
@@ -64,13 +85,13 @@ class ApiClient {
     window.dispatchEvent(new CustomEvent("auth:logout"));
 
     // Avoid redirect loops if already on login.
-    const path = window.location?.pathname || "";
-    if (!path.includes("/login")) {
-      // Locale-aware login route (app has /[locale]/login)
-      const firstSeg = path.split("/").filter(Boolean)[0];
-      const localePrefix = firstSeg && firstSeg.length === 2 ? `/${firstSeg}` : "";
-      window.location.assign(`${localePrefix}/login`);
-    }
+    // const path = window.location?.pathname || "";
+    // if (!path.includes("/login")) {
+    //   // Locale-aware login route (app has /[locale]/login)
+    //   const firstSeg = path.split("/").filter(Boolean)[0];
+    //   const localePrefix = firstSeg && firstSeg.length === 2 ? `/${firstSeg}` : "";
+    //   window.location.assign(`${localePrefix}/login`);
+    // }
   }
 
   private async request<T>(
@@ -87,6 +108,7 @@ class ApiClient {
       credentials: "include",
       headers: {
         ...this.defaultHeaders,
+        ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
         ...options?.headers,
       },
     };

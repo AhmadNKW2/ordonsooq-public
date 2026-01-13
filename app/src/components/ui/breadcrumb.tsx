@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export interface BreadcrumbItem {
   label: string;
@@ -13,13 +14,15 @@ interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ items, className }: BreadcrumbProps) {
+  const t = useTranslations();
+  
   return (
     <nav className={cn("flex items-center text-sm text-muted-foreground", className)} aria-label="Breadcrumb">
       <ol className="flex items-center gap-2 flex-wrap">
         <li>
           <Link href="/" className="hover:text-primary flex items-center gap-1 transition-colors">
             <Home className="w-4 h-4" />
-            <span className="sr-only">Home</span>
+            <span className="sr-only">{t('common.home')}</span>
           </Link>
         </li>
         

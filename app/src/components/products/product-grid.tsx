@@ -1,5 +1,8 @@
+"use client";
+
 import { Product } from "@/types";
 import { ProductCard } from "./product-card";
+import { useTranslations } from "next-intl";
 
 interface ProductGridProps {
   products: Product[];
@@ -12,6 +15,7 @@ export function ProductGrid({
   columns = 4,
   showActions = true 
 }: ProductGridProps) {
+  const t = useTranslations("productGrid");
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
@@ -22,10 +26,8 @@ export function ProductGrid({
   if (products.length === 0) {
     return (
       <div className="text-center">
-        <p className="text-third text-lg">No products found</p>
-        <p className="text-third text-sm mt-2">
-          Try adjusting your search or filter criteria
-        </p>
+        <p className="text-third text-lg">{t("emptyTitle")}</p>
+        <p className="text-third text-sm mt-2">{t("emptySubtitle")}</p>
       </div>
     );
   }

@@ -11,7 +11,7 @@ import { PageWrapper } from "@/components/ui";
 
 export default function CategoriesPage() {
   const locale = useLocale() as Locale;
-  const t = useTranslations();
+  const t = useTranslations('categories');
   const { data, isLoading, error } = useRootCategories({ 
     status: 'active',
     limit: 50,
@@ -25,7 +25,7 @@ export default function CategoriesPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12">
-          <p className="text-secondary">Error loading categories. Please try again.</p>
+          <p className="text-secondary">{t('errorLoading')}</p>
         </div>
       </div>
     );
@@ -35,9 +35,9 @@ export default function CategoriesPage() {
     <PageWrapper className="container mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">Shop by Category</h1>
+        <h1 className="text-3xl font-bold text-primary mb-2">{t('shopByCategory')}</h1>
         <p className="text-third">
-          Browse our wide selection of categories to find what you need
+          {t('shopByCategoryDesc')}
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function CategoriesPage() {
         </div>
       ) : categories.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-third">No categories found.</p>
+          <p className="text-third">{t('noCategories')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -80,7 +80,7 @@ export default function CategoriesPage() {
                     </h3>
                     {category.productCount !== undefined && (
                       <p className="text-sm text-third opacity-80">
-                        {category.productCount} products
+                        {t('itemCount', { count: category.productCount })}
                       </p>
                     )}
                   </div>
@@ -89,7 +89,7 @@ export default function CategoriesPage() {
                 {/* Subcategories */}
                 {subcategories.length > 0 && (
                   <div className="p-4">
-                    <p className="text-sm font-medium text-primary mb-3">Popular in {category.name}</p>
+                    <p className="text-sm font-medium text-primary mb-3">{t('popularIn', { category: category.name })}</p>
                     <div className="flex flex-wrap gap-2">
                       {subcategories.slice(0, 4).map((sub) => (
                         <span
@@ -101,7 +101,7 @@ export default function CategoriesPage() {
                       ))}
                       {subcategories.length > 4 && (
                         <span className="px-3 py-1 text-primary text-sm">
-                          +{subcategories.length - 4} more
+                          {t('more', { count: subcategories.length - 4 })}
                         </span>
                       )}
                     </div>
