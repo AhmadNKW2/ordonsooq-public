@@ -15,7 +15,7 @@ export function Logo({ asLink = true, className }: LogoProps) {
       <div className="flex justify-center items-center bg-white h-9 w-9 rounded-full">
         <div className="h-7 w-7 rounded-full bg-white border-6 border-primary"></div>
       </div>
-      <span className="text-2xl text-white hidden sm:inline">rdonsooq</span>
+      <span className="text-2xl text-white inline">rdonsooq</span>
     </>
   );
 

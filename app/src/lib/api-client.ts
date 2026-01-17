@@ -60,12 +60,20 @@ class ApiClient {
           credentials: "include",
           headers: {
             ...this.defaultHeaders,
+            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
           },
         });
 
         if (!response.ok) return false;
 
-        // Backend sets new cookies via Set-Cookie. Body is optional.
+        // Try to parse the new token from valid JSON response
+        const data = await response.json().catch(() => null);
+        const newToken = data?.data?.access_token || data?.access_token;
+        
+        if (newToken) {
+          this.setAccessToken(newToken);
+        }
+
         return true;
       } catch {
         return false;

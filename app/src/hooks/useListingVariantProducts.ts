@@ -8,6 +8,8 @@ import type { Product, ProductVariant } from "@/types";
 import type { Product as ApiProduct, ProductDetail } from "@/types/api.types";
 
 function getVariantPrimaryImage(product: Product, variant: ProductVariant): string | undefined {
+  if (variant.image) return variant.image;
+
   const mainImage = product.images?.[0];
   const mediaAttribute = product.attributes?.find((a) => a.controlsMedia);
 
@@ -33,7 +35,7 @@ function toVariantCardProduct(base: Product, variant: ProductVariant): Product {
     price: variant.price,
     compareAtPrice: variant.compareAtPrice,
     stock: variant.stock,
-    images,
+    images: images || [], // Ensure images is never undefined
   };
 }
 
@@ -44,7 +46,12 @@ export function useListingVariantProducts(apiProducts: ApiProduct[] | undefined,
 
   const variantProductIds = useMemo(() => {
     return baseProducts
-      .filter((p) => (p.variantIds?.length ?? 0) > 0 || (p.variants?.length ?? 0) > 0 || !!p.hasVariants)
+      .filter((p) => {
+        // If we already have variants populated (from the listing response), don't fetch details
+        if ((p.variants?.length ?? 0) > 0) return false;
+
+        return (p.variantIds?.length ?? 0) > 0 || !!p.hasVariants;
+      })
       .map((p) => parseInt(String(p.id), 10))
       .filter((id) => Number.isFinite(id) && id > 0);
   }, [baseProducts]);
@@ -72,19 +79,29 @@ export function useListingVariantProducts(apiProducts: ApiProduct[] | undefined,
 
     return baseProducts.flatMap((p) => {
       const id = parseInt(String(p.id), 10);
-      const ReliesOnVariants = (p.variantIds?.length ?? 0) > 0 || (p.variants?.length ?? 0) > 0 || !!p.hasVariants;
+      const hasVariants = (p.variants?.length ?? 0) > 0;
+      
+      // If we have variants from listing, use them. 
+      // If not, check if we fetched details.
+      if (hasVariants) {
+        const variants = p.variants || [];
+        const inStockVariants = variants.filter((v) => (v.stock ?? 0) > 0);
+        if (inStockVariants.length === 0) return [p];
+        return inStockVariants.map((v) => toVariantCardProduct(p, v));
+      }
 
+      const ReliesOnVariants = (p.variantIds?.length ?? 0) > 0 || !!p.hasVariants;
       if (!ReliesOnVariants) return [p];
 
       const detail = detailById.get(id);
-      if (!detail) return [];
+      if (!detail) return [p];
 
       const full = transformProduct(detail, locale);
       const variants = full.variants || [];
 
       // Only show available (in-stock) variants as individual cards
       const inStockVariants = variants.filter((v) => (v.stock ?? 0) > 0);
-      if (inStockVariants.length === 0) return [];
+      if (inStockVariants.length === 0) return [p];
 
       return inStockVariants.map((v) => toVariantCardProduct(full, v));
     });

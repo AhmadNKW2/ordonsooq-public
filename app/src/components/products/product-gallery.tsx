@@ -9,15 +9,38 @@ interface ProductGalleryProps {
   productName: string;
   wishlistButton?: React.ReactNode;
   initialIndex?: number;
+  showThumbnails?: boolean;
+  showMainImage?: boolean;
+  selectedIndex?: number;
+  onIndexChange?: (index: number) => void;
 }
 
 export function ProductGallery({
   images,
   productName,
   wishlistButton,
-  initialIndex = 0
+  initialIndex = 0,
+  showThumbnails = true,
+  showMainImage = true,
+  selectedIndex: controlledIndex,
+  onIndexChange
 }: ProductGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const [internalIndex, setInternalIndex] = useState(initialIndex);
+  const selectedIndex = controlledIndex !== undefined ? controlledIndex : internalIndex;
+
+  const setSelectedIndex = useCallback((index: number | ((prev: number) => number)) => {
+    if (onIndexChange) {
+      if (typeof index === 'function') {
+        const next = index(selectedIndex);
+        onIndexChange(next);
+      } else {
+        onIndexChange(index);
+      }
+    } else {
+      setInternalIndex(index);
+    }
+  }, [onIndexChange, selectedIndex]);
+
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -78,6 +101,34 @@ export function ProductGallery({
     setShowZoomModal(true);
   }, []);
 
+  // Touch handling for swipe
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNext();
+    }
+    if (isRightSwipe) {
+      handlePrevious();
+    }
+  };
+
   const handleScroll = useCallback(() => {
     const container = thumbnailContainerRef.current;
     if (!container) return;
@@ -131,12 +182,29 @@ export function ProductGallery({
 
   return (
     <>
-      <div className="flex gap-2 w-full h-150">
-        {/* Thumbnails - Left Side */}
-        {images.length > 1 && (
-          <div className="relative shrink-0 group h-full">
+      <div className={cn(
+        "relative", 
+        // Mobile: Flex column-reverse (Thumbnails below image) OR Grid.
+        // Requested: Main Image THEN Thumbnails.
+        // Current: grid-cols-1 (which order?)
+        // Default Grid: Child 1, Child 2.
+        // Child 1 is Thumbnails Div. Child 2 is Main Image.
+        // So on Mobile (grid-cols-1), Thumbnails appear ABOVE Main Image.
+        // FIX: We need specific order classes or Flex col-reverse structure for mobile.
+        // Using flex for mobile to control order easily.
+        showThumbnails && showMainImage ? "flex flex-col md:flex-row gap-6 h-auto md:h-[500px]" : "block"
+      )}>
+        {/* Thumbnails (Left side on Desktop, Bottom on Mobile) */}
+        {showThumbnails && images.length > 1 && (
+          <div className={cn(
+            "relative group shrink-0",
+            // Desktop: Side bar
+            showMainImage && "md:w-20 md:h-full",
+            // Mobile: Row below image
+            showMainImage && "w-full h-20 order-2 md:order-1" 
+          )}>
             {/* Scroll Up Arrow */}
-            {showScrollUp && (
+            {showScrollUp && showMainImage && (
               <button
                 onClick={() => scrollThumbnails('up')}
                 className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
@@ -152,7 +220,15 @@ export function ProductGallery({
             <div
               ref={thumbnailContainerRef}
               onScroll={handleScroll}
-              className="flex flex-col gap-4 h-full overflow-y-auto scrollbar-hide px-2 py-2"
+              className={cn(
+                "overflow-y-auto scrollbar-hide px-2 py-2",
+                // Desktop: Vertical column
+                showMainImage ? "md:flex md:flex-col md:gap-4 md:h-full" : "",
+                // Mobile: Horizontal row
+                showMainImage ? "flex flex-row gap-3 overflow-x-auto w-full h-full" : "",
+                // Standalone thumbnails
+                !showMainImage && "flex flex-row gap-2 overflow-x-auto w-full",
+              )}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {images.map((image, index) => (
@@ -160,7 +236,11 @@ export function ProductGallery({
                   key={index}
                   onClick={() => handleThumbnailClick(index)}
                   className={cn(
-                    "relative w-15 h-15 rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
+                    "relative rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
+                    // Desktop size
+                    showMainImage ? "md:w-15 md:h-15" : "w-16 h-16",
+                    // Mobile size
+                    showMainImage ? "w-16 h-16" : "",
                     selectedIndex === index
                       ? "ring-blue-500 ring-offset-2 opacity-100 scale-105"
                       : "opacity-60 ring-gray-300 hover:opacity-100 hover:ring-blue-300 hover:scale-105"
@@ -177,7 +257,7 @@ export function ProductGallery({
             </div>
 
             {/* Scroll Down Arrow */}
-            {showScrollDown && (
+            {showScrollDown && showMainImage && (
               <button
                 onClick={() => scrollThumbnails('down')}
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
@@ -192,9 +272,20 @@ export function ProductGallery({
         )}
 
         {/* Main Image */}
+        {showMainImage && (
         <div
-          className="relative flex-1 aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in"
+          className={cn(
+            "relative flex-1 aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in",
+            // Desktop order
+            "md:order-2",
+            // Mobile: Main Image FIRST (order-1)
+            "order-1",
+            "w-full h-full"
+          )}
           onClick={handleImageClick}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
           {/* Image Container with Animation */}
           <div className="relative w-full h-full">
@@ -241,7 +332,7 @@ export function ProductGallery({
               <button
                 onClick={handlePrevious}
                 disabled={isAnimating}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Previous image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +342,7 @@ export function ProductGallery({
               <button
                 onClick={handleNext}
                 disabled={isAnimating}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 flex items-center justify-center hover:bg-white hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Next image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,6 +357,7 @@ export function ProductGallery({
             {selectedIndex + 1} / {images.length}
           </div>
         </div>
+        )}
       </div>
 
       {/* Zoom Modal */}

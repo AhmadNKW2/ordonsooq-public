@@ -84,8 +84,8 @@ export default function HomePage() {
   const { products: newProductsRaw, isLoading: newVariantsLoading } =
     useListingVariantProducts(newData?.data, locale);
 
-  const featuredProducts = featuredProductsRaw.filter((p) => p.stock > 0);
-  const newProducts = newProductsRaw.filter((p) => p.stock > 0);
+  const featuredProducts = featuredProductsRaw;
+  const newProducts = newProductsRaw;
 
   return (
     <PageWrapper>

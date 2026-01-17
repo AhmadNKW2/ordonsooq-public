@@ -63,6 +63,13 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   
   if ('media' in apiProduct && apiProduct.media && apiProduct.media.length > 0) {
     const mediaItems = [...apiProduct.media]
+      .map((m: any) => {
+        // Normalizing media object to have url property
+        if (m?.image?.url) {
+          return { ...m, url: m.image.url };
+        }
+        return m;
+      })
       .filter((m: any) => m?.url && typeof m.url === 'string' && m.url.trim() !== '');
 
     const groupKeyOf = (m: any) => {
@@ -195,6 +202,30 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       images = [primaryImageUrl];
     }
   }
+
+  // If we still have no images, check variants for media
+  if (images.length === 0 && 'variants' in apiProduct && Array.isArray(apiProduct.variants)) {
+    const variantImages = new Set<string>();
+    
+    (apiProduct.variants as any[]).forEach((v: any) => {
+      if (v.media) {
+        // v.media could be array or object
+        if (Array.isArray(v.media)) {
+          v.media.forEach((m: any) => {
+            const url = m?.url ?? m?.image?.url;
+            if (url && typeof url === 'string') variantImages.add(url);
+          });
+        } else if (typeof v.media === 'object') {
+          const url = v.media.url ?? v.media.image?.url;
+          if (url && typeof url === 'string') variantImages.add(url);
+        }
+      }
+    });
+    
+    if (variantImages.size > 0) {
+      images = Array.from(variantImages);
+    }
+  }
   
   // Ensure we always have at least the placeholder
   if (images.length === 0) {
@@ -203,7 +234,11 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
 
   let actualPrice = 0;
   let compareAtPrice: number | undefined = undefined;
-  const allPrices = (apiProduct as any).prices || [];
+  
+  // Handle price being an array (new API) or prices array (old API)
+  const allPrices = Array.isArray((apiProduct as any).price) 
+    ? (apiProduct as any).price 
+    : ((apiProduct as any).prices || []);
 
   const getPriceValues = (entry: any) => {
     const regPrice = entry?.price ? parseFloat(String(entry.price)) : 0;
@@ -216,8 +251,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     return { actual, compare };
   };
 
-  // Check for direct price properties first (new API structure)
-  if ('price' in apiProduct && apiProduct.price) {
+  // Check for direct price properties first (scalar value)
+  if ('price' in apiProduct && apiProduct.price && !Array.isArray(apiProduct.price)) {
     const price = parseFloat(String(apiProduct.price));
     const salePrice = apiProduct.sale_price ? parseFloat(String(apiProduct.sale_price)) : null;
 
@@ -229,15 +264,24 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     }
   } else {
     // Find default price (one without group values or just the first one)
-    const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0) || allPrices[0];
+    const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0 || (Array.isArray(p.attributes) && p.attributes.length === 0)) || allPrices[0];
     
-    const result = getPriceValues(defaultPriceEntry);
-    actualPrice = result.actual;
-    compareAtPrice = result.compare;
+    if (defaultPriceEntry) {
+      const result = getPriceValues(defaultPriceEntry);
+      actualPrice = result.actual;
+      compareAtPrice = result.compare;
+    }
   }
 
   // Helper to get variant price
   const getVariantPriceData = (v: any) => {
+    // 0. Check for direct price object on variant (newest API structure)
+    if (v.price && typeof v.price === 'object' && !Array.isArray(v.price)) {
+      if ('price' in v.price) {
+         return getPriceValues(v.price);
+      }
+    }
+
     // 1. Check if variant has specific prices array (unlikely in this API but for safety)
     if (v.prices && v.prices.length > 0) {
       return getPriceValues(v.prices[0]);
@@ -262,13 +306,39 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       }
     }
 
+    // 2b. Find matching price in product.prices based on attributes (when combinations is missing)
+    if (allPrices.length > 0 && v.attributes && Array.isArray(v.attributes)) {
+      const matchingPrice = allPrices.find((p: any) => {
+        // API might return p.attributes or p.groupValues to define the criteria
+        const criteria = p.groupValues || p.attributes;
+        if (!criteria || !Array.isArray(criteria) || criteria.length === 0) return false;
+        
+        // Check if ALL criteria in price entry match the variant's attributes
+        return criteria.every((crit: any) => 
+           (v.attributes as any[]).some((attr: any) => {
+              // crit might be { attribute_id, attribute_value_id or value_id }
+              // attr is { attribute_id, value_id }
+              const critValId = crit.attribute_value_id ?? crit.value_id;
+              return attr.attribute_id == crit.attribute_id && attr.value_id == critValId;
+           })
+        );
+      });
+
+      if (matchingPrice) {
+        return getPriceValues(matchingPrice);
+      }
+    }
+
     // Fallback to product price
     return { actual: actualPrice, compare: compareAtPrice };
   };
 
   // Get stock - handle both array format and direct properties
   let stockQuantity = 0;
+  let hasExplicitStock = false;
+
   if (Array.isArray(apiProduct.stock) && apiProduct.stock.length > 0) {
+    hasExplicitStock = true;
     // Sum up quantities from all stock entries
     stockQuantity = apiProduct.stock.reduce((total: number, s: any) => {
       const qty = s?.quantity ?? 0;
@@ -276,8 +346,28 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       return total + Math.max(0, qty - reserved);
     }, 0);
   } else if (apiProduct.stock && typeof apiProduct.stock === 'object') {
+    hasExplicitStock = true;
     const stockData = apiProduct.stock as { total_quantity?: number; available?: number; quantity?: number; in_stock?: boolean };
     stockQuantity = stockData?.total_quantity ?? stockData?.available ?? stockData?.quantity ?? 0;
+  }
+  
+  // If no product-level stock but variants exist, sum up variant quantities
+  if (!hasExplicitStock && 'variants' in apiProduct && Array.isArray(apiProduct.variants) && apiProduct.variants.length > 0) {
+    const variantStock = (apiProduct.variants as any[]).reduce((total: number, v: any) => {
+      const qty = typeof v.quantity === 'number' ? v.quantity : 0;
+      return total + qty;
+    }, 0);
+    
+    if (variantStock > 0) {
+      stockQuantity = variantStock;
+      hasExplicitStock = true;
+    }
+  }
+
+  // If no explicit stock info found and calculated stock is 0, assume product is in stock (default to 100)
+  // This handles cases where the API doesn't return stock information for active products
+  if (!hasExplicitStock && stockQuantity === 0) {
+    stockQuantity = 100;
   }
 
   // Handle brand data from ProductDetail
@@ -366,6 +456,41 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
                 valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
               }
             });
+          } else if (v.attributes && Array.isArray(v.attributes)) {
+             // Handle attributes array format (v.attributes instead of v.combinations)
+             v.attributes.forEach((attrData: any) => {
+                if (attrData.attribute_id === attr.attribute_id) {
+                    const val = getLocalizedText(attrData.value_name_en || attrData.value_name, attrData.value_name_ar, locale);
+                    
+                    let mediaUrl = attrData.image; 
+                    const valueId = attrData.value_id;
+                    
+                    // Fallback to check product media if attrData.image is missing
+                    if (!mediaUrl && valueId && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
+                       const matchingMedia = (apiProduct.media as any[])
+                         .filter(m => 
+                           m?.media_group?.groupValues?.some((gv: any) => 
+                             gv.attribute_id === attr.attribute_id && gv.attribute_value_id === valueId
+                           )
+                         )
+                         .sort((a: any, b: any) => {
+                            // Sort logic...
+                           const aGroupPrimary = a?.is_group_primary ? 1 : 0;
+                           const bGroupPrimary = b?.is_group_primary ? 1 : 0;
+                           if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
+                           return (a?.sort_order ?? 0) - (b?.sort_order ?? 0);
+                         });
+
+                       if (matchingMedia.length > 0) mediaUrl = matchingMedia[0].url;
+                    }
+
+                    const meta = attrData.color_code;
+                    // For attributes array, sort order might not be available, default to 0
+                    const sortOrder = 0;
+                    
+                    valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
+                }
+             });
           }
         });
       }
@@ -394,6 +519,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
 
   const mappedVariants = 'variants' in apiProduct && apiProduct.variants
     ? apiProduct.variants.map(v => {
+        let variantImage: string | undefined = undefined;
         const variantAttributes: Record<string, string> = {};
         if (v.combinations && Array.isArray(v.combinations)) {
           v.combinations.forEach((c: any) => {
@@ -403,16 +529,39 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
               variantAttributes[attrName] = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
             }
           });
+        } else if (v.attributes && Array.isArray(v.attributes)) {
+           v.attributes.forEach((attr: any) => {
+             const attrName = locale === 'ar' ? (attr.attribute_name_ar || attr.attribute_name) : attr.attribute_name;
+             const valName = locale === 'ar' 
+               ? (attr.value_name_ar || attr.value_name) 
+               : (attr.value_name_en || attr.value_name || attr.value_name_ar);
+
+             if (attrName && valName) {
+               variantAttributes[attrName] = valName;
+             }
+          });
         }
+        if (v.media) {
+           // v.media could be array or object
+           if (Array.isArray(v.media) && v.media.length > 0) {
+             const m = v.media[0];
+             variantImage = m?.url ?? m?.image?.url;
+           } else if (typeof v.media === 'object') {
+             const m = v.media as any;
+             variantImage = m.url ?? m.image?.url;
+           }
+        }
+
         const priceData = getVariantPriceData(v);
         return {
           id: String(v.id),
           name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
           price: priceData.actual,
           compareAtPrice: priceData.compare,
-          stock: variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0),
+          stock: typeof v.quantity === 'number' ? v.quantity : (variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0)),
           sku: v.sku || '',
           attributes: variantAttributes,
+          image: variantImage,
         };
       })
     : undefined;

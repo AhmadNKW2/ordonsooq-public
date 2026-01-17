@@ -175,3 +175,22 @@ export const STORAGE_KEYS = {
   user: "ordonsooq-user",
   theme: "ordonsooq-theme",
 };
+
+export const JORDAN_CITIES = [
+  { value: 'Amman', label: 'Amman' },
+  { value: 'Zarqa', label: 'Zarqa' },
+  { value: 'Irbid', label: 'Irbid' },
+  { value: 'Russeifa', label: 'Russeifa' },
+  { value: 'Sahab', label: 'Sahab' },
+  { value: 'Ramtha', label: 'Ramtha' },
+  { value: 'Aqaba', label: 'Aqaba' },
+  { value: 'Mafraq', label: 'Mafraq' },
+  { value: 'Madaba', label: 'Madaba' },
+  { value: 'Salt', label: 'Salt' },
+  { value: 'Jerash', label: 'Jerash' },
+  { value: 'Ain Al-Basha', label: 'Ain Al-Basha' },
+  { value: 'Karak', label: 'Karak' },
+  { value: 'Tafilah', label: 'Tafilah' },
+  { value: 'Ma\'an', label: 'Ma\'an' },
+  { value: 'Ajloun', label: 'Ajloun' }
+];

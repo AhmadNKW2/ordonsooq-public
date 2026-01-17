@@ -5,11 +5,12 @@ import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { IconButton } from "@/components/ui/icon-button";
-import { Select } from "@/components/ui";
+import { Select, type SelectOption } from "@/components/ui";
 import { LanguageSwitcher } from "./language-switcher";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { User, Package, LogOut, Wallet, Heart, MapPin, UserCog } from "lucide-react";
 
 interface HeaderActionsProps {
   onSearchToggle: () => void;
@@ -30,10 +31,15 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
     router.push('/');
   };
 
-  const profileOptions = [
-    { value: "/profile", label: t("myProfile") },
-    { value: "/orders", label: t("myOrders") },
-    { value: "logout", label: t("logout") }
+  const profileOptions: SelectOption[] = [
+    { value: "/profile", label: t("myProfile"), icon: User },
+    { value: "/profile/wallet", label: t("myWallet"), icon: Wallet },
+    { value: "/profile/wishlist", label: t("myWishlist"), icon: Heart },
+    { value: "/profile/addresses", label: t("addresses"), icon: MapPin },
+    { value: "/orders", label: t("myOrders"), icon: Package },
+    { value: "/profile/account", label: t("accountDetails"), icon: UserCog },
+    { type: 'divider', value: 'divider', label: 'divider' },
+    { value: "logout", label: t("logout"), icon: LogOut }
   ];
 
   const handleProfileChange = (value: string) => {
@@ -46,22 +52,24 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
 
   return (
     <div className="flex items-center gap-3">
-      {/* Mobile Search Toggle */}
-      <IconButton
+      {/* Mobile Search Toggle - Hidden since search bar is always visible */}
+      {/* <IconButton
         variant="header"
         className="md:hidden"
         onClick={onSearchToggle}
         aria-label="Toggle search"
         icon="search"
-      />
+      /> */}
 
-      {/* Language Switcher */}
-      <LanguageSwitcher />
+      {/* Language Switcher - Desktop Only */}
+      <div className="hidden lg:block">
+        <LanguageSwitcher />
+      </div>
 
-      <div className="w-px h-8 bg-white/10"></div>
+      <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
 
-      {/* Wishlist */}
-      <Link href="/wishlist" className="hidden sm:flex">
+      {/* Wishlist - Always visible on mobile to replace language */}
+      <Link href="/profile/wishlist" className="flex">
         <IconButton
           variant="header"
           badge={wishlistItems.length}
@@ -70,7 +78,7 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
         />
       </Link>
 
-      <div className="w-px h-8 bg-white/10"></div>
+      <div className="w-px h-8 bg-white/10 hidden sm:block"></div>
 
       {/* User Account */}
       <div className="relative hidden sm:block">
@@ -80,7 +88,9 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
             value=""
             onChange={handleProfileChange}
             placeholder={`${t("hi")} ${user?.firstName}`}
-            className="w-48"
+            className="w-30"
+            variant="header"
+            icon={User}
           />
         ) : (
           <div className="flex items-center gap-1 cursor-pointer" onClick={() => setIsAuthModalOpen(true)}

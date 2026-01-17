@@ -17,7 +17,7 @@ interface CartContextType {
   isOpen: boolean;
   totalItems: number;
   totalAmount: number;
-  addItem: (product: Product, quantity: number, variantId?: number | string) => void;
+  addItem: (product: Product, quantity: number, variantId?: number | string, options?: { openSidebar?: boolean; onSuccess?: () => void }) => void;
   removeItem: (itemId: number) => void;
   updateQuantity: (itemId: number, quantity: number) => void;
   clearCart: () => void;
@@ -147,7 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const addItemMutation = useMutation({
-    mutationFn: (data: { product: Product; quantity: number; variantId?: number | string }) => {
+    mutationFn: (data: { product: Product; quantity: number; variantId?: number | string; options?: { openSidebar?: boolean; onSuccess?: () => void } }) => {
       const vId = data.variantId
         ? typeof data.variantId === "string"
           ? parseInt(data.variantId, 10)
@@ -187,7 +187,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setIsOpen(true);
+      if (variables.options?.openSidebar !== false) {
+        setIsOpen(true);
+      }
+      
+      variables.options?.onSuccess?.();
     },
   });
 
@@ -236,9 +240,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const addItem = useCallback(
-    (product: Product, quantity: number, variantId?: number | string) => {
+    (product: Product, quantity: number, variantId?: number | string, options?: { openSidebar?: boolean; onSuccess?: () => void }) => {
       if (!isAuthenticated) return;
-      addItemMutation.mutate({ product, quantity, variantId });
+      addItemMutation.mutate({ product, quantity, variantId, options });
     },
     [addItemMutation, isAuthenticated]
   );

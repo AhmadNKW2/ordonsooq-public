@@ -52,8 +52,15 @@ export type ProductVendor = {
 
 export type ProductMedia = {
   id: number;
-  url: string;
-  is_primary: boolean;
+  url?: string;
+  image?: {
+    id: number;
+    url: string;
+    type?: string;
+    alt_text?: string | null;
+  };
+  attributes?: any[];
+  is_primary?: boolean;
   mediaGroup?: Record<string, unknown>;
 };
 
@@ -66,7 +73,9 @@ export type ProductStock = {
 
 export type ProductPrice = {
   id?: number;
-  price?: number;
+  price?: number | string;
+  sale_price?: number | string | null;
+  attributes?: any[];
   currency?: string;
   priceGroup?: Record<string, unknown>;
 };
@@ -84,8 +93,13 @@ export type ProductVariant = {
   name_ar?: string;
   sku?: string;
   prices?: ProductPrice[];
+  price?: ProductPrice | { price: string; sale_price?: string | null };
   stock?: ProductStock[];
+  quantity?: number;
   combinations?: any[];
+  attributes?: any[];
+  is_active?: boolean;
+  media?: ProductMedia | { url: string; [key: string]: any } | ProductMedia[];
 };
 
 export type ProductAttribute = {
@@ -111,18 +125,22 @@ export type Product = {
   long_description_ar: string | null;
   status: Status;
   visible: boolean;
-  average_rating: number;
+  average_rating: number | string;
   total_ratings: number;
   created_at: string;
   updated_at: string;
-  category: ProductCategory | null;
+  category?: ProductCategory | null;
   categories: ProductCategory[];
   vendor: ProductVendor | null;
-  primary_image: string | { url: string } | null;
-  stock: ProductStock | { total_quantity: number; in_stock: boolean } | null;
+  brand_id?: number | null;
+  brand?: any;
+  primary_image?: string | { url: string } | null;
+  stock?: ProductStock | { total_quantity: number; in_stock: boolean } | null;
   prices?: ProductPrice[];
-  price?: string;
+  price?: ProductPrice[] | string;
   sale_price?: string | null;
+  media?: ProductMedia[];
+  variants?: ProductVariant[];
 };
 
 export type ProductDetail = Product & {

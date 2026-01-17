@@ -46,7 +46,7 @@ export function SearchBar({ className, variant = "desktop", isOpen = true }: Sea
   return (
     <form 
       onSubmit={handleSearch}
-      className={cn("hidden md:flex items-center flex-1 max-w-md mx-6", className)}
+      className={cn("flex items-center flex-1 max-w-md mx-2 md:mx-6", className)}
     >
       <div className="relative w-full">
         <Input

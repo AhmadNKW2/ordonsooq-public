@@ -128,6 +128,13 @@ export default function ProductPage() {
     return 0;
   }, [product, selectedOptions]);
 
+  // Sync internal gallery state
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  useEffect(() => {
+    setActiveImageIndex(selectedImageIndex);
+  }, [selectedImageIndex]);
+
+
   const handleOptionChange = (attributeName: string, value: string) => {
     if (!product?.variants) {
       setSelectedOptions(prev => ({ ...prev, [attributeName]: value }));
@@ -221,14 +228,115 @@ export default function ProductPage() {
         ]}
       />
 
+      {/* Product Details - Mobile Layout (Brand -> Name -> Rating -> Wishlist -> Main Image -> Thumbnails -> Price) */}
+      <div className="lg:hidden flex flex-col gap-4 mb-8">
+        {/* Header Info */}
+        <div className="flex flex-col gap-2">
+          {product.brand && (
+            <div className="flex items-center gap-2">
+              {product.brand.logo && (
+                <Image
+                  src={product.brand.logo}
+                  alt={product.brand.name}
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              )}
+              <p className="text-sm text-primary font-medium">{product.brand.name}</p>
+            </div>
+          )}
+
+          <div className="flex justify-between items-start gap-4">
+            <h1 className="text-2xl font-bold text-primary flex-1">
+              {product.name}
+              {selectedOptionsSummary ? (
+                <span className="font-medium text-third text-sm">
+                  {" "}({selectedOptionsSummary})
+                </span>
+              ) : null}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Star size={16} className="fill-secondary text-secondary mb-1" />
+            <span className="text-sm font-bold text-primary">{product.rating || 0}</span>
+            {
+              product.reviewCount > 0 &&
+              <span className="text-sm text-gray-500">
+                ({product.reviewCount || 0})
+              </span>
+            }
+          </div>
+        </div>
+
+        {/* Gallery (Main Image -> Thumbnails) */}
+        <ProductGallery
+          images={product.images}
+          productName={product.name}
+          initialIndex={selectedImageIndex}
+          selectedIndex={activeImageIndex}
+          onIndexChange={setActiveImageIndex}
+          showThumbnails={true}
+          showMainImage={true}
+          wishlistButton={
+            <IconButton
+              onClick={() => toggleItem(product)}
+              isActive={isInWishlist(product.id)}
+              className={cn(
+                "shadow-sm shrink-0",
+                !isInWishlist(product.id) && "bg-white/80 backdrop-blur-sm"
+              )}
+              aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+              icon="heart"
+              shape="circle"
+              variant="wishlist"
+            />
+          }
+        />
+
+        {/* Price & Actions */}
+        <div className="flex flex-col gap-5 mt-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-2xl font-bold text-primary">
+              {formatPrice(currentPrice, "JOD", locale)}
+            </p>
+            {currentCompareAtPrice && currentCompareAtPrice > currentPrice && (
+              <>
+                <p className="text-lg text-gray-400 line-through">
+                  {formatPrice(currentCompareAtPrice, "JOD", locale)}
+                </p>
+                <Badge variant="sale">
+                  {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, "JOD", locale) })}
+                </Badge>
+              </>
+            )}
+          </div>
+
+          <ProductOptions
+            attributes={product.attributes || []}
+            selectedOptions={selectedOptions}
+            onChange={handleOptionChange}
+            isOptionDisabled={isOptionDisabled}
+          />
+
+          <ProductActions product={product} selectedVariant={selectedVariant} />
+        </div>
+      </div>
+
       {/* Product Details - 3 Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid lg:grid-cols-12 gap-8 mb-16">
         {/* Gallery - Column 1 */}
         <div className="lg:col-span-5">
           <ProductGallery
             images={product.images}
             productName={product.name}
             initialIndex={selectedImageIndex}
+            selectedIndex={activeImageIndex}
+            onIndexChange={setActiveImageIndex}
+            showThumbnails={true}
+            showMainImage={true}
             wishlistButton={
               <IconButton
                 onClick={() => toggleItem(product)}
@@ -284,20 +392,11 @@ export default function ProductPage() {
           </div>
 
           {/* Rating */}
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${i < Math.floor(product.rating)
-                    ? "fill-secondary text-secondary"
-                    : "fill-gray-200 text-third"
-                    }`}
-                />
-              ))}
-            </div>
-            <span className="text-third">
-              {product.rating} {t('product.reviewCount', { count: product.reviewCount })}
+          <div className="flex items-center gap-2">
+            <Star size={20} className="fill-warning text-warning" />
+            <span className="text-base font-bold text-primary">{product.rating || 0}</span>
+            <span className="text-sm text-gray-500">
+              ({product.reviewCount || 0})
             </span>
           </div>
 
@@ -360,7 +459,7 @@ export default function ProductPage() {
                   </a>
                   {product.vendor && (
                     <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3 h-3 fill-secondary text-secondary" />
+                      <Star className="w-3 h-3 text-secondary text-secondary" />
                       <span className="text-xs text-third">
                         {product.vendor.rating} {t('product.reviewCount', { count: product.vendor.reviewCount })}
                       </span>
@@ -369,7 +468,7 @@ export default function ProductPage() {
                         if (!(positivePercent > 75)) return null;
                         return (
                           <span className="text-green-600 font-medium text-xs ml-1">
-                             {t('product.positiveFeedback', { percent: positivePercent })}
+                            {t('product.positiveFeedback', { percent: positivePercent })}
                           </span>
                         );
                       })()}
@@ -430,7 +529,7 @@ export default function ProductPage() {
                   ))}
                 </div>
               )}
-                <p>{t('product.brand')}: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
+              <p>{t('product.brand')}: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
 
             </div>
           </Card>
@@ -443,6 +542,8 @@ export default function ProductPage() {
 
 
       </div>
+
+
       {/* Features */}
       <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
         <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">

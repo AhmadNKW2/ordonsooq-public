@@ -16,8 +16,12 @@ export function ProductActions({ product, selectedVariant }: ProductActionsProps
   const router = useRouter();
 
   const handleCheckout = () => {
-    addItem(product, 1, selectedVariant?.id);
-    router.push("/checkout");
+    addItem(product, 1, selectedVariant?.id, {
+      openSidebar: false,
+      onSuccess: () => {
+        router.push("/checkout");
+      }
+    });
   };
 
   const maxStock = selectedVariant ? selectedVariant.stock : product.stock;

@@ -10,8 +10,19 @@ export const addressService = {
     return response as Address[];
   },
   
-  // Placeholder for future implementation matching RESTful patterns if needed
-  // create: (data: any) => apiClient.post('/addresses', data),
-  // update: (id: string, data: any) => apiClient.put(`/addresses/${id}`, data),
-  // delete: (id: string) => apiClient.delete(`/addresses/${id}`),
+  create: async (data: Partial<Address>): Promise<Address> => {
+    const response = await apiClient.post<{data: Address} | Address>('/addresses', data);
+    if ('data' in response) return response.data;
+    return response as Address;
+  },
+  
+  update: async (id: string, data: Partial<Address>): Promise<Address> => {
+    const response = await apiClient.put<{data: Address} | Address>(`/addresses/${id}`, data);
+    if ('data' in response) return response.data;
+    return response as Address;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/addresses/${id}`);
+  },
 };

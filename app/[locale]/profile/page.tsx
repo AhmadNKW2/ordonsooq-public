@@ -114,8 +114,8 @@ export default function ProfilePage() {
           <p className="text-gray-500 font-medium mb-5">{t('defaultAddress')}</p>
           {defaultAddress ? (
             <div className="text-sm text-gray-700">
-              <p className="font-medium text-gray-900">{defaultAddress.firstName} {defaultAddress.lastName}</p>
-              <p className="line-clamp-2">{defaultAddress.address1}, {defaultAddress.city}</p>
+              <p className="font-medium text-gray-900">{defaultAddress.city}, {defaultAddress.country}</p>
+              <p className="line-clamp-2">{defaultAddress.address1}</p>
             </div>
           ) : (
              <p className="text-xs text-gray-400 italic">{t('noDefaultAddress')}</p>

@@ -339,7 +339,7 @@ export default function CheckoutPage() {
             {/* Items Preview */}
             <div className="flex flex-col gap-3 pb-5 border-b border-gray-100">
               {items.slice(0, 3).map((item) => (
-                <div key={item.product.id} className="flex items-center gap-3">
+                <div key={item.id} className="flex items-center gap-3">
                   <div className="relative w-12 h-12 shrink-0">
                     <Image
                       src={item.product.image || '/placeholder.svg'}

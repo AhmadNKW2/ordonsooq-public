@@ -1,10 +1,11 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { Heart, User } from "lucide-react";
+import { Heart, User, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
 import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "./language-switcher";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -49,6 +50,13 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           <User size={20} />
           {t('nav.myAccount')}
         </Link>
+        
+        <div className="px-4 py-3 flex items-center gap-3">
+             <Globe size={20} className="text-primary" />
+             <div className="flex-1">
+                 <LanguageSwitcher />
+             </div>
+        </div>
       </nav>
     </div>
   );

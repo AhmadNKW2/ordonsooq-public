@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, INPUT_STYLES } from "@/lib/utils";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -34,13 +34,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={id}
             type={type}
             className={cn(
-              "flex h-11 w-full rounded-lg border bg-white px-4 py-2 text-sm transition-all duration-300",
-              "placeholder:text-third",
-              "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-              "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50",
+              INPUT_STYLES.base,
+              INPUT_STYLES.padding,
+              "h-11",
               error
-                ? "border-danger focus:ring-danger"
-                : "border-gray-200 hover:border-gray-300",
+                ? INPUT_STYLES.error
+                : INPUT_STYLES.default,
               Icon && iconPosition === "left" && "pl-10",
               Icon && iconPosition === "right" && "pr-10",
               className

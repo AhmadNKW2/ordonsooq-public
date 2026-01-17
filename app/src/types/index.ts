@@ -84,6 +84,7 @@ export interface ProductVariant {
   stock: number;
   sku: string;
   attributes: Record<string, string>;
+  image?: string;
 }
 
 // Category Types
@@ -297,17 +298,18 @@ export interface AuthResponse {
 export interface Address {
   id: string;
   type: 'shipping' | 'billing';
-  firstName: string;
-  lastName: string;
   company?: string;
   address1: string;
   address2?: string;
+  buildingNumber?: string;
+  floorNumber?: string;
   city: string;
   state: string;
-  postalCode: string;
+  postalCode?: string;
   country: string;
   phone: string;
   isDefault: boolean;
+  notes?: string;
 }
 
 // Order Types
