@@ -303,6 +303,7 @@
     "sale": "Sale",
     "positiveFeedback": "({percent}% positive)",
     "otherSellers": "Check offers from {count} other sellers",
+    "save": "Save {amount}",
     "off": "-{percent}% OFF",
     "onlyLeft": "Only {count} left!",
     "reviewCount": "({count} reviews)",

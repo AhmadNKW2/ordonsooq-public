@@ -26,7 +26,7 @@ export function ProductCard({
   const t = useTranslations();
   const router = useRouter();
   const { addItem, items, openCart } = useCart();
-  const { toggleItem, isInWishlist } = useWishlist();
+  const { toggleItem, isInWishlist, isItemLoading } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
 
   const hasVariants =
@@ -39,7 +39,11 @@ export function ProductCard({
     ? calculateDiscount(product.compareAtPrice, product.price)
     : 0;
 
-  const inWishlist = isInWishlist(product.id);
+  const wishlistVariantId = product.defaultVariantId != null && String(product.defaultVariantId).length > 0
+    ? Number(product.defaultVariantId)
+    : null;
+
+  const inWishlist = isInWishlist(product.id, wishlistVariantId);
 
   const variantAttributesSummary = useMemo(() => {
     if (!product.defaultVariantId || !product.variants || product.variants.length === 0) return "";
@@ -47,10 +51,12 @@ export function ProductCard({
     const variant = product.variants.find((v) => String(v.id) === String(product.defaultVariantId));
     if (!variant) return "";
 
-    const orderedNames = product.attributes?.map((a) => a.name) ?? Object.keys(variant.attributes);
-    const parts = orderedNames
-      .map((name) => {
-        const value = variant.attributes[name];
+    const ordered = product.attributes?.map((a) => ({ id: a.id, name: a.name }))
+      ?? Object.keys(variant.attributes).map((id) => ({ id, name: id }));
+
+    const parts = ordered
+      .map(({ id, name }) => {
+        const value = variant.attributes[id];
         return value ? `${name}: ${value}` : null;
       })
       .filter(Boolean) as string[];
@@ -58,6 +64,8 @@ export function ProductCard({
     return parts.join(", ");
   }, [product.defaultVariantId, product.variants, product.attributes]);
 
+  // Use next-intl navigation objects to keep locale stable.
+  // Also include variant id so the product details page can auto-select options.
   const productHref = product.defaultVariantId
     ? `/products/${product.slug}?variant=${product.defaultVariantId}`
     : `/products/${product.slug}`;
@@ -86,7 +94,7 @@ export function ProductCard({
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleItem(product);
+    toggleItem(product, wishlistVariantId);
   };
 
   if (variant === "horizontal") {
@@ -201,6 +209,7 @@ export function ProductCard({
               size="sm"
               variant="wishlist"
               isActive={inWishlist}
+              isLoading={isItemLoading(product.id, wishlistVariantId)}
               aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
               icon="heart"
               shape="circle"

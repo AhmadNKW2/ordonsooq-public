@@ -85,6 +85,8 @@ export interface ProductVariant {
   sku: string;
   attributes: Record<string, string>;
   image?: string;
+  weight?: string;
+  dimensions?: ProductDimensions;
 }
 
 // Category Types
@@ -257,6 +259,7 @@ export interface WishlistProduct {
 export interface WishlistItem {
   id: number;
   product_id: number;
+  variant_id: number | null;
   created_at: string;
   product: WishlistProduct;
 }

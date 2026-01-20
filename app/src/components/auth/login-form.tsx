@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Lock, Mail, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -25,6 +26,7 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
   const t = useTranslations("auth");
   const { login, isLoggingIn } = useAuth();
+  const { syncGuestCart } = useCart();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -38,6 +40,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
   const onSubmit = async (data: LoginFormValues) => {
     setError(null);
     try {
+      await syncGuestCart();
       await login(data);
       if (onSuccess) onSuccess();
     } catch (error: any) {

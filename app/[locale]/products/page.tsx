@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { SlidersHorizontal, Grid3X3, Grid2X2, List, X } from "lucide-react";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
-import { Button, Badge, Card, Select, PageWrapper } from "@/components/ui";
+import { Button, Badge, Card, Select } from "@/components/ui";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProducts, useCategories, useListingVariantProducts } from "@/hooks";
 import { transformCategories, type Locale } from "@/lib/transformers";
@@ -78,7 +78,7 @@ export default function ProductsPage() {
     (filters.rating ? 1 : 0);
 
   return (
-    <PageWrapper>
+    <>
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary mb-2">{t('allProductsTitle')}</h1>
@@ -262,6 +262,6 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
-    </PageWrapper>
+    </>
   );
 }

@@ -14,7 +14,6 @@ import { Logo } from "./header-components";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { IconButton, IconName } from "../ui/icon-button";
-import { PageWrapper } from "../ui";
 import { useTranslations } from "next-intl";
 
 const FEATURES = [
@@ -62,13 +61,13 @@ const PAYMENT_IMAGES = [
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const t = useTranslations();
+  const containerClass = "container mx-auto py-5 px-4 md:px-12";
 
   return (
     <footer className="bg-gray-900 text-third2">
       {/* Features Bar */}
-      <PageWrapper>
-        <div>
-          <div className="container mx-auto py-5">
+      
+        <div className={containerClass}>
             <div className="grid grid-cols-2 md:grid-cols-none md:grid-flow-col justify-between gap-5">
               {FEATURES.map(({ title, description, Icon }) => (
                 <div key={title} className="flex items-center gap-5">
@@ -83,13 +82,12 @@ export function Footer() {
               ))}
             </div>
           </div>
-        </div>
 
         {/* Divider */}
         <div className="h-px bg-gray-800"></div>
 
         {/* Main Footer */}
-        <div className="container mx-auto py-5">
+        <div className={containerClass}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Brand Column */}
             <div className="lg:col-span-2">
@@ -149,7 +147,7 @@ export function Footer() {
                 <h3 className="text-white font-semibold mb-4">{t(column.title)}</h3>
                 <ul className="flex flex-col gap-2">
                   {column.links.map((link) => (
-                    <li key={link.href}>
+                    <li key={link.label}>
                       <Link
                         href={link.href}
                         className="text-third2 hover:text-secondary transition-colors"
@@ -169,7 +167,7 @@ export function Footer() {
 
         {/* Newsletter */}
         <div>
-          <div className="container mx-auto py-5">
+          <div className={containerClass}>
             <div className="flex flex-col md:flex-row items-center justify-between gap-5">
               <div>
                 <h3 className="text-white font-semibold text-lg mb-1">{t('footer.subscribeTitle')}</h3>
@@ -198,13 +196,13 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div>
-          <div className="container mx-auto py-5">
+          <div className={containerClass}>
             <div className="flex flex-col md:flex-row items-center justify-between gap-5 text-sm text-third2">
               <p>© {currentYear} {SITE_CONFIG.name}. All rights reserved.</p>
               <div className="flex items-center gap-5">
                 {FOOTER_LINKS.legal.map((link) => (
                   <Link
-                    key={link.href}
+                    key={link.label}
                     href={link.href}
                     className="hover:text-secondary transition-colors"
                   >
@@ -228,7 +226,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-      </ PageWrapper>
+      
     </footer>
   );
 }

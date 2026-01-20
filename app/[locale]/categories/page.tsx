@@ -7,7 +7,6 @@ import { ArrowRight } from "lucide-react";
 import { useRootCategories } from "@/hooks";
 import { transformCategories, type Locale } from "@/lib/transformers";
 import { CategoryCardSkeleton } from "@/components/ui/skeleton";
-import { PageWrapper } from "@/components/ui";
 
 export default function CategoriesPage() {
   const locale = useLocale() as Locale;
@@ -32,7 +31,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <PageWrapper className="container mx-auto">
+    <>
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-primary mb-2">{t('shopByCategory')}</h1>
@@ -117,6 +116,6 @@ export default function CategoriesPage() {
           })}
         </div>
       )}
-    </PageWrapper>
+    </>
   );
 }

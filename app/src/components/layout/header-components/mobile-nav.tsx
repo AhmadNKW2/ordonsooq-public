@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Heart, User, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -14,6 +17,19 @@ interface MobileNavProps {
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const t = useTranslations();
+  const { isAuthenticated } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      onClose();
+      setIsAuthModalOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
 
   return (
     <div
@@ -25,7 +41,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       <nav className="p-4 flex flex-col gap-1">
         {NAV_LINKS.map((link) => (
           <Link
-            key={link.href}
+            key={link.label}
             href={link.href}
             className="block px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
             onClick={onClose}
@@ -35,15 +51,15 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         ))}
         <hr className="my-4" />
         <Link
-          href="/wishlist"
+          href="/profile/wishlist"
           className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
-          onClick={onClose}
+          onClick={handleWishlistClick}
         >
           <Heart size={20} />
           {t('nav.wishlist')}
         </Link>
         <Link
-          href="/account"
+          href="/profile/account"
           className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
           onClick={onClose}
         >
@@ -58,6 +74,11 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
              </div>
         </div>
       </nav>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }

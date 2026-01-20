@@ -3,6 +3,7 @@ import { Figtree, Almarai } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { Header, Footer, Providers } from "@/components";
+import { PageWrapper } from "@/components/ui/page-wrapper";
 import { SITE_CONFIG } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import "./../globals.css";
@@ -76,7 +77,9 @@ export default async function RootLayout({ children, params }: Props) {
           <Providers>
             <Header />
             <main className="flex-1">
-              {children}
+              <PageWrapper>
+                {children}
+              </PageWrapper>
             </main>
             <Footer />
           </Providers>

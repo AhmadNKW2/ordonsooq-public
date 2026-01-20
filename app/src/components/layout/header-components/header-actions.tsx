@@ -69,7 +69,16 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
       <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
 
       {/* Wishlist - Always visible on mobile to replace language */}
-      <Link href="/profile/wishlist" className="flex">
+      <Link 
+        href="/profile/wishlist" 
+        className="flex"
+        onClick={(e) => {
+          if (!isAuthenticated) {
+            e.preventDefault();
+            setIsAuthModalOpen(true);
+          }
+        }}
+      >
         <IconButton
           variant="header"
           badge={wishlistItems.length}
@@ -88,9 +97,8 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
             value=""
             onChange={handleProfileChange}
             placeholder={`${t("hi")} ${user?.firstName}`}
-            className="w-30"
+            className="w-auto min-w-[140px]"
             variant="header"
-            icon={User}
           />
         ) : (
           <div className="flex items-center gap-1 cursor-pointer" onClick={() => setIsAuthModalOpen(true)}

@@ -12,7 +12,6 @@ import type { ShopByItem } from "@/components/home/shop-by-section";
 import { useProducts, useHome, useListingVariantProducts } from "@/hooks";
 import { transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
-import { PageWrapper } from "@/components/ui";
 
 export default function HomePage() {
   const locale = useLocale() as Locale;
@@ -66,7 +65,7 @@ export default function HomePage() {
 
   const brandItems: ShopByItem[] = brands.map((brand) => ({
     id: brand.id,
-    href: `/brands/${brand.slug}`,
+    href: `#`, // was: /brands/${brand.slug}
     name: brand.name,
     image: brand.logo,
     isCategory: false,
@@ -74,7 +73,7 @@ export default function HomePage() {
 
   const vendorItems: ShopByItem[] = vendors.map((vendor) => ({
     id: vendor.id,
-    href: `/vendors/${vendor.slug}`,
+    href: `#`, // was: /vendors/${vendor.slug}
     name: vendor.name,
     image: vendor.logo,
     isCategory: false,
@@ -88,9 +87,9 @@ export default function HomePage() {
   const newProducts = newProductsRaw;
 
   return (
-    <PageWrapper>
+    <>
       {/* Hero Banner */}
-      <section className="container mx-auto pt-0">
+      <section className="pt-0">
         {homeLoading ? (
           <Skeleton className="h-100 md:h-125 rounded-2xl" />
         ) : (
@@ -99,7 +98,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Carousel */}
-      <section className="container mx-auto">
+      <section>
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -117,7 +116,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <section className="container mx-auto">
+      <section>
         {featuredLoading || featuredVariantsLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -130,12 +129,12 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto">
+      <section>
         <FeaturesSection />
       </section>
 
       {/* Brands Section */}
-      <section className="container mx-auto">
+      <section>
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -147,13 +146,13 @@ export default function HomePage() {
             title={t('shopByBrand')}
             subtitle={t('trustedBrands')}
               items={brandItems}
-              viewAllHref="/brands"
+              viewAllHref="#"
           />
         )}
       </section>
 
       {/* Vendors Section */}
-      <section className="container mx-auto">
+      <section>
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -165,13 +164,13 @@ export default function HomePage() {
             title={t('shopByVendor')}
             subtitle={t('trustedVendors')}
               items={vendorItems}
-              viewAllHref="/vendors"
+              viewAllHref="#"
           />
         )}
       </section>
 
       {/* New Arrivals */}
-      <section className="container mx-auto">
+      <section>
         {newLoading || newVariantsLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
@@ -185,10 +184,10 @@ export default function HomePage() {
       </section>
 
       {/* Newsletter */}
-      <section className="container mx-auto">
+      <section>
         <Newsletter />
       </section>
-    </PageWrapper>
+    </>
   );
 }
 

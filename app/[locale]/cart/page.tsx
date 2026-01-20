@@ -3,7 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight } from "lucide-react";
-import { Button, Card, PageWrapper, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
+import { Button, Card, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { formatPrice, calculateDiscount, cn, slugify } from "@/lib/utils";
@@ -46,7 +46,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-16">
+      <div className="px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingBag className="w-12 h-12 text-third" />
@@ -67,7 +67,7 @@ export default function CartPage() {
   }
 
   return (
-    <PageWrapper className="container mx-auto">
+    <>
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -184,8 +184,8 @@ export default function CartPage() {
                           {/* Wishlist Button */}
                           <IconButton
                             icon="heart"
-                            onClick={() => toggleItem(item.product)}
-                            isActive={isInWishlist(item.product.id)}
+                            onClick={() => toggleItem(item.product, item.variant_id ?? null)}
+                            isActive={isInWishlist(item.product.id, item.variant_id ?? null)}
                             variant="wishlist"
                             className="border border-gray-200"
                             aria-label="Add to wishlist"
@@ -286,6 +286,6 @@ export default function CartPage() {
           </Card>
         </div>
       </div>
-    </PageWrapper>
+    </>
   );
 }

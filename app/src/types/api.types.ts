@@ -100,6 +100,12 @@ export type ProductVariant = {
   attributes?: any[];
   is_active?: boolean;
   media?: ProductMedia | { url: string; [key: string]: any } | ProductMedia[];
+  weight?: number | string;
+  dimensions?: {
+    length?: number | string;
+    width?: number | string;
+    height?: number | string;
+  };
 };
 
 export type ProductAttribute = {

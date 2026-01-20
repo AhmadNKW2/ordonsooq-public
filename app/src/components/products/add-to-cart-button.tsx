@@ -27,6 +27,8 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { items, addItem, updateQuantity } = useCart();
+
+  const MIN_LOADING_MS = 650;
   
   const hasCustomColor = !!color;
 
@@ -52,19 +54,34 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
   const handleClick = async () => {
     if (status !== "idle" || product.stock === 0 || disabled) return;
 
-    updateStatus("loading");
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    
-    // Add to cart
-    addItem(product, 1, variant?.id);
-    
-    updateStatus("success");
-    if (onAddToCart) onAddToCart(1);
+    const startedAt = Date.now();
+    const minLoadingMs = MIN_LOADING_MS;
+    const successHoldMs = 750;
 
-    setTimeout(() => {
-      updateStatus("idle");
-      onAnimationEnd?.();
-    }, 750);
+    updateStatus("loading");
+
+    // Add to cart, and only transition UI/open sidebar after SUCCESS response.
+    addItem(product, 1, variant?.id, {
+      // Avoid opening sidebar before the server/cart cache updates.
+      openSidebar: false,
+      onSuccess: () => {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, minLoadingMs - elapsed);
+
+        window.setTimeout(() => {
+          updateStatus("success");
+          onAddToCart?.(1);
+
+          window.setTimeout(() => {
+            updateStatus("idle");
+            onAnimationEnd?.();
+          }, successHoldMs);
+        }, remaining);
+      },
+      onError: () => {
+        updateStatus("idle");
+      },
+    });
   };
 
   // Show QuantitySelector if item is in cart AND we are not in the middle of an animation
@@ -172,7 +189,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
               className="absolute bottom-0 left-0 top-0 bg-white/20"
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
-              transition={{ duration: 0.6, ease: "linear" }}
+              transition={{ duration: MIN_LOADING_MS / 1000, ease: "linear" }}
             />
           )}
         </motion.button>

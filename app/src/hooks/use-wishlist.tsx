@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useContext, ReactNode, useCallback } from "react";
-import { WishlistItem, WishlistResponse, Product, CartProduct, WishlistProduct } from "@/types";
+import { WishlistItem, WishlistResponse, WishlistUpdateResponse, Product, CartProduct, WishlistProduct } from "@/types";
 import { useAuth } from "./useAuth";
 import { wishlistService } from "@/services/wishlist.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthModal } from "@/contexts/auth-modal-context";
 
 type WishlistInputProduct = Product | CartProduct | WishlistProduct;
 
@@ -12,17 +13,19 @@ interface WishlistContextType {
   items: WishlistItem[];
   isLoading: boolean;
   total: number;
-  addItem: (product: WishlistInputProduct) => void;
-  removeItem: (productId: number) => void;
+  addItem: (product: WishlistInputProduct, variantId?: number | null) => void;
+  removeItem: (productId: number, variantId?: number | null) => void;
   clearWishlist: () => void;
-  isInWishlist: (productId: string | number) => boolean;
-  toggleItem: (product: WishlistInputProduct) => void;
+  isInWishlist: (productId: string | number, variantId?: string | number | null) => boolean;
+  isItemLoading: (productId: string | number, variantId?: string | number | null) => boolean;
+  toggleItem: (product: WishlistInputProduct, variantId?: number | null) => void;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -35,44 +38,106 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const wishlistTotal = data?.total || 0;
 
   const addItemMutation = useMutation({
-    mutationFn: (productId: number) => wishlistService.addItem(productId),
-    onSuccess: (response, productId) => {
-      // Optimistic update logic based on user request "take the response if it returns the list or add it locally"
-      // Assuming response matches WishlistResponse or contains it
-      if (response && response.data && Array.isArray(response.data)) {
-         queryClient.setQueryData(['wishlist'], response);
-      } else if (response && response.items && response.items.data) {
-          queryClient.setQueryData(['wishlist'], response.items);
-      } else {
-         // Fallback: Add locally
-         const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
-         // We can't perfectly reconstruct WishlistItem without backend response (e.g. id, created_at)
-         // So we invalidate if we can't update.
-         // But user INSISTED on no refetch.
-         // So we probably assume response *contains* the needed info or we fake it.
-         // If response is the new item:
-         if (prevData) {
-            // Need to know what response looks like if it's a single item.
-            // Assuming it might be the Item object.
-             queryClient.invalidateQueries({ queryKey: ['wishlist'] }); // Safety fallback if structure unknown
-         }
+    mutationFn: (vars: { productId: number; variantId?: number | null }) => 
+        wishlistService.addItem(vars.productId, vars.variantId),
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: ['wishlist'] });
+      const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
+
+      if (prevData) {
+        const optimisticItem: WishlistItem = {
+          id: -Date.now(),
+          product_id: vars.productId,
+          variant_id: vars.variantId ?? null,
+          created_at: new Date().toISOString(),
+          product: {
+            id: vars.productId,
+            name_en: "",
+            name_ar: "",
+            price: 0,
+            image: "",
+          },
+        };
+
+        queryClient.setQueryData<WishlistResponse>(['wishlist'], {
+          ...prevData,
+          data: [optimisticItem, ...prevData.data],
+          total: prevData.total + 1,
+        });
+      }
+
+      return { prevData };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prevData) {
+        queryClient.setQueryData(['wishlist'], ctx.prevData);
       }
     },
-    onError: () => {
+    onSuccess: (payload: WishlistUpdateResponse) => {
+      // IMPORTANT: Do not refetch (no GET /wishlist). Use server response instead.
+      const items = payload?.items;
+      if (items?.data) {
+        queryClient.setQueryData<WishlistResponse>(['wishlist'], {
+          data: items.data,
+          total: items.total ?? items.data.length,
+        });
+        return;
+      }
+
+      // Fallback: if backend shape changes, at least ensure consistency.
+      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
     },
   });
 
   const removeItemMutation = useMutation({
-    mutationFn: (productId: number) => wishlistService.removeItem(productId),
-    onSuccess: (response, productId) => {
-        // Optimistic Remove
+    mutationFn: (vars: { productId: number; variantId?: number | null }) => 
+        wishlistService.removeItem(vars.productId, vars.variantId),
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: ['wishlist'] });
+      const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
+
+      if (prevData) {
+        const newItems = prevData.data.filter((item) => {
+             if (vars.variantId != null) {
+               return !(item.product_id === vars.productId && item.variant_id === vars.variantId);
+             }
+             return !(item.product_id === vars.productId && item.variant_id == null);
+         });
+         
+        queryClient.setQueryData<WishlistResponse>(['wishlist'], {
+          ...prevData,
+          data: newItems,
+          total: newItems.length,
+        });
+      }
+
+      return { prevData };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prevData) {
+        queryClient.setQueryData(['wishlist'], ctx.prevData);
+      }
+    },
+    onSuccess: (response, vars) => {
+       // We already optimistically removed it, but let's confirm with server data if available
+       // or just invalidate to be safe if strictly required, but usually optimistic is enough for delete.
+       // However, since we might want to sync total count accurately from server if possible,
+       // we can stick with the optimistic result or update from response if response structure allows.
+       
+       // For now, let's trust the optimistic update was correct, 
+       // but strictly ensuring the cache is correct via the logic below which basically repeats the filter
+       // or just lets the query settle.
+       
+       // Note: reusing the logic from previous simplified version ensuring the cache is definitely correct:
        const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
        if (prevData) {
-         // Backend expects product ID in /wishlist/:id
-         // Keep a small compatibility fallback if some caller still passes the wishlist row id.
-         const newItems = prevData.data.filter(
-           (item) => item.product_id !== productId && item.id !== productId
-         );
+         const newItems = prevData.data.filter((item) => {
+             // Handle optimistic temporary IDs if necessary, though usually we filter by product_id/variant_id
+             if (vars.variantId != null) {
+               return !(item.product_id === vars.productId && item.variant_id === vars.variantId);
+             }
+             return !(item.product_id === vars.productId && item.variant_id == null);
+         });
          queryClient.setQueryData(['wishlist'], {
              ...prevData,
              data: newItems,
@@ -80,8 +145,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
          });
        }
     },
-    onError: () => {
-    }
   });
 
   const clearMutation = useMutation({
@@ -91,48 +154,33 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const addItem = useCallback((product: WishlistInputProduct) => {
+  const isInWishlist = useCallback((productId: string | number, variantId?: string | number | null) => {
+      const pId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+      const vId = variantId != null
+        ? (typeof variantId === 'string' ? parseInt(variantId, 10) : variantId)
+        : null;
+
+      return wishlistItems.some(item => {
+          if (vId != null) return item.product_id === pId && item.variant_id === vId;
+          return item.product_id === pId && item.variant_id == null;
+      });
+  }, [wishlistItems]);
+
+  const addItem = useCallback((product: WishlistInputProduct, variantId?: number | null) => {
     if (!isAuthenticated) {
+        openAuthModal();
         return;
     }
-    
-    // Convert ID to number if string
     const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
     
-    const exists = wishlistItems.some(item => item.product_id === productId);
-    if (exists) {
-        return;
-    }
+    if (isInWishlist(productId, variantId)) return;
 
-    addItemMutation.mutate(productId, {
-        onSuccess: (response) => {
-            // Handle single item return if that's what backend sends
-             if (!response?.data && !response?.items?.data) {
-                 const prevData = queryClient.getQueryData<WishlistResponse>(['wishlist']);
-                 if (prevData) {
-                     // Check if we need to convert product structure to WishlistProduct
-                     // Ideally we should but for now just casting/spreading
-                     const newItem: WishlistItem = {
-                         id: response.id || Date.now(),
-                         product_id: productId,
-                         created_at: new Date().toISOString(),
-                         product: product as any 
-                     };
-                     queryClient.setQueryData(['wishlist'], {
-                         ...prevData,
-                         data: [...prevData.data, newItem],
-                         total: prevData.total + 1
-                     });
-                 }
-             }
-        }
-    });
+    addItemMutation.mutate({ productId, variantId });
+  }, [isAuthenticated, openAuthModal, isInWishlist, addItemMutation]);
 
-  }, [addItemMutation, isAuthenticated, wishlistItems, queryClient]);
-
-    const removeItem = useCallback((productId: number) => {
+    const removeItem = useCallback((productId: number, variantId?: number | null) => {
      if (!isAuthenticated) return;
-      removeItemMutation.mutate(productId);
+      removeItemMutation.mutate({ productId, variantId });
   }, [removeItemMutation, isAuthenticated]);
 
   const clearWishlist = useCallback(() => {
@@ -140,19 +188,36 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     clearMutation.mutate();
   }, [clearMutation, isAuthenticated]);
 
-  const isInWishlist = useCallback((productId: string | number) => {
-    const id = typeof productId === 'string' ? parseInt(productId, 10) : productId;
-    return wishlistItems.some((item) => item.product_id === id);
-  }, [wishlistItems]);
-
-  const toggleItem = useCallback((product: WishlistInputProduct) => {
-    const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
-    if (isInWishlist(productId)) {
-      removeItem(productId);
-    } else {
-      addItem(product);
+  const toggleItem = useCallback((product: WishlistInputProduct, variantId?: number | null) => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
     }
-  }, [isInWishlist, wishlistItems, removeItem, addItem]);
+    const productId = typeof product.id === 'string' ? parseInt(product.id, 10) : product.id;
+    
+    if (isInWishlist(productId, variantId)) {
+      removeItem(productId, variantId);
+    } else {
+      addItem(product, variantId);
+    }
+  }, [isInWishlist, removeItem, addItem, isAuthenticated, openAuthModal]);
+
+  const isItemLoading = useCallback((productId: string | number, variantId?: string | number | null) => {
+    const pId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+    const vId = variantId != null
+      ? (typeof variantId === 'string' ? parseInt(variantId, 10) : variantId)
+      : null; // Explicit null if undefined
+
+    const isAdding = addItemMutation.isPending && 
+      addItemMutation.variables?.productId === pId && 
+      (addItemMutation.variables?.variantId ?? null) === vId;
+      
+    const isRemoving = removeItemMutation.isPending &&
+      removeItemMutation.variables?.productId === pId &&
+      (removeItemMutation.variables?.variantId ?? null) === vId;
+
+      return isAdding || isRemoving;
+  }, [addItemMutation.isPending, addItemMutation.variables, removeItemMutation.isPending, removeItemMutation.variables]);
 
   return (
     <WishlistContext.Provider
@@ -164,6 +229,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         removeItem,
         clearWishlist,
         isInWishlist,
+        isItemLoading,
         toggleItem,
       }}
     >

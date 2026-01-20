@@ -41,7 +41,7 @@ export function FeaturesSection() {
 
   return (
     <section className="bg-gray-50 rounded-r1">
-      <div className="container mx-auto p-4">
+      <div className="p-4">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
           {features.map((feature, index) => (
             <div

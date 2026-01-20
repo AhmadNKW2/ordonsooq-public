@@ -74,13 +74,13 @@ export function NavigationBar() {
     }
   };
 
-  const updateIndicator = useCallback((href: string | null) => {
-    if (!href || !navRef.current) {
+  const updateIndicator = useCallback((label: string | null) => {
+    if (!label || !navRef.current) {
       setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
       return;
     }
 
-    const navItem = navItemsRef.current.get(href);
+    const navItem = navItemsRef.current.get(label);
     if (navItem) {
       const navRect = navRef.current.getBoundingClientRect();
       const itemRect = navItem.getBoundingClientRect();
@@ -92,19 +92,19 @@ export function NavigationBar() {
     }
   }, []);
 
-  const handleMouseEnter = useCallback((href: string) => {
+  const handleMouseEnter = useCallback((link: { label: string, href: string }) => {
     clearTimeouts();
-    setHoveredLink(href);
-    updateIndicator(href);
+    setHoveredLink(link.label);
+    updateIndicator(link.label);
     
     // Only set activeDropdown if this link has a menu
-    if (MEGA_MENU_CONTENT[href]) {
-      setActiveDropdown(href);
+    if (MEGA_MENU_CONTENT[link.href]) {
+      setActiveDropdown(link.href);
     } else {
       // Immediately close mega menu when hovering on links without mega menu
       setActiveDropdown(null);
     }
-  }, [updateIndicator]);
+  }, [updateIndicator, MEGA_MENU_CONTENT]);
 
   const handleMouseLeave = useCallback(() => {
     clearTimeouts();
@@ -145,7 +145,7 @@ export function NavigationBar() {
       onMouseLeave={handleMouseLeave}
     >
       <div 
-        className="container mx-auto px-4"
+        className="container mx-auto px-4 md:px-12"
         onMouseEnter={handleWrapperMouseEnter}
       >
         <nav 
@@ -166,19 +166,19 @@ export function NavigationBar() {
 
           {NAV_LINKS.map((link) => (
             <div
-              key={link.href}
+              key={link.label}
               ref={(el) => {
-                if (el) navItemsRef.current.set(link.href, el);
+                if (el) navItemsRef.current.set(link.label, el);
               }}
               className="relative z-10"
-              onMouseEnter={() => handleMouseEnter(link.href)}
+              onMouseEnter={() => handleMouseEnter(link)}
             >
               <Link
                 href={link.href}
                 onClick={handleLinkClick}
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-300",
-                  (activeDropdown === link.href || hoveredLink === link.href)
+                  (activeDropdown === link.href || hoveredLink === link.label)
                     ? "text-primary" 
                     : "text-third hover:text-primary"
                 )}

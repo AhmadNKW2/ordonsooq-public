@@ -12,7 +12,8 @@ import {
   Twitter, 
   Instagram, 
   Youtube,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 
 const ICONS = {
@@ -42,6 +43,8 @@ export interface IconButtonProps
   shape?: "square" | "circle";
   /** Active state for toggleable icons (like heart) */
   isActive?: boolean;
+  /** Loading state */
+  isLoading?: boolean;
 }
 
 const sizeClasses = {
@@ -74,6 +77,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       icon,
       shape = "square",
       isActive,
+      isLoading,
       ...props
     },
     ref
@@ -114,10 +118,14 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           iconSizeClasses[size],
           effectiveClassName
         )}
-        disabled={disabled}
+        disabled={disabled || isLoading}
         {...props}
       >
-        <IconComponent className={effectiveIconClassName} />
+        {isLoading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <IconComponent className={effectiveIconClassName} />
+        )}
         {badge !== undefined && badge > 0 && (
           <span className="absolute -top-1 -right-1 bg-danger text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
             {badge > 99 ? "99+" : badge}

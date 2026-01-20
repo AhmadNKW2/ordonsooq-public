@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useCallback, useMemo, useState } from "react";
+import { createContext, useContext, ReactNode, useCallback, useMemo, useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import { Cart, CartItem, Product, ProductVariant } from "@/types";
 import { useAuth } from "./useAuth";
@@ -17,7 +17,12 @@ interface CartContextType {
   isOpen: boolean;
   totalItems: number;
   totalAmount: number;
-  addItem: (product: Product, quantity: number, variantId?: number | string, options?: { openSidebar?: boolean; onSuccess?: () => void }) => void;
+  addItem: (
+    product: Product,
+    quantity: number,
+    variantId?: number | string,
+    options?: { openSidebar?: boolean; onSuccess?: () => void; onError?: (error: unknown) => void }
+  ) => void;
   removeItem: (itemId: number) => void;
   updateQuantity: (itemId: number, quantity: number) => void;
   clearCart: () => void;
@@ -27,9 +32,11 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   totalPrice: number;
+  syncGuestCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const GUEST_CART_KEY = "ordonsooq-cart";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -37,6 +44,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const activeLocale = useLocale();
   const locale: Locale = activeLocale === "ar" ? "ar" : "en";
+  const [guestItems, setGuestItems] = useState<CartItem[]>([]);
+
+  // Load guest cart on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(GUEST_CART_KEY);
+      if (stored) {
+        try {
+          setGuestItems(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse guest cart", e);
+        }
+      }
+    }
+  }, []);
+
+  const saveGuestCart = (items: CartItem[]) => {
+    setGuestItems(items);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+    }
+  };
 
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'],
@@ -44,7 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     enabled: isAuthenticated,
   });
 
-  const cartItems = cart?.items || [];
+  const cartItems = isAuthenticated ? (cart?.items || []) : guestItems;
 
   const getVariantPrimaryImage = (product: Product, variant: ProductVariant): string | undefined => {
     const mainImage = product.images?.[0];
@@ -57,55 +86,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const attributeValue = mediaAttribute.values.find((v) => v.value === selectedValue);
     return attributeValue?.image || mainImage;
   };
-
-  const cartVariantProductIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const item of cartItems) {
-      if (item?.variant_id) ids.add(item.product_id);
-    }
-    return Array.from(ids);
-  }, [cartItems]);
-
-  const cartVariantDetailQueries = useQueries({
-    queries: cartVariantProductIds.map((id) => ({
-      queryKey: PRODUCT_QUERY_KEYS.detail(id),
-      queryFn: () => productService.getById(id),
-      enabled: isAuthenticated && cartVariantProductIds.length > 0,
-    })),
-  });
-
-  const enrichedCartItems = useMemo(() => {
-    if (cartItems.length === 0) return cartItems;
-    if (cartVariantProductIds.length === 0) return cartItems;
-
-    const detailById = new Map<number, any>();
-    for (const q of cartVariantDetailQueries) {
-      const d = q.data as any;
-      if (d && typeof d.id === "number") detailById.set(d.id, d);
-    }
-
-    return cartItems.map((item) => {
-      if (!item?.variant_id) return item;
-
-      const detail = detailById.get(item.product_id);
-      if (!detail) return item;
-
-      const full = transformProduct(detail, locale);
-      const variant = full.variants?.find((v) => String(v.id) === String(item.variant_id));
-      if (!variant) return item;
-
-      const variantImage = getVariantPrimaryImage(full, variant);
-      if (!variantImage) return item;
-
-      return {
-        ...item,
-        product: {
-          ...item.product,
-          image: variantImage,
-        },
-      };
-    });
-  }, [cartItems, cartVariantDetailQueries, cartVariantProductIds.length, locale]);
 
   const toNumber = (value: unknown): number => {
     if (typeof value === "number") return value;
@@ -147,24 +127,126 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const addItemMutation = useMutation({
-    mutationFn: (data: { product: Product; quantity: number; variantId?: number | string; options?: { openSidebar?: boolean; onSuccess?: () => void } }) => {
+    mutationFn: async (data: { product: Product; quantity: number; variantId?: number | string; options?: { openSidebar?: boolean; onSuccess?: () => void; onError?: (error: unknown) => void } }) => {
       const vId = data.variantId
         ? typeof data.variantId === "string"
           ? parseInt(data.variantId, 10)
           : data.variantId
-        : undefined;
+        : null; // Use null to match types
+
+      if (!isAuthenticated) {
+        // Guest Cart Logic
+        let currentItems = [...guestItems];
+        // Ensure we have the latest items from localStorage to prevent stale closures
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem(GUEST_CART_KEY);
+          if (stored) {
+            try {
+              currentItems = JSON.parse(stored);
+            } catch (e) {
+              // ignore error
+            }
+          }
+        }
+
+        const productId = parseInt(String(data.product.id), 10);
+        const existingItemIndex = currentItems.findIndex(
+          item => item.product_id === productId && (item.variant_id ?? null) === (vId ?? null)
+        );
+
+        let newItems = [...currentItems];
+
+        if (existingItemIndex >= 0) {
+          newItems[existingItemIndex] = {
+            ...newItems[existingItemIndex],
+            quantity: newItems[existingItemIndex].quantity + data.quantity
+          };
+        } else {
+            // Construct CartItem
+            const variantObj = data.product.variants?.find(v => String(v.id) === String(vId));
+            
+            let selectedImage = data.product.images?.[0] || "";
+            const cartVariantAttributes: any[] = []; // CartVariantAttribute[]
+
+            if (variantObj) {
+                // 1. Check if variant has specific image
+                if (variantObj.image) {
+                    selectedImage = variantObj.image;
+                }
+
+                // 2. Resolve Attributes and check for controlled media
+                if (variantObj.attributes) {
+                    Object.entries(variantObj.attributes).forEach(([key, value]) => {
+                        const attrDef = data.product.attributes?.find(a => a.name === key);
+                        
+                        // Image Logic - if attribute controls media and we haven't already used variant.image (or maybe this overrides?)
+                        // Usually variant.image (if specific) is best. If not, look at attribute media.
+                        if (!variantObj.image && attrDef?.controlsMedia) {
+                            const valDef = attrDef.values.find(v => v.value === value);
+                            if (valDef?.image) {
+                                selectedImage = valDef.image;
+                            }
+                        }
+                        
+                        // Attribute List Logic
+                        let colorCode: string | undefined;
+                        // For color attributes, try to find meta (hex code)
+                        const valDef = attrDef?.values.find(v => v.value === value);
+                        if (valDef?.meta) {
+                            colorCode = valDef.meta;
+                        }
+
+                        cartVariantAttributes.push({
+                            attribute_name_en: key,
+                            value_en: value,
+                            color_code: colorCode 
+                        });
+                    });
+                }
+            }
+            
+            const newItem: CartItem = {
+                id: Date.now(), // Temp ID
+                product_id: productId,
+                variant_id:  vId ?? null,
+                quantity: data.quantity,
+                product: {
+                    id: productId,
+                    name_en: data.product.name,
+                    price: data.product.price,
+                    sale_price: data.product.compareAtPrice,
+                    image: selectedImage,
+                    slug: data.product.slug,
+                },
+                variant: variantObj ? {
+                    id: typeof variantObj.id === 'string' ? parseInt(variantObj.id) : variantObj.id,
+                    sku: variantObj.sku,
+                    price: variantObj.price,
+                    compareAtPrice: variantObj.compareAtPrice,
+                    sale_price: variantObj.compareAtPrice, 
+                    attributes: cartVariantAttributes,
+                } : null
+            };
+            newItems.push(newItem);
+        }
+        
+        saveGuestCart(newItems);
+        return { items: newItems };
+      }
 
       return cartService.addItem({
         product_id: parseInt(String(data.product.id), 10),
         quantity: data.quantity,
-        variant_id: vId,
+        variant_id: vId || undefined,
       });
     },
     onSuccess: (response, variables) => {
-      if (response && (response as any).items) {
+      if (!isAuthenticated) {
+         // Guest handled in mutationFn
+      } else if (response && (response as any).items) {
         setCartCache(() => response as any);
       } else {
-        // Best-effort optimistic update without triggering extra requests
+        // Optimistic update
         setCartCache((old) => {
           if (!old) return old;
           const productId = parseInt(String(variables.product.id), 10);
@@ -193,12 +275,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       variables.options?.onSuccess?.();
     },
+    onError: (error, variables) => {
+      variables.options?.onError?.(error);
+    },
   });
 
   const updateQuantityMutation = useMutation({
-    mutationFn: (data: { itemId: number; quantity: number }) =>
-      cartService.updateItem(data.itemId, data.quantity),
+    mutationFn: async (data: { itemId: number; quantity: number }) => {
+        if (!isAuthenticated) {
+            let currentItems = [...guestItems];
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem(GUEST_CART_KEY);
+                if (stored) {
+                    try {
+                        currentItems = JSON.parse(stored);
+                    } catch (e) {}
+                }
+            }
+
+            const newItems = currentItems.map(item => 
+                item.id === data.itemId ? { ...item, quantity: data.quantity } : item
+            );
+            saveGuestCart(newItems);
+            return { items: newItems };
+        }
+        return cartService.updateItem(data.itemId, data.quantity);
+    },
     onSuccess: (response, variables) => {
+      if (!isAuthenticated) return;
+      
       if (response && (response as any).items) {
         setCartCache(() => response as any);
         return;
@@ -215,8 +320,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const removeItemMutation = useMutation({
-    mutationFn: (itemId: number) => cartService.removeItem(itemId),
+    mutationFn: async (itemId: number) => {
+        if (!isAuthenticated) {
+            let currentItems = [...guestItems];
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem(GUEST_CART_KEY);
+                if (stored) {
+                    try {
+                        currentItems = JSON.parse(stored);
+                    } catch (e) {}
+                }
+            }
+            const newItems = currentItems.filter(item => item.id !== itemId);
+            saveGuestCart(newItems);
+            return { items: newItems };
+        }
+        return cartService.removeItem(itemId);
+    },
     onSuccess: (response, itemId) => {
+      if (!isAuthenticated) return;
+
       if (response && (response as any).items) {
         setCartCache(() => response as any);
         return;
@@ -230,8 +353,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const clearCartMutation = useMutation({
-    mutationFn: cartService.clear,
+    mutationFn: async () => {
+        if(!isAuthenticated) {
+            saveGuestCart([]);
+            return;
+        }
+        return cartService.clear();
+    },
     onSuccess: () => {
+      if (!isAuthenticated) return;
       setCartCache((old) => {
         if (!old) return old;
         return { ...old, items: [], total_amount: 0 };
@@ -239,37 +369,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const syncGuestCart = useCallback(async () => {
+    if (guestItems.length === 0) return;
+    
+    try {
+        for (const item of guestItems) {
+            try {
+                await cartService.addItem({
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    variant_id: item.variant_id ?? undefined
+                });
+            } catch (e) {
+                console.error("Failed to sync item", item, e);
+            }
+        }
+        saveGuestCart([]);
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+    } catch (e) {
+        console.error("Sync failed", e);
+    }
+  }, [guestItems, queryClient]);
+
+
   const addItem = useCallback(
-    (product: Product, quantity: number, variantId?: number | string, options?: { openSidebar?: boolean; onSuccess?: () => void }) => {
-      if (!isAuthenticated) return;
+    (product: Product, quantity: number, variantId?: number | string, options?: { openSidebar?: boolean; onSuccess?: () => void; onError?: (error: unknown) => void }) => {
       addItemMutation.mutate({ product, quantity, variantId, options });
     },
-    [addItemMutation, isAuthenticated]
+    [addItemMutation]
   );
 
   const updateQuantity = useCallback((itemId: number, quantity: number) => {
-      if (!isAuthenticated) return;
       if (quantity <= 0) {
           removeItemMutation.mutate(itemId);
           return;
       }
       updateQuantityMutation.mutate({ itemId, quantity });
-  }, [updateQuantityMutation, removeItemMutation, isAuthenticated]);
+  }, [updateQuantityMutation, removeItemMutation]);
 
   const removeItem = useCallback((itemId: number) => {
-      if (!isAuthenticated) return;
       removeItemMutation.mutate(itemId);
-  }, [removeItemMutation, isAuthenticated]);
+  }, [removeItemMutation]);
 
   const clearCart = useCallback(() => {
-      if (!isAuthenticated) return;
       clearCartMutation.mutate();
-  }, [clearCartMutation, isAuthenticated]);
+  }, [clearCartMutation]);
 
   return (
     <CartContext.Provider
       value={{
-        items: enrichedCartItems,
+        items: cartItems,
         cart,
         isLoading,
         isOpen,
@@ -284,6 +433,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         openCart,
         closeCart,
         totalPrice: totalAmount,
+        syncGuestCart,
       }}
     >
       {children}

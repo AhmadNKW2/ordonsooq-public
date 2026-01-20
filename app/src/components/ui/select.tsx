@@ -20,7 +20,6 @@ export interface SelectProps {
   className?: string;
   size?: "sm" | "md" | "lg";
   variant?: "default" | "header";
-  icon?: LucideIcon;
 }
 
 const Select = React.forwardRef<HTMLDivElement, SelectProps>(
@@ -34,7 +33,6 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       className,
       size = "md",
       variant = "default",
-      icon: Icon = ChevronDown,
     },
     ref
   ) => {
@@ -62,9 +60,8 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
         isOpen && "border-primary ring-2 ring-primary/20"
       ),
       header: cn(
-        "bg-transparent border border-transparent text-white",
-        "hover:bg-white/10",
-        isOpen && "text-gray-900 ring-2 ring-primary/20"
+        "bg-transparent text-white rounded-r1 transition-all",
+        "hover:bg-white hover:text-primary ",
       ),
     };
 
@@ -176,10 +173,10 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           aria-expanded={isOpen}
         >
           <span className="truncate">
-            {selectedOption ? selectedOption.label : <span className="text-gray-400">{placeholder}</span>}
+            {selectedOption ? selectedOption.label : <span className={cn("font-semibold", variant === "header" ? "text-current" : "text-white")}>{placeholder}</span>}
           </span>
-          <Icon
-            className={cn(
+          <ChevronDown
+           className={cn(
               "w-5 h-5 shrink-0 transition-transform duration-300 ease-out",
               isOpen && "rotate-180"
             )}

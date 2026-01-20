@@ -23,7 +23,7 @@ export function Header() {
 
       {/* Main Header - Logo, Search, Actions */}
       <div className="bg-primary lg:border-b border-gray-100">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 md:px-12">
           <div className="flex items-center gap-2 justify-between h-16 md:h-20">
             <div className="flex items-center gap-2">
                 {/* Mobile Menu Button */}

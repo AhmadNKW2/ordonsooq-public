@@ -130,8 +130,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
 
       for (const v of (apiProduct as any).variants as any[]) {
         for (const c of (v?.combinations ?? []) as any[]) {
-          const attrId = c?.attribute_value?.attribute_id;
-          const valueId = c?.attribute_value_id;
+          const attrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
+          const valueId = c?.value_id ?? c?.attribute_value_id;
           if (attrId == id && typeof valueId === 'number' && !seenValueIds.has(valueId)) {
             seenValueIds.add(valueId);
             orderedValueIds.push({ valueId, sortOrder: c?.attribute_value?.sort_order ?? 0 });
@@ -296,7 +296,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         return p.groupValues.every((gv: any) =>
           (v.combinations as any[]).some((c: any) => {
             const combAttrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
-            return combAttrId == gv.attribute_id && c?.attribute_value_id == gv.attribute_value_id;
+            const combValueId = c?.value_id ?? c?.attribute_value_id;
+            return combAttrId == gv.attribute_id && combValueId == gv.attribute_value_id;
           })
         );
       });
@@ -383,6 +384,19 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       width: w.width ? String(w.width) : undefined,
       height: w.height ? String(w.height) : undefined,
     };
+  } else if ('variants' in apiProduct && Array.isArray(apiProduct.variants) && apiProduct.variants.length > 0) {
+    // Fallback to first variant dimensions if product-level weights are not available
+    const v = apiProduct.variants[0] as any;
+    const hasDimensions = v.weight || (v.dimensions && (v.dimensions.length || v.dimensions.width || v.dimensions.height));
+    
+    if (hasDimensions) {
+      dimensions = {
+        weight: v.weight ? String(v.weight) : undefined,
+        length: v.dimensions?.length ? String(v.dimensions.length) : undefined,
+        width: v.dimensions?.width ? String(v.dimensions.width) : undefined,
+        height: v.dimensions?.height ? String(v.dimensions.height) : undefined,
+      };
+    }
   }
 
   // Create a map of variant stock if stock is an array at product level
@@ -412,24 +426,32 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       
       if ('variants' in apiProduct && Array.isArray(apiProduct.variants)) {
         (apiProduct.variants as any[]).forEach(v => {
-          if (v.combinations && Array.isArray(v.combinations)) {
+          if (v.combinations && Array.isArray(v.combinations) && v.combinations.length > 0) {
             v.combinations.forEach((c: any) => {
-              if (c.attribute_value?.attribute_id === attr.attribute_id) {
-                const val = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
+              const combAttrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
+              if (combAttrId === attr.attribute_id) {
+                const val = getLocalizedText(
+                  c?.value_name_en ?? c?.value_name ?? c?.attribute_value?.value_en,
+                  c?.value_name_ar ?? c?.attribute_value?.value_ar,
+                  locale
+                );
+                if (!val) return;
+
                 // Use image_url if available (for media control), otherwise color_code
                 // If controls_media is true, we prioritize image_url from the attribute value if it exists
                 // But wait, the attribute value itself might not have the image url directly if it's just a "Color" value definition.
                 // The image is usually in the product media gallery, linked to the attribute value.
                 
                 // Let's check if we can find media linked to this attribute value in the product media
-                let mediaUrl = c.attribute_value.image_url;
+                let mediaUrl = c?.attribute_value?.image_url;
+                const valueId = c?.value_id ?? c?.attribute_value_id;
                 
                 if (!mediaUrl && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
                    // Find media that belongs to this attribute value
                    const matchingMedia = (apiProduct.media as any[])
                      .filter(m => 
                        m?.media_group?.groupValues?.some((gv: any) => 
-                         gv.attribute_id === attr.attribute_id && gv.attribute_value_id === c.attribute_value_id
+                         gv.attribute_id === attr.attribute_id && gv.attribute_value_id === valueId
                        )
                      )
                      .sort((a: any, b: any) => {
@@ -451,8 +473,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
                    }
                 }
                 
-                const meta = c.attribute_value.color_code;
-                const sortOrder = c.attribute_value.sort_order ?? 0;
+                const meta = c?.color_code ?? c?.attribute_value?.color_code;
+                const sortOrder = c?.attribute_value?.sort_order ?? 0;
                 valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
               }
             });
@@ -511,6 +533,72 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         controlsWeight: attr.controls_weight || false
       };
     }).filter(a => a.values.length > 0);
+  } else if ('variants' in apiProduct && Array.isArray((apiProduct as any).variants)) {
+    // Newer API shape: product-level attributes are omitted; variant carries its own attributes.
+    // Build a product-level attribute list from the union of variant attributes.
+    const byAttrId = new Map<number, {
+      name: string;
+      values: Map<string, { meta?: string; image?: string }>;
+      isColor: boolean;
+    }>();
+
+    for (const v of (apiProduct as any).variants as any[]) {
+      const variantMediaUrl: string | undefined =
+        v?.media?.url ?? v?.media?.image?.url;
+
+      const attrs = v?.attributes;
+      if (!Array.isArray(attrs)) continue;
+
+      for (const a of attrs as any[]) {
+        const attrId: number | undefined = a?.attribute_id;
+        if (typeof attrId !== 'number') continue;
+
+        const attrName = getLocalizedText(a?.attribute_name, a?.attribute_name_ar, locale);
+        if (attrName) attributeIdToName.set(attrId, attrName);
+
+        const valueLabel = getLocalizedText(
+          a?.value_name_en ?? a?.value_name,
+          a?.value_name_ar,
+          locale
+        );
+        if (!valueLabel) continue;
+
+        const meta: string | undefined = typeof a?.color_code === 'string' ? a.color_code : undefined;
+        const isColor = Boolean(meta);
+        const image = isColor ? variantMediaUrl : undefined;
+
+        const existing = byAttrId.get(attrId) ?? {
+          name: attrName || String(attrId),
+          values: new Map<string, { meta?: string; image?: string }>(),
+          isColor: false,
+        };
+
+        if (attrName) existing.name = attrName;
+        existing.isColor = existing.isColor || isColor;
+        if (!existing.values.has(valueLabel)) {
+          existing.values.set(valueLabel, { meta, image });
+        }
+
+        byAttrId.set(attrId, existing);
+      }
+    }
+
+    attributes = Array.from(byAttrId.entries())
+      .sort(([aId], [bId]) => aId - bId)
+      .map(([attrId, data]) => ({
+        id: String(attrId),
+        name: data.name,
+        values: Array.from(data.values.entries()).map(([value, vData]) => ({
+          value,
+          meta: vData.meta,
+          image: vData.image,
+        })),
+        isColor: data.isColor,
+        controlsPricing: false,
+        controlsMedia: data.isColor,
+        controlsWeight: false,
+      }))
+      .filter((a) => a.values.length > 0);
   }
 
   const variantIds = Array.isArray((apiProduct as any).variants_ids)
@@ -521,12 +609,18 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     ? apiProduct.variants.map(v => {
         let variantImage: string | undefined = undefined;
         const variantAttributes: Record<string, string> = {};
-        if (v.combinations && Array.isArray(v.combinations)) {
+        if (v.combinations && Array.isArray(v.combinations) && v.combinations.length > 0) {
           v.combinations.forEach((c: any) => {
-            const attrId = c.attribute_value?.attribute_id;
-            const attrName = attributeIdToName.get(attrId);
-            if (attrName) {
-              variantAttributes[attrName] = getLocalizedText(c.attribute_value.value_en, c.attribute_value.value_ar, locale);
+            const attrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
+            const attrName = attributeIdToName.get(attrId) ?? getLocalizedText(c?.attribute_name, c?.attribute_name_ar, locale);
+            const valName = getLocalizedText(
+              c?.value_name_en ?? c?.value_name ?? c?.attribute_value?.value_en,
+              c?.value_name_ar ?? c?.attribute_value?.value_ar,
+              locale
+            );
+
+            if (attrName && valName) {
+              variantAttributes[attrName] = valName;
             }
           });
         } else if (v.attributes && Array.isArray(v.attributes)) {
@@ -553,6 +647,19 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         }
 
         const priceData = getVariantPriceData(v);
+        
+        const variantWeight = v.weight ? String(v.weight) : undefined;
+        let variantDims: ProductDimensions | undefined = undefined;
+
+        if (v.dimensions || variantWeight) {
+             variantDims = {
+                 weight: variantWeight,
+                 length: v.dimensions?.length ? String(v.dimensions.length) : undefined,
+                 width: v.dimensions?.width ? String(v.dimensions.width) : undefined,
+                 height: v.dimensions?.height ? String(v.dimensions.height) : undefined,
+             };
+        }
+
         return {
           id: String(v.id),
           name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
@@ -562,6 +669,8 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
           sku: v.sku || '',
           attributes: variantAttributes,
           image: variantImage,
+          weight: variantWeight,
+          dimensions: variantDims
         };
       })
     : undefined;

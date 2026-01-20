@@ -118,8 +118,8 @@ export function HeroBanner({
 
           {/* Content */}
           <div className="absolute inset-0 flex items-center">
-            <div className="container mx-auto px-4 md:px-8">
-            </div>
+             <div className="px-4 md:px-8 w-full">
+             </div>
           </div>
         </div>
       ))}

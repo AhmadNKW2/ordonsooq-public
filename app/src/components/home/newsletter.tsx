@@ -24,7 +24,7 @@ export function Newsletter() {
 
   return (
     <section className="py-16 bg-linear-to-r from-primary to-primary2 rounded-r1">
-      <div className="container mx-auto px-4">
+      <div className="px-4">
         <div className="max-w-2xl mx-auto text-center text-white">
           {isSubmitted ? (
             <div className="animate-fade-in">

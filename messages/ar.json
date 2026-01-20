@@ -287,6 +287,7 @@
     "soldBy": "يباع بواسطة",
     "positiveFeedback": "({percent}% إيجابي)",
     "otherSellers": "تحقق من العروض من {count} بائعين آخرين",
+    "save": "وفّر {amount}",
     "off": "خصم {percent}%",
     "onlyLeft": "بقي {count} فقط!",
     "reviewCount": "({count} تقييم)",

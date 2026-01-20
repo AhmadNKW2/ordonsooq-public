@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight } from "lucide-react";
-import { Button, Input, Card, PageWrapper, Radio } from "@/components/ui";
+import { Button, Input, Card, Radio } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice, cn } from "@/lib/utils";
 import { SHIPPING_OPTIONS, PAYMENT_METHODS } from "@/lib/constants";
@@ -60,7 +60,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0 && !orderComplete) {
     return (
-      <div className="container mx-auto px-4 py-16">
+      <div className="px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-2xl font-bold text-primary mb-4">{t('noItems')}</h1>
           <p className="text-third mb-8">
@@ -76,7 +76,7 @@ export default function CheckoutPage() {
 
   if (orderComplete) {
     return (
-      <div className="container mx-auto px-4 py-16">
+      <div className="px-4 py-16">
         <div className="max-w-md mx-auto text-center">
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-success" />
@@ -106,7 +106,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <PageWrapper className="pt-5! mx-auto">
+    <>
       <div className="flex flex-col gap-2">
         {/* Page Header */}
         <h1 className="text-3xl font-bold text-primary">Checkout</h1>
@@ -431,6 +431,6 @@ export default function CheckoutPage() {
           </Card>
         </div>
       </div>
-    </PageWrapper>
+    </>
   );
 }

@@ -9,7 +9,7 @@ import { useCategory, useProductsByCategory, useListingVariantProducts } from "@
 import { transformCategory, type Locale } from "@/lib/transformers";
 import { ProductGrid } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
-import { PageWrapper, Breadcrumb } from "@/components/ui";
+import { Breadcrumb } from "@/components/ui";
 
 export default function CategoryPage() {
   const locale = useLocale() as Locale;
@@ -55,7 +55,7 @@ export default function CategoryPage() {
   } : null;
 
   return (
-    <PageWrapper className="container mx-auto">
+    <>
       {/* Breadcrumb */}
       <div className="mb-6">
         <Breadcrumb 
@@ -135,6 +135,6 @@ export default function CategoryPage() {
           </div>
         )}
       </div>
-    </PageWrapper>
+    </>
   );
 }

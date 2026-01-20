@@ -81,7 +81,7 @@ export default function WishlistPage() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeItem(item.product_id);
+                    removeItem(item.product_id, item.variant_id);
                   }}
                   aria-label="Remove from wishlist"
                   className="absolute top-3 right-3 z-30 h-8 w-8 rounded-full bg-white/90 shadow-s1 text-gray-600 hover:text-danger hover:bg-white transition flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"

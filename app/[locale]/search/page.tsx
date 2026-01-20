@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Search as SearchIcon, X, SlidersHorizontal } from "lucide-react";
-import { Input, Button, Badge, Select, PageWrapper } from "@/components/ui";
+import { Input, Button, Badge, Select } from "@/components/ui";
 import { ProductGrid, ProductFilters, FilterState } from "@/components/products";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProductSearch, useCategories, useListingVariantProducts } from "@/hooks";
@@ -80,7 +80,7 @@ function SearchPageContent() {
     (filters.rating ? 1 : 0);
 
   return (
-    <PageWrapper className="container mx-auto">
+    <>
       {/* Search Header */}
       <div className="mb-8">
         <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
@@ -272,7 +272,7 @@ function SearchPageContent() {
           </div>
         </>
       )}
-    </PageWrapper>
+    </>
   );
 }
 

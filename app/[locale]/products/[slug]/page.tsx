@@ -10,7 +10,7 @@ import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
-import { Badge, Card, IconButton, PageWrapper, Breadcrumb } from "@/components/ui";
+import { Badge, Card, IconButton, Breadcrumb } from "@/components/ui";
 import { ProductActions } from "./product-actions";
 
 export default function ProductPage() {
@@ -19,7 +19,7 @@ export default function ProductPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = params.slug as string;
-  const { toggleItem, isInWishlist } = useWishlist();
+  const { toggleItem, isInWishlist, isItemLoading } = useWishlist();
 
   const requestedVariantId = useMemo(() => {
     const raw = searchParams.get("variant") ?? searchParams.get("variantId");
@@ -54,22 +54,22 @@ export default function ProductPage() {
 
   // State for selected options
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Initialize options (prefer variant from URL when provided)
   useEffect(() => {
     if (!product?.variants || product.variants.length === 0) return;
+    if (hasInitialized) return;
 
-    // If a variant is specified in the URL (e.g., coming from cart), apply it only once.
-    // Otherwise it would override user changes on every re-render.
-    if (requestedVariantId && Object.keys(selectedOptions).length === 0) {
+    // If a variant is specified in the URL (e.g., coming from cart), use it
+    if (requestedVariantId) {
       const match = product.variants.find(v => String(v.id) === requestedVariantId);
-      if (match) {
+      if (match && Object.keys(match.attributes).length > 0) {
         setSelectedOptions(match.attributes);
+        setHasInitialized(true);
         return;
       }
     }
-
-    if (Object.keys(selectedOptions).length > 0) return;
 
     // 1. Try to find the first variant with stock > 0
     let defaultVariant = product.variants.find(v => v.stock > 0);
@@ -79,10 +79,11 @@ export default function ProductPage() {
       defaultVariant = product.variants[0];
     }
 
-    if (defaultVariant) {
+    if (defaultVariant && Object.keys(defaultVariant.attributes).length > 0) {
       setSelectedOptions(defaultVariant.attributes);
     }
-  }, [product?.variants, requestedVariantId, selectedOptions]);
+    setHasInitialized(true);
+  }, [product?.variants, requestedVariantId, hasInitialized]);
 
   // Find matching variant
   const selectedVariant = useMemo(() => {
@@ -153,22 +154,37 @@ export default function ProductPage() {
       return;
     }
 
-    // If exact match is not available, try to find a variant with the new option that IS in stock
-    // Prioritize variants that match the most other currently selected options
-    const bestVariant = product.variants
-      .filter(v => v.attributes[attributeName] === value && v.stock > 0)
-      .sort((a, b) => {
-        const aMatches = Object.entries(selectedOptions).filter(([k, v]) => k !== attributeName && a.attributes[k] === v).length;
-        const bMatches = Object.entries(selectedOptions).filter(([k, v]) => k !== attributeName && b.attributes[k] === v).length;
-        return bMatches - aMatches;
+    // Logic to find the best matching variant when exact match is not available
+    // We look for any variant that has the selected attribute value and is in stock
+    const candidates = product.variants.filter(v => 
+      v.attributes[attributeName] === value && v.stock > 0
+    );
+
+    if (candidates.length > 0) {
+      // Find the candidate that is "closest" to the current selection
+      // We calculate a score based on how many OTHER attributes match the current selection
+      const bestMatch = candidates.sort((a, b) => {
+        let scoreA = 0;
+        let scoreB = 0;
+
+        Object.entries(selectedOptions).forEach(([key, val]) => {
+          if (key === attributeName) return; // Skip the attribute we just changed
+          
+          if (a.attributes[key] === val) scoreA++;
+          if (b.attributes[key] === val) scoreB++;
+        });
+
+        return scoreB - scoreA; // Descending sort (higher score first)
       })[0];
 
-    if (bestVariant) {
-      setSelectedOptions(bestVariant.attributes);
-    } else {
-      // Fallback: just select the option even if OOS
-      setSelectedOptions(newOptions);
+      // Use the attributes of the best matching variant
+      setSelectedOptions(bestMatch.attributes);
+      return;
     }
+
+    // Fallback: If no valid variant found even with other attribute changes, 
+    // just set the option (user will see it as unavailable)
+    setSelectedOptions(newOptions);
   };
 
   // Check if an option should be disabled
@@ -185,7 +201,7 @@ export default function ProductPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5">
             <div className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
@@ -210,6 +226,8 @@ export default function ProductPage() {
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentCompareAtPrice = selectedVariant && selectedVariant.compareAtPrice ? selectedVariant.compareAtPrice : product.compareAtPrice;
+  // Fallback to product dimensions if selected variant has none, but prioritize variant's if present
+  const currentDimensions = selectedVariant?.dimensions || product.dimensions;
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
   const currentSku = product.sku;
 
@@ -218,7 +236,7 @@ export default function ProductPage() {
     : 0;
 
   return (
-    <PageWrapper>
+    <>
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -281,13 +299,18 @@ export default function ProductPage() {
           showMainImage={true}
           wishlistButton={
             <IconButton
-              onClick={() => toggleItem(product)}
-              isActive={isInWishlist(product.id)}
+              onClick={() => toggleItem(product, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
+              isActive={isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
+              isLoading={isItemLoading(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
               className={cn(
                 "shadow-sm shrink-0",
-                !isInWishlist(product.id) && "bg-white/80 backdrop-blur-sm"
+                !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/80 backdrop-blur-sm"
               )}
-              aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+              aria-label={
+                isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)
+                  ? t('product.removeFromWishlist')
+                  : t('product.addToWishlist')
+              }
               icon="heart"
               shape="circle"
               variant="wishlist"
@@ -339,13 +362,18 @@ export default function ProductPage() {
             showMainImage={true}
             wishlistButton={
               <IconButton
-                onClick={() => toggleItem(product)}
-                isActive={isInWishlist(product.id)}
+                onClick={() => toggleItem(product, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
+                isActive={isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
+                isLoading={isItemLoading(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
                 className={cn(
                   "shadow-lg hover:scale-110",
-                  !isInWishlist(product.id) && "bg-white/90 backdrop-blur-sm"
+                  !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/90 backdrop-blur-sm"
                 )}
-                aria-label={isInWishlist(product.id) ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+                aria-label={
+                  isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)
+                    ? t('product.removeFromWishlist')
+                    : t('product.addToWishlist')
+                }
                 icon="heart"
                 shape="circle"
                 variant="wishlist"
@@ -591,7 +619,7 @@ export default function ProductPage() {
       )}
 
       {/* Specifications Section */}
-      {(product.attributes || product.dimensions) && (
+      {(product.attributes || currentDimensions) && (
         <section >
           <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
           <Card className="p-6">
@@ -604,30 +632,30 @@ export default function ProductPage() {
                   </span>
                 </div>
               ))}
-              {product.dimensions && (
+              {currentDimensions && (
                 <>
-                  {product.dimensions.weight && (
+                  {currentDimensions.weight && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
                       <span className="text-third font-medium">{t('product.dims.weight')}</span>
-                      <span className="text-primary font-semibold">{product.dimensions.weight} kg</span>
+                      <span className="text-primary font-semibold">{currentDimensions.weight} kg</span>
                     </div>
                   )}
-                  {product.dimensions.length && (
+                  {currentDimensions.length && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
                       <span className="text-third font-medium">{t('product.dims.length')}</span>
-                      <span className="text-primary font-semibold">{product.dimensions.length} cm</span>
+                      <span className="text-primary font-semibold">{currentDimensions.length} cm</span>
                     </div>
                   )}
-                  {product.dimensions.width && (
+                  {currentDimensions.width && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
                       <span className="text-third font-medium">{t('product.dims.width')}</span>
-                      <span className="text-primary font-semibold">{product.dimensions.width} cm</span>
+                      <span className="text-primary font-semibold">{currentDimensions.width} cm</span>
                     </div>
                   )}
-                  {product.dimensions.height && (
+                  {currentDimensions.height && (
                     <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
                       <span className="text-third font-medium">{t('product.dims.height')}</span>
-                      <span className="text-primary font-semibold">{product.dimensions.height} cm</span>
+                      <span className="text-primary font-semibold">{currentDimensions.height} cm</span>
                     </div>
                   )}
                 </>
@@ -658,6 +686,6 @@ export default function ProductPage() {
           />
         </section>
       )}
-    </PageWrapper>
+    </>
   );
 }
