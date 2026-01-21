@@ -32,6 +32,9 @@ export function useAuth() {
   } = useQuery({
     queryKey: AUTH_KEYS.user,
     queryFn: async () => {
+        // Don't fetch profile if we don't have a token (guest user)
+        if (!apiClient.getAccessToken()) return null;
+
         try {
             return await authService.getProfile();
         } catch(e) {

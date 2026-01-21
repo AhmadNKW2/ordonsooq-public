@@ -21,10 +21,11 @@ export const CATEGORY_QUERY_KEYS = {
 /**
  * Hook to fetch paginated categories with filters
  */
-export function useCategories(filters: CategoryFilters = {}) {
+export function useCategories(filters: CategoryFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: CATEGORY_QUERY_KEYS.list(filters),
     queryFn: () => categoryService.getAll(filters),
+    enabled: options?.enabled,
   });
 }
 

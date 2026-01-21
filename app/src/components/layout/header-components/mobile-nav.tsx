@@ -51,6 +51,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         ))}
         <hr className="my-4" />
         <Link
+          prefetch={isAuthenticated}
           href="/profile/wishlist"
           className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
           onClick={handleWishlistClick}
@@ -59,6 +60,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {t('nav.wishlist')}
         </Link>
         <Link
+          prefetch={isAuthenticated}
           href="/profile/account"
           className="flex items-center gap-3 px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
           onClick={onClose}

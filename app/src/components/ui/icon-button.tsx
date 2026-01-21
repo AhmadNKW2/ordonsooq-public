@@ -13,7 +13,8 @@ import {
   Instagram, 
   Youtube,
   Trash2,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 
 const ICONS = {
@@ -27,6 +28,7 @@ const ICONS = {
   instagram: Instagram,
   youtube: Youtube,
   trash: Trash2,
+  x: X,
 } as const;
 
 export type IconName = keyof typeof ICONS;

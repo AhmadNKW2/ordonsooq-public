@@ -39,3 +39,5 @@ export {
   BannerSkeleton 
 } from "./skeleton";
 export { Breadcrumb } from './breadcrumb';
+export { Sheet } from './sheet';
+export { EntityHeader } from './entity-header';

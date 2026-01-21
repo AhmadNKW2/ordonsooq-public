@@ -7,6 +7,7 @@ export * from "./usePosts";
 export * from "./useProducts";
 export * from "./useCategories";
 export * from "./useVendors";
+export * from "./useBrands";
 export * from "./useHome";
 
 export * from "./useListingVariantProducts";

@@ -29,6 +29,7 @@ export type ProductFilters = {
   sortOrder?: SortOrder;
   categoryId?: number;
   vendorId?: number;
+  brandId?: number;
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
@@ -262,6 +263,37 @@ export type Vendor = {
   email: string;
   phone: string | null;
   address: string | null;
+  logo: string | null;
+  status: Status;
+  visible: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+// ===== Brand Types =====
+export type BrandSortBy =
+  | 'created_at'
+  | 'name_en'
+  | 'name_ar'
+  | 'sort_order';
+
+export type BrandFilters = {
+  page?: number;
+  limit?: number;
+  sortBy?: BrandSortBy;
+  sortOrder?: SortOrder;
+  status?: Status;
+  visible?: boolean;
+  search?: string;
+};
+
+export type Brand = {
+  id: number;
+  name_en: string;
+  name_ar: string;
+  description_en: string | null;
+  description_ar: string | null;
   logo: string | null;
   status: Status;
   visible: boolean;

@@ -217,12 +217,12 @@ export function NavigationBar() {
         onMouseLeave={handleMouseLeave}
       >
         <div className="bg-white backdrop-blur-xl border-b border-gray-200/50 shadow-2xl shadow-gray-900/5">
-          <div className="container mx-auto px-4 py-8 relative">
+          <div className="container mx-auto relative">
             {/* Render all menu contents, crossfade between them */}
             {MENU_KEYS.map((menuKey) => (
               <div
                 key={menuKey}
-                className="transition-all duration-400 ease-out"
+                className="transition-all duration-400 ease-out p-5"
                 style={{
                   opacity: activeDropdown === menuKey ? 1 : 0,
                   transform: activeDropdown === menuKey ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
@@ -259,6 +259,7 @@ export function NavigationBar() {
                         {section.links.map((link, linkIdx) => (
                           <li key={linkIdx}>
                             <Link
+                              prefetch={false}
                               href={link.href}
                               className="group flex items-start gap-3 p-3 -mx-3 rounded-xl hover:bg-gray-50/80 transition-all duration-300"
                               onClick={handleLinkClick}

@@ -1,4 +1,19 @@
 {
+  "options": {
+    "price": {
+      "under25": "أقل من 25 دينار",
+      "25to50": "25 إلى 50 دينار",
+      "50to100": "50 إلى 100 دينار",
+      "100to200": "100 إلى 200 دينار",
+      "200plus": "200 دينار وأكثر"
+    },
+    "rating": {
+      "4stars": "4 نجوم وأكثر",
+      "3stars": "3 نجوم وأكثر",
+      "2stars": "نجمتان وأكثر",
+      "1star": "نجمة واحدة وأكثر"
+    }
+  },
   "common": {
     "viewAll": "عرض الكل",
     "loading": "جاري التحميل...",
@@ -21,7 +36,15 @@
     "filters": "الفلاتر",
     "clearAll": "مسح الكل ({count})",
     "continueShopping": "متابعة التسوق",
-    "loadMoreProducts": "تحميل المزيد من المنتجات"
+    "loadMoreProducts": "تحميل المزيد من المنتجات",
+    "products": "المنتجات",
+    "reviews": "مراجعات",
+    "categories": "الأقسام",
+    "price": "السعر",
+    "brands": "الماركات",
+    "rating": "التقييم",
+    "stars": "نجوم",
+    "noProductsFound": "لا توجد منتجات لهذا الاختيار"
   },
   "navigation": {
     "electronics": "إلكترونيات",
@@ -140,7 +163,7 @@
     "noOrders": "لا توجد طلبات",
     "noOrdersDesc": "يبدو أنك لم تقم بأي طلبات بعد.",
     "availableBalance": "الرصيد المتاح",
-    "totalCredited": "مجموع الإيداع",
+    "totalCredited": "مجموع التوفير",
     "totalSpent": "مجموع الإنفاق",
     "transactionHistory": "سجل المعاملات",
     "loadingHistory": "جاري تحميل السجل...",
@@ -190,6 +213,7 @@
     "deals": "العروض",
     "newArrivals": "وصل حديثاً",
     "brands": "العلامات التجارية",
+    "stores": "المتاجر",
     "wishlist": "قائمة الأمنيات",
     "cart": "السلة",
     "account": "الحساب",
@@ -327,7 +351,12 @@
     "weight": "الوزن",
     "length": "الطول",
     "width": "العرض",
-    "height": "الارتفاع"
+    "height": "الارتفاع",
+    "sortPopular": "الأكثر رواجاً",
+    "sortPriceAsc": "السعر: من الأقل للأعلى",
+    "sortPriceDesc": "السعر: من الأعلى للأقل",
+    "sortNewest": "وصل حديثاً",
+    "sortRating": "الأعلى تقييماً"
   },
   "cart": {
     "title": "سلة التسوق",

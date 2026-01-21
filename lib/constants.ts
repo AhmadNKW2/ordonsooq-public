@@ -18,13 +18,13 @@ export const SITE_CONFIG = {
 
 // Navigation Links
 export const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Shop", href: "/products" },
-  { label: "Categories", href: "/categories" },
-  { label: "Deals", href: "/deals" },
-  { label: "New Arrivals", href: "/products?filter=new" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "nav.home", href: "/" },
+  { label: "nav.shop", href: "/products" },
+  { label: "nav.categories", href: "/categories" },
+  { label: "nav.brands", href: "/brands" },
+  { label: "nav.stores", href: "/vendors" },
+  { label: "nav.deals", href: "#" },
+  { label: "nav.newArrivals", href: "/products?filter=new" },
 ];
 
 // Footer Links

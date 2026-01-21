@@ -117,7 +117,7 @@ export function CartSidebar() {
             className="fixed top-0 right-0 h-full w-full sm:w-100 bg-white shadow-2xl z-70 flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 border-gray-100">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-bold text-gray-900">{tCart("title")} ({items.length})</h2>

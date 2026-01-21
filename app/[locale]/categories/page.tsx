@@ -7,10 +7,13 @@ import { ArrowRight } from "lucide-react";
 import { useRootCategories } from "@/hooks";
 import { transformCategories, type Locale } from "@/lib/transformers";
 import { CategoryCardSkeleton } from "@/components/ui/skeleton";
+import { ListingLayout } from "@/components/layout/listing-layout";
 
 export default function CategoriesPage() {
   const locale = useLocale() as Locale;
   const t = useTranslations('categories');
+  const tCommon = useTranslations('common');
+  const tNav = useTranslations('nav');
   const { data, isLoading, error } = useRootCategories({ 
     status: 'active',
     limit: 50,
@@ -22,24 +25,30 @@ export default function CategoriesPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <ListingLayout
+         title={t('shopByCategory')}
+         subtitle={t('shopByCategoryDesc')}
+         breadcrumbs={[
+            { label: tCommon("home"), href: "/" },
+            { label: tNav("categories"), href: "/categories" },
+         ]}
+      >
         <div className="text-center py-12">
           <p className="text-secondary">{t('errorLoading')}</p>
         </div>
-      </div>
+      </ListingLayout>
     );
   }
 
   return (
-    <>
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">{t('shopByCategory')}</h1>
-        <p className="text-third">
-          {t('shopByCategoryDesc')}
-        </p>
-      </div>
-
+    <ListingLayout
+         title={t('shopByCategory')}
+         subtitle={t('shopByCategoryDesc')}
+         breadcrumbs={[
+            { label: tCommon("home"), href: "/" },
+            { label: tNav("categories"), href: "/categories" },
+         ]}
+    >
       {/* Categories Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -116,6 +125,6 @@ export default function CategoriesPage() {
           })}
         </div>
       )}
-    </>
+    </ListingLayout>
   );
 }

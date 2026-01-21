@@ -421,7 +421,7 @@ export default function ProductPage() {
 
           {/* Rating */}
           <div className="flex items-center gap-2">
-            <Star size={20} className="fill-warning text-warning" />
+            <Star size={20} className="fill-secondary text-secondary mb-1" />
             <span className="text-base font-bold text-primary">{product.rating || 0}</span>
             <span className="text-sm text-gray-500">
               ({product.reviewCount || 0})

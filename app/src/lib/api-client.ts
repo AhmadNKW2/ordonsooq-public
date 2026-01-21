@@ -36,6 +36,10 @@ class ApiClient {
     }
   }
 
+  public getAccessToken() {
+    return this.accessToken;
+  }
+
   public setAccessToken(token: string) {
     this.accessToken = token;
     if (typeof window !== 'undefined') {

@@ -24,6 +24,7 @@ export function Logo({ asLink = true, className }: LogoProps) {
       <Link
         href="/"
         className={cn("flex items-center gap-1 font-bold", className)}
+        dir="ltr"
       >
         {logoContent}
       </Link>
@@ -31,7 +32,7 @@ export function Logo({ asLink = true, className }: LogoProps) {
   }
 
   return (
-    <span className={cn("flex items-center gap-1 font-bold", className)}>
+    <span className={cn("flex items-center gap-1 font-bold", className)} dir="ltr">
       {logoContent}
     </span>
   );

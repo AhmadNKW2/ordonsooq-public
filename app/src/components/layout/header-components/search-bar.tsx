@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ className, variant = "desktop", isOpen = true }: SearchBarProps) {
+  const t = useTranslations('common');
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
@@ -32,7 +34,7 @@ export function SearchBar({ className, variant = "desktop", isOpen = true }: Sea
         <form onSubmit={handleSearch} className="relative">
           <Input
             type="search"
-            placeholder="Search products..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pr-12 rounded-full"
@@ -51,7 +53,7 @@ export function SearchBar({ className, variant = "desktop", isOpen = true }: Sea
       <div className="relative w-full">
         <Input
           type="search"
-          placeholder="Search products..."
+          placeholder={t('searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pr-12 rounded-full bg-gray-50 border-gray-200 focus:bg-white"

@@ -12,6 +12,10 @@ import { useTranslations } from "next-intl";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { User, Package, LogOut, Wallet, Heart, MapPin, UserCog } from "lucide-react";
 
+import { useWallet } from "@/hooks/useWallet";
+import { formatPrice } from "@/lib/utils";
+import { useLocale } from "next-intl";
+
 interface HeaderActionsProps {
   onSearchToggle: () => void;
 
@@ -19,10 +23,12 @@ interface HeaderActionsProps {
 
 export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
   const t = useTranslations("auth");
+  const locale = useLocale();
   const router = useRouter();
   const { totalItems, toggleCart } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { user, isAuthenticated, logout } = useAuth();
+  const { data: wallet } = useWallet();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -66,10 +72,26 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
         <LanguageSwitcher />
       </div>
 
+      {isAuthenticated && wallet && (
+        <>
+            <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
+            <Link href="/profile/wallet" className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10">
+                <Wallet className="w-4 h-4 text-secondary" />
+                <div className="flex flex-col leading-none">
+                    <span className="text-[10px] text-white/70 uppercase font-medium">{t('myWallet')}</span>
+                    <span className="text-sm font-bold text-white tabular-nums">
+                        {formatPrice(Number(wallet.balance) || 0, wallet.currency || "JOD", locale as any)}
+                    </span>
+                </div>
+            </Link>
+        </>
+      )}
+
       <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
 
       {/* Wishlist - Always visible on mobile to replace language */}
       <Link 
+        prefetch={isAuthenticated}
         href="/profile/wishlist" 
         className="flex"
         onClick={(e) => {

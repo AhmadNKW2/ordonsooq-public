@@ -162,7 +162,7 @@ export function ProductFilters({
               className="flex items-center gap-1 cursor-pointer"
               onClick={() => handlePriceChange(null)}
             >
-              ${filters.priceRange.min} - ${filters.priceRange.max === Infinity ? "+" : filters.priceRange.max}
+              {filters.priceRange.min} - {filters.priceRange.max === Infinity ? "+" : filters.priceRange.max} {t('common.currency')}
               <X className="w-3 h-3" />
             </Badge>
           )}
@@ -172,7 +172,7 @@ export function ProductFilters({
               className="flex items-center gap-1 cursor-pointer"
               onClick={() => handleRatingChange(null)}
             >
-              {filters.rating}+ Stars
+              {filters.rating}+ {t('common.stars')}
               <X className="w-3 h-3" />
             </Badge>
           )}
@@ -181,7 +181,7 @@ export function ProductFilters({
 
       {/* Categories Section */}
       <FilterSection
-        title="Categories"
+        title={t('common.categories')}
         isExpanded={expandedSections.includes("categories")}
         onToggle={() => toggleSection("categories")}
       >
@@ -213,7 +213,7 @@ export function ProductFilters({
 
       {/* Price Section */}
       <FilterSection
-        title="Price"
+        title={t('common.price')}
         isExpanded={expandedSections.includes("price")}
         onToggle={() => toggleSection("price")}
       >
@@ -235,7 +235,7 @@ export function ProductFilters({
                 className="text-sm text-primary cursor-pointer"
                 onClick={() => handlePriceChange({ min: range.min, max: range.max })}
               >
-                {range.label}
+                {t(range.label)}
               </span>
             </div>
           ))}
@@ -245,7 +245,7 @@ export function ProductFilters({
       {/* Brands Section */}
       {brands.length > 0 && (
         <FilterSection
-          title="Brands"
+          title={t('common.brands')}
           isExpanded={expandedSections.includes("brands")}
           onToggle={() => toggleSection("brands")}
         >
@@ -273,7 +273,7 @@ export function ProductFilters({
 
       {/* Rating Section */}
       <FilterSection
-        title="Rating"
+        title={t('common.rating')}
         isExpanded={expandedSections.includes("rating")}
         onToggle={() => toggleSection("rating")}
       >
@@ -292,7 +292,7 @@ export function ProductFilters({
                 className="text-sm text-primary cursor-pointer"
                 onClick={() => handleRatingChange(option.value)}
               >
-                {option.label}
+                {t(option.label)}
               </span>
             </div>
           ))}

@@ -50,6 +50,13 @@ export const productService = {
   },
 
   /**
+   * Get products by brand
+   */
+  getByBrand: (brandId: number, filters: Omit<ProductFilters, 'brandId'> = {}) => {
+    return productService.getAll({ ...filters, brandId });
+  },
+
+  /**
    * Search products
    */
   search: (query: string, filters: Omit<ProductFilters, 'search'> = {}) => {

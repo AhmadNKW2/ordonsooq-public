@@ -827,6 +827,27 @@ export function transformCategories(apiCategories: ApiCategory[], locale: Locale
 }
 
 /**
+ * Transform API brand to frontend brand
+ */
+export function transformBrand(apiBrand: HomeBrand | any, locale: Locale = 'en'): FrontendBrand {
+  const name = getLocalizedText(apiBrand.name_en, apiBrand.name_ar, locale);
+  return {
+    id: String(apiBrand.id),
+    name,
+    slug: apiBrand.slug || `brand-${generateSlug(name)}-${apiBrand.id}`,
+    logo: apiBrand.logo || undefined,
+    description: getLocalizedText(apiBrand.description_en, apiBrand.description_ar, locale),
+  };
+}
+
+/**
+ * Transform a list of API brands to frontend brands
+ */
+export function transformBrands(apiBrands: any[], locale: Locale = 'en'): FrontendBrand[] {
+  return apiBrands.map(brand => transformBrand(brand, locale));
+}
+
+/**
  * Transform array of vendors
  */
 export function transformVendors(apiVendors: ApiVendor[], locale: Locale = 'en'): FrontendVendor[] {

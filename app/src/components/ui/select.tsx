@@ -226,10 +226,10 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
                     "px-5 py-2 my-1 text-sm",
                     "transition-colors",
                     option.value === value
-                      ? "text-primary font-medium"
+                      ? "text-white font-medium bg-primary/90"
                       : "text-primary",
                     highlightedIndex === index && "bg-secondary text-white",
-                    option.value === value && highlightedIndex === index && "bg-secondary/50"
+                    option.value === value && highlightedIndex === index && "bg-primary"
                   )}
                 >
                   <div className="flex items-center gap-2 flex-1 truncate">
@@ -239,7 +239,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
                     <span className="truncate">{option.label}</span>
                   </div>
                   {option.value === value && (
-                    <Check className="w-4 h-4 text-primary shrink-0" />
+                    <Check className="w-4 h-4 text-white shrink-0" />
                   )}
                 </li>
               );

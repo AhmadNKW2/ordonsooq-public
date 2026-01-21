@@ -1,4 +1,19 @@
 {
+  "options": {
+    "price": {
+      "under25": "Under $25",
+      "25to50": "$25 to $50",
+      "50to100": "$50 to $100",
+      "100to200": "$100 to $200",
+      "200plus": "$200 & Above"
+    },
+    "rating": {
+      "4stars": "4 Stars & Up",
+      "3stars": "3 Stars & Up",
+      "2stars": "2 Stars & Up",
+      "1star": "1 Star & Up"
+    }
+  },
   "common": {
     "viewAll": "View All",
     "loading": "Loading...",
@@ -21,7 +36,15 @@
     "loadMoreProducts": "Load More Products",
     "currency": "JOD",
     "filters": "Filters",
-    "clearAll": "Clear all ({count})"
+    "clearAll": "Clear all ({count})",
+    "products": "Products",
+    "reviews": "Reviews",
+    "categories": "Categories",
+    "price": "Price",
+    "brands": "Brands",
+    "rating": "Rating",
+    "stars": "Stars",
+    "noProductsFound": "No products found for this selection"
   },
   "navigation": {
     "electronics": "Electronics",
@@ -90,6 +113,7 @@
   "nav": {
     "home": "Home",
     "shop": "Shop",
+    "stores": "Stores",
     "categories": "Categories",
     "deals": "Deals",
     "newArrivals": "New Arrivals",
@@ -207,6 +231,7 @@
     "deals": "Deals",
     "newArrivals": "New Arrivals",
     "brands": "Brands",
+    "stores": "Stores",
     "wishlist": "Wishlist",
     "cart": "Cart",
     "account": "Account",
@@ -344,7 +369,12 @@
     "weight": "Weight",
     "length": "Length",
     "width": "Width",
-    "height": "Height"
+    "height": "Height",
+    "sortPopular": "Most Popular",
+    "sortPriceAsc": "Price: Low to High",
+    "sortPriceDesc": "Price: High to Low",
+    "sortNewest": "Newest Arrivals",
+    "sortRating": "Best Rating"
   },
   "cart": {
     "title": "Shopping Cart",

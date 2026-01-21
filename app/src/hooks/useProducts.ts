@@ -12,6 +12,8 @@ export const PRODUCT_QUERY_KEYS = {
     [...PRODUCT_QUERY_KEYS.lists(), 'category', categoryId, filters] as const,
   byVendor: (vendorId: number, filters?: Omit<ProductFilters, 'vendorId'>) =>
     [...PRODUCT_QUERY_KEYS.lists(), 'vendor', vendorId, filters] as const,
+  byBrand: (brandId: number, filters?: Omit<ProductFilters, 'brandId'>) =>
+    [...PRODUCT_QUERY_KEYS.lists(), 'brand', brandId, filters] as const,
   search: (query: string, filters?: Omit<ProductFilters, 'search'>) =>
     [...PRODUCT_QUERY_KEYS.lists(), 'search', query, filters] as const,
 };
@@ -62,6 +64,20 @@ export function useProductsByVendor(
     queryKey: PRODUCT_QUERY_KEYS.byVendor(vendorId, filters),
     queryFn: () => productService.getByVendor(vendorId, filters),
     enabled: !!vendorId && vendorId > 0,
+  });
+}
+
+/**
+ * Hook to fetch products by brand
+ */
+export function useProductsByBrand(
+  brandId: number,
+  filters: Omit<ProductFilters, 'brandId'> = {}
+) {
+  return useQuery({
+    queryKey: PRODUCT_QUERY_KEYS.byBrand(brandId, filters),
+    queryFn: () => productService.getByBrand(brandId, filters),
+    enabled: !!brandId && brandId > 0,
   });
 }
 

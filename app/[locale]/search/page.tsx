@@ -279,7 +279,7 @@ function SearchPageContent() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto">
         <div className="max-w-2xl mx-auto">
           <div className="h-14 bg-gray-100 rounded-lg animate-pulse" />
         </div>

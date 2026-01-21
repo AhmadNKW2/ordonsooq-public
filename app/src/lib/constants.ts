@@ -21,10 +21,10 @@ export const NAV_LINKS = [
   { label: "nav.home", href: "/" },
   { label: "nav.shop", href: "/products" },
   { label: "nav.categories", href: "/categories" },
+  { label: "nav.brands", href: "/brands" },
+  { label: "nav.stores", href: "/vendors" },
   { label: "nav.deals", href: "#" },
   { label: "nav.newArrivals", href: "/products?filter=new" },
-  { label: "nav.about", href: "#" },
-  { label: "nav.contact", href: "#" },
 ];
 
 // Footer Links
