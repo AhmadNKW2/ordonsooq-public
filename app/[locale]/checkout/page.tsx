@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight } from "lucide-react";
 import { Button, Input, Card, Radio } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
@@ -15,6 +15,7 @@ type CheckoutStep = "shipping" | "payment" | "review";
 export default function CheckoutPage() {
   const t = useTranslations('checkout');
   const tProfile = useTranslations('profile');
+  const locale = useLocale();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
   const [shippingMethod, setShippingMethod] = useState(SHIPPING_OPTIONS[0].id);
@@ -320,7 +321,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                         <p className="font-semibold text-primary">
-                          {formatPrice(item.product.price * item.quantity)}
+                          {formatPrice(item.product.price * item.quantity, undefined, locale)}
                         </p>
                       </div>
                     ))}
@@ -355,7 +356,7 @@ export default function CheckoutPage() {
                     <p className="text-sm font-medium text-primary truncate">{item.product.name_en}</p>
                   </div>
                   <p className="text-sm font-semibold text-primary">
-                    {formatPrice(item.product.price * item.quantity)}
+                    {formatPrice(item.product.price * item.quantity, undefined, locale)}
                   </p>
                 </div>
               ))}

@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { orderService } from "@/services/order.service";
-import { walletService } from "@/services/wallet.service";
+import { useWallet } from "@/hooks/useWallet";
+import { useOrders } from "@/hooks/useOrders";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "@/i18n/navigation";
 import { 
@@ -16,25 +15,18 @@ import {
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { items: wishlistItems } = useWishlist();
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   
-  const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["orders", user?.id],
-    queryFn: () => orderService.getAll(),
-    enabled: !!user?.id,
-  });
+  const { data: orders, isLoading: ordersLoading } = useOrders({ enabled: !!user?.id });
 
-  const { data: wallet, isLoading: walletLoading } = useQuery({
-    queryKey: ["wallet", user?.id],
-    queryFn: () => walletService.getWallet(),
-    enabled: !!user?.id,
-  });
+  const { data: wallet, isLoading: walletLoading } = useWallet({ enabled: !!user?.id });
 
   const recentOrders = orders?.slice(0, 3) || [];
   const defaultAddress = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
@@ -60,7 +52,7 @@ export default function ProfilePage() {
           </div>
           <p className="text-blue-100 mb-1 font-medium">{t('walletBalance')}</p>
           <div className="text-3xl font-bold mb-4">
-             {walletLoading ? tCommon('loading') : formatPrice(wallet?.balance || 0)}
+             {walletLoading ? tCommon('loading') : formatPrice(wallet?.balance || 0, undefined, locale)}
           </div>
         </div>
 
@@ -145,7 +137,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="hidden sm:block text-right">
-                  <p className="font-medium text-gray-900">{formatPrice(order.totalAmount)}</p>
+                  <p className="font-medium text-gray-900">{formatPrice(order.totalAmount, undefined, locale)}</p>
                   <p className="text-xs text-gray-400">{t('items', {count: order.items.length})}</p>
                 </div>
                 

@@ -1,28 +1,19 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { walletService } from "@/services/wallet.service";
+import { useWallet, useWalletTransactions } from "@/hooks/useWallet";
 import { formatPrice } from "@/lib/utils";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Wallet, Plus } from "lucide-react";
-
 import { useAuth } from "@/hooks/useAuth";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export default function WalletPage() {
   const { user } = useAuth();
   const t = useTranslations('profile');
+  const locale = useLocale();
 
-  const { data: wallet, isLoading: walletLoading } = useQuery({
-    queryKey: ["wallet", user?.id],
-    queryFn: () => walletService.getWallet(),
-    enabled: !!user?.id,
-  });
+  const { data: wallet, isLoading: walletLoading } = useWallet({ enabled: !!user?.id });
 
-  const { data: transactions, isLoading: historyLoading } = useQuery({
-    queryKey: ["wallet-transactions", user?.id],
-    queryFn: () => walletService.getTransactions(),
-    enabled: !!user?.id,
-  });
+  const { data: transactions, isLoading: historyLoading } = useWalletTransactions({ enabled: !!user?.id });
 
   return (
     <div className="space-y-6">
@@ -38,7 +29,7 @@ export default function WalletPage() {
           <div className="relative z-10">
             <p className="text-blue-100 font-medium mb-2">{t('availableBalance')}</p>
             <div className="text-4xl font-bold mb-8">
-              {walletLoading ? "..." : formatPrice(wallet?.balance || 0)}
+              {walletLoading ? "..." : formatPrice(wallet?.balance || 0, undefined, locale)}
             </div>
           </div>
         </div>
@@ -91,7 +82,7 @@ export default function WalletPage() {
                   </div>
                 </div>
                 <div className={`font-bold ${tx.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                  {tx.type === 'credit' ? '+' : '-'}{formatPrice(tx.amount)}
+                  {tx.type === 'credit' ? '+' : '-'}{formatPrice(tx.amount, undefined, locale)}
                 </div>
               </div>
             ))}

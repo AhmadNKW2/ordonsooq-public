@@ -9,6 +9,7 @@ import { useProduct, useProductsByCategory, useListingVariantProducts } from "@/
 import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
+import { CURRENCY_CONFIG } from "@/lib/constants";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
 import { Badge, Card, IconButton, Breadcrumb } from "@/components/ui";
 import { ProductActions } from "./product-actions";
@@ -322,15 +323,15 @@ export default function ProductPage() {
         <div className="flex flex-col gap-5 mt-2">
           <div className="flex items-center gap-3 flex-wrap">
             <p className="text-2xl font-bold text-primary">
-              {formatPrice(currentPrice, "JOD", locale)}
+              {formatPrice(currentPrice, CURRENCY_CONFIG.code, locale)}
             </p>
             {currentCompareAtPrice && currentCompareAtPrice > currentPrice && (
               <>
                 <p className="text-lg text-gray-400 line-through">
-                  {formatPrice(currentCompareAtPrice, "JOD", locale)}
+                  {formatPrice(currentCompareAtPrice, CURRENCY_CONFIG.code, locale)}
                 </p>
                 <Badge variant="sale">
-                  {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, "JOD", locale) })}
+                  {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, CURRENCY_CONFIG.code, locale) })}
                 </Badge>
               </>
             )}

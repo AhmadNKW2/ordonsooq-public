@@ -91,7 +91,7 @@ export default function HomePage() {
       {/* Hero Banner */}
       <section className="pt-0">
         {homeLoading ? (
-          <Skeleton className="h-100 md:h-125 rounded-2xl" />
+          <Skeleton className="h-100 rounded-2xl" />
         ) : (
           <HeroBanner banners={banners} />
         )}

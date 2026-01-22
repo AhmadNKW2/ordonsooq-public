@@ -11,7 +11,7 @@ export const cartService = {
   },
 
   updateItem: async (itemId: number, quantity: number): Promise<any> => {
-    return apiClient.put(`/cart/${itemId}`, { quantity });
+    return apiClient.patch(`/cart/${itemId}`, { quantity });
   },
 
   removeItem: async (itemId: number): Promise<any> => {

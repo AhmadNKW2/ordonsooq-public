@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 import { Package, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { useAuth } from "@/hooks/useAuth";
 
 export default function OrdersPage() {
   const { user } = useAuth();
   const t = useTranslations('profile');
+  const locale = useLocale();
   
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders", user?.id],
@@ -69,7 +70,7 @@ export default function OrdersPage() {
                         {t('placedOn')} {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                       <div className="text-sm text-gray-600">
-                        {t('items', {count: order.items.length})} • {t('total')}: <span className="font-semibold text-gray-900">{formatPrice(order.totalAmount)}</span>
+                        {t('items', {count: order.items.length})} • {t('total')}: <span className="font-semibold text-gray-900">{formatPrice(order.totalAmount, undefined, locale)}</span>
                       </div>
                     </div>
                   </div>

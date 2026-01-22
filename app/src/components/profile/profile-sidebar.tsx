@@ -10,9 +10,11 @@ import {
   MapPin, 
   LogOut, 
   LayoutDashboard,
-  Heart
+  Heart,
+  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/layout/header-components/language-switcher";
 
 const navigation = [
   { key: "dashboard", href: "/profile", icon: LayoutDashboard },
@@ -81,6 +83,16 @@ export function ProfileSidebar() {
           <LogOut className="h-5 w-5" />
           {tAuth("logout")}
         </button>
+
+        {/* Mobile Language Switcher */}
+        <div className="lg:hidden mt-4 pt-4 border-t border-gray-100">
+           <div className="flex items-center gap-3 px-4 py-2">
+              <Globe className="h-5 w-5 text-gray-400" />
+              <div className="flex-1">
+                 <LanguageSwitcher />
+              </div>
+           </div>
+        </div>
       </nav>
     </div>
   );

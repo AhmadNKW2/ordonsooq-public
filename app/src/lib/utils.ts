@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CURRENCY_CONFIG } from "@/lib/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -7,12 +8,29 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatPrice(
   price: number,
-  currency: string = "USD",
-  locale: string = "en-US"
+  currency: string = CURRENCY_CONFIG.code,
+  locale: string = "en"
 ): string {
-  return new Intl.NumberFormat(locale, {
+  // If locale is Arabic, we might want to ensure we use the explicit symbol if Intl doesn't satisfy,
+  // but usually Intl is best. However, let's map 'en' to 'en-JO' or 'en-US' and 'ar' to 'ar-JO' for JOD currency.
+  
+  const safeLocale = locale === 'ar' ? 'ar-JO' : 'en-US'; 
+  
+  // Force JOD if not provided or default
+  const safeCurrency = currency === "USD" ? CURRENCY_CONFIG.code : currency;
+
+  if (locale === 'ar' && safeCurrency === 'JOD') {
+     const formattedNum = new Intl.NumberFormat('en-US', {
+       style: 'decimal',
+       minimumFractionDigits: 2,
+       maximumFractionDigits: 2,
+     }).format(price);
+     return `${formattedNum} ${CURRENCY_CONFIG.symbolAr}`;
+  }
+
+  return new Intl.NumberFormat(safeLocale, {
     style: "currency",
-    currency,
+    currency: safeCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(price);
@@ -22,7 +40,7 @@ export const INPUT_STYLES = {
   base: "flex w-full rounded-lg border bg-white text-sm transition-all duration-300 placeholder:text-third focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50",
   default: "border-gray-200 hover:border-gray-300",
   error: "border-danger focus:ring-danger",
-  padding: "px-4 py-2"
+  padding: "px-2 py-2"
 };
 
 export function formatDate(

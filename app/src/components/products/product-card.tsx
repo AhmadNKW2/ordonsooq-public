@@ -10,7 +10,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 interface ProductCardProps {
   product: Product;
@@ -24,6 +24,7 @@ export function ProductCard({
   showActions = true
 }: ProductCardProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const { addItem, items, openCart } = useCart();
   const { toggleItem, isInWishlist, isItemLoading } = useWishlist();
@@ -129,11 +130,11 @@ export function ProductCard({
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary">
-                {formatPrice(product.price)}
+                {formatPrice(product.price, undefined, locale)}
               </span>
               {product.compareAtPrice && (
                 <span className="text-sm text-third line-through">
-                  {formatPrice(product.compareAtPrice)}
+                  {formatPrice(product.compareAtPrice, undefined, locale)}
                 </span>
               )}
             </div>
@@ -165,7 +166,7 @@ export function ProductCard({
             ) : null}
           </h3>
           <p className="text-sm font-bold text-primary mt-1">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, undefined, locale)}
           </p>
         </div>
       </div>
@@ -296,11 +297,11 @@ export function ProductCard({
         {/* Price - Always at bottom */}
         <div className="flex items-center justify-center gap-2 mt-auto">
           <span className="text-lg font-bold text-secondary">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, undefined, locale)}
           </span>
           {product.compareAtPrice && (
             <span className="text-sm text-third line-through">
-              {formatPrice(product.compareAtPrice)}
+              {formatPrice(product.compareAtPrice, undefined, locale)}
             </span>
           )}
         </div>

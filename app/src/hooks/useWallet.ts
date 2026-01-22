@@ -12,20 +12,22 @@ export const WALLET_QUERY_KEYS = {
 /**
  * Hook to fetch wallet details
  */
-export function useWallet() {
+export function useWallet(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: WALLET_QUERY_KEYS.details(),
     queryFn: () => walletService.getWallet(),
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to fetch wallet transactions
  */
-export function useWalletTransactions() {
+export function useWalletTransactions(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: WALLET_QUERY_KEYS.transactions(),
     queryFn: () => walletService.getTransactions(),
+    enabled: options?.enabled,
   });
 }
 

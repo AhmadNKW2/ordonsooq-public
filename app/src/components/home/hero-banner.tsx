@@ -82,7 +82,8 @@ export function HeroBanner({
   const currentBanner = activeBanners[currentIndex];
 
   return (
-    <div className="relative w-full h-[300px] md:h-[400px] lg:h-[550px] rounded-2xl overflow-hidden group">
+    
+    <div className="relative w-full aspect-2/1 md:aspect-[2.7/1] rounded-2xl overflow-hidden group">
       {/* Banner Slides */}
       {activeBanners.map((banner, index) => (
         <div

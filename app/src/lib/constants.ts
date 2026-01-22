@@ -16,6 +16,12 @@ export const SITE_CONFIG = {
   },
 };
 
+export const CURRENCY_CONFIG = {
+  code: "JOD",
+  symbol: "JOD",
+  symbolAr: "دينار",
+};
+
 // Navigation Links
 export const NAV_LINKS = [
   { label: "nav.home", href: "/" },

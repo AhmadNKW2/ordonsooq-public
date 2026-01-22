@@ -33,6 +33,7 @@ interface CartContextType {
   closeCart: () => void;
   totalPrice: number;
   syncGuestCart: () => Promise<void>;
+  loadingItems: Set<number>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -45,6 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const activeLocale = useLocale();
   const locale: Locale = activeLocale === "ar" ? "ar" : "en";
   const [guestItems, setGuestItems] = useState<CartItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState<Set<number>>(new Set());
 
   // Load guest cart on mount
   useEffect(() => {
@@ -434,6 +436,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         closeCart,
         totalPrice: totalAmount,
         syncGuestCart,
+        loadingItems,
       }}
     >
       {children}

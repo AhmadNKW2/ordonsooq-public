@@ -44,7 +44,19 @@
     "brands": "Brands",
     "rating": "Rating",
     "stars": "Stars",
-    "noProductsFound": "No products found for this selection"
+    "noProductsFound": "No products found for this selection",
+    "shop": "Shop",
+    "account": "Account",
+    "cart": "Cart",
+    "noCategories": "No categories found",
+    "free": "Free",
+    "shipping": "Shipping",
+    "proceedToCheckout": "Proceed to Checkout",
+    "secureCheckout": "Secure Checkout"
+  },
+  "nav": {
+    "wishlist": "Wishlist",
+    "myAccount": "My Account"
   },
   "navigation": {
     "electronics": "Electronics",
@@ -400,7 +412,10 @@
     "subtotalWithCount": "Subtotal ({count} items)",
     "freeShippingUnlocked": "Free shipping unlocked!",
     "addAmountForFreeShipping": "Add {amount} for free shipping",
-    "secureCheckoutNotice": "🔒 Secure checkout powered by Stripe"
+    "secureCheckoutNotice": "🔒 Secure checkout powered by Stripe",
+    "free": "Free",
+    "proceedToCheckout": "Proceed to Checkout",
+    "secureCheckout": "Secure Checkout"
   },
   "productGrid": {
     "emptyTitle": "No products found",

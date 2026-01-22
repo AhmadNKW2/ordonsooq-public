@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Menu, X } from "lucide-react";
 import { CartSidebar } from "@/components/cart";
 import {
@@ -11,10 +11,13 @@ import {
   MobileNav,
   NavigationBar,
 } from "./header-components";
+import { BottomNav } from "./bottom-nav";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-s1">
@@ -23,9 +26,9 @@ export function Header() {
 
       {/* Main Header - Logo, Search, Actions */}
       <div className="bg-primary lg:border-b border-gray-100">
-        <div className="container mx-auto">
-          <div className="flex items-center gap-2 justify-between h-16 md:h-20">
-            <div className="flex items-center gap-2">
+        <div className="container mx-auto flex flex-col gap-5 px-4 md:px-5">
+          <div className="flex items-center gap-2 md:gap-4 justify-between h-16 md:h-20">
+            <div className="flex items-center gap-1">
                 {/* Mobile Menu Button */}
                 <button
                 className="lg:hidden p-2 hover:bg-gray-100 text-white hover:text-primary rounded-lg transition-colors"
@@ -55,10 +58,13 @@ export function Header() {
       <NavigationBar />
 
       {/* Mobile Navigation */}
-      <MobileNav isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <MobileNav isOpen={isMenuOpen} onClose={closeMenu} />
 
       {/* Cart Sidebar */}
       <CartSidebar />
+
+      {/* Bottom Navigation Bar */}
+      <BottomNav />
     </header>
   );
 }

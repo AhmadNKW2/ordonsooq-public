@@ -168,7 +168,7 @@ export function Footer() {
         {/* Newsletter */}
         <div>
           <div className={containerClass}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-5">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5 mx-25">
               <div>
                 <h3 className="text-white font-semibold text-lg mb-1">{t('footer.subscribeTitle')}</h3>
                 <p className="text-third2 text-sm">{t('footer.subscribeDesc')}</p>

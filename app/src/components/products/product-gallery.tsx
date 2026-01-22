@@ -192,7 +192,7 @@ export function ProductGallery({
         // So on Mobile (grid-cols-1), Thumbnails appear ABOVE Main Image.
         // FIX: We need specific order classes or Flex col-reverse structure for mobile.
         // Using flex for mobile to control order easily.
-        showThumbnails && showMainImage ? "flex flex-col md:flex-row gap-6 h-auto md:h-125" : "block"
+        showThumbnails && showMainImage ? "flex flex-col md:flex-row gap-6 h-auto" : "block"
       )}>
         {/* Thumbnails (Left side on Desktop, Bottom on Mobile) */}
         {showThumbnails && images.length > 1 && (
@@ -277,7 +277,7 @@ export function ProductGallery({
           className={cn(
             "relative flex-1 aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in",
             // Desktop order
-            "md:order-2",
+            "md:order-2 border border-secondary/20",
             // Mobile: Main Image FIRST (order-1)
             "order-1",
             "w-full h-full"

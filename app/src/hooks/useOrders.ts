@@ -12,10 +12,11 @@ export const ORDER_QUERY_KEYS = {
 /**
  * Hook to fetch all orders for the current user
  */
-export function useOrders() {
+export function useOrders(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ORDER_QUERY_KEYS.lists(),
     queryFn: () => orderService.getAll(),
+    enabled: options?.enabled,
   });
 }
 

@@ -13,6 +13,7 @@ interface QuantitySelectorProps {
   size?: "sm" | "default" | "lg";
   className?: string;
   variant?: "default" | "primary";
+  isLoading?: boolean;
 }
 
 const sizeClasses = {
