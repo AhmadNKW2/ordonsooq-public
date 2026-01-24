@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, ChevronLeft, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export interface BreadcrumbItem {
   label: string;
@@ -15,6 +15,9 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ items, className }: BreadcrumbProps) {
   const t = useTranslations();
+  const locale = useLocale();
+  const isRtl = locale === 'ar';
+  const SeparatorIcon = isRtl ? ChevronLeft : ChevronRight;
   
   return (
     <nav className={cn("flex items-center text-sm text-muted-foreground", className)} aria-label="Breadcrumb">
@@ -31,7 +34,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
           
           return (
             <li key={index} className="flex items-center gap-2">
-              <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+              <SeparatorIcon className="w-4 h-4 text-muted-foreground/50" />
               {isLast ? (
                 <span className="font-medium text-foreground truncate max-w-[200px] sm:max-w-[300px]" aria-current="page">
                   {item.label}

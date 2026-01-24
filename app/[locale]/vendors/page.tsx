@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useVendors } from "@/hooks/useVendors";
 import { ListingLayout } from "@/components/layout/listing-layout";
 import { Star } from "lucide-react";
+import { slugify } from "@/lib/utils";
 
 export default function VendorsPage() {
   const t = useTranslations();
@@ -41,10 +42,12 @@ export default function VendorsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {vendors.map((vendor) => (
-            <Link 
-                key={vendor.id} 
-                href={`/vendors/${vendor.id}`} // Vendor ID is clean
+          {vendors.map((vendor) => {
+            const vendorSlug = `${slugify(vendor.name_en)}-${vendor.id}`;
+            return (
+            <Link
+                key={vendor.id}
+                href={`/vendors/${vendorSlug}`}
                 className="group block bg-white border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="relative h-40 bg-gray-50 flex items-center justify-center p-6 border-b">
@@ -82,7 +85,8 @@ export default function VendorsPage() {
                   )}
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

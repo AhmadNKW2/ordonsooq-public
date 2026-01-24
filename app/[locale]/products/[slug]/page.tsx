@@ -626,7 +626,7 @@ export default function ProductPage() {
           <Card className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
               {product.attributes?.map((attr) => (
-                <div key={attr.name} className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                <div key={attr.name} className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                   <span className="text-third font-medium">{attr.name}</span>
                   <span className="text-primary font-semibold">
                     {selectedOptions[attr.name] || attr.values.map(v => v.value).join(', ')}
@@ -636,25 +636,25 @@ export default function ProductPage() {
               {currentDimensions && (
                 <>
                   {currentDimensions.weight && (
-                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t('product.dims.weight')}</span>
                       <span className="text-primary font-semibold">{currentDimensions.weight} kg</span>
                     </div>
                   )}
                   {currentDimensions.length && (
-                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t('product.dims.length')}</span>
                       <span className="text-primary font-semibold">{currentDimensions.length} cm</span>
                     </div>
                   )}
                   {currentDimensions.width && (
-                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t('product.dims.width')}</span>
                       <span className="text-primary font-semibold">{currentDimensions.width} cm</span>
                     </div>
                   )}
                   {currentDimensions.height && (
-                    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t('product.dims.height')}</span>
                       <span className="text-primary font-semibold">{currentDimensions.height} cm</span>
                     </div>

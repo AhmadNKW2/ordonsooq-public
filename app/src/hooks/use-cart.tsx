@@ -24,7 +24,7 @@ interface CartContextType {
     options?: { openSidebar?: boolean; onSuccess?: () => void; onError?: (error: unknown) => void }
   ) => void;
   removeItem: (itemId: number) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
+  updateQuantity: (itemId: number, quantity: number, options?: { onSuccess?: () => void; onError?: (error: unknown) => void }) => void;
   clearCart: () => void;
   setIsOpen: (isOpen: boolean) => void;
   // Aliases/Helpers for backward compatibility
@@ -283,8 +283,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const updateQuantityMutation = useMutation({
-    mutationFn: async (data: { itemId: number; quantity: number }) => {
+    onMutate: (variables) => {
+      setLoadingItems(prev => new Set(prev).add(variables.itemId));
+    },
+    mutationFn: async (data: { itemId: number; quantity: number; options?: { onSuccess?: () => void; onError?: (error: unknown) => void } }) => {
         if (!isAuthenticated) {
+            // Simulate network delay for guest to show animation
+            if (typeof window !== 'undefined') {
+                 await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
             let currentItems = [...guestItems];
             if (typeof window !== 'undefined') {
                 const stored = localStorage.getItem(GUEST_CART_KEY);
@@ -303,7 +311,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         return cartService.updateItem(data.itemId, data.quantity);
     },
+    onSettled: (data, error, variables) => {
+        setLoadingItems(prev => {
+            const next = new Set(prev);
+            next.delete(variables.itemId);
+            return next;
+        });
+    },
+    onError: (error, variables) => {
+        variables.options?.onError?.(error);
+    },
     onSuccess: (response, variables) => {
+      variables.options?.onSuccess?.();
       if (!isAuthenticated) return;
       
       if (response && (response as any).items) {
@@ -401,12 +420,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [addItemMutation]
   );
 
-  const updateQuantity = useCallback((itemId: number, quantity: number) => {
+  const updateQuantity = useCallback((itemId: number, quantity: number, options?: { onSuccess?: () => void; onError?: (error: unknown) => void }) => {
       if (quantity <= 0) {
           removeItemMutation.mutate(itemId);
+          options?.onSuccess?.();
           return;
       }
-      updateQuantityMutation.mutate({ itemId, quantity });
+      updateQuantityMutation.mutate({ itemId, quantity, options });
   }, [updateQuantityMutation, removeItemMutation]);
 
   const removeItem = useCallback((itemId: number) => {

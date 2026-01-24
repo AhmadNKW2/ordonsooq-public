@@ -25,8 +25,9 @@ interface AddToCartButtonProps {
 export function AddToCartButton({ product, variant, onAddToCart, onStatusChange, onAnimationEnd, color, disabled }: AddToCartButtonProps) {
   const t = useTranslations('product');
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const [isUpdating, setIsUpdating] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { items, addItem, updateQuantity } = useCart();
+  const { items, addItem, updateQuantity, loadingItems } = useCart();
 
   const MIN_LOADING_MS = 650;
   
@@ -86,20 +87,38 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
 
   // Show QuantitySelector if item is in cart AND we are not in the middle of an animation
   if (quantity > 0 && status === "idle") {
+      const isItemLoading = cartItem ? loadingItems.has(cartItem.id) : false;
+      const maxStock = variant ? variant.stock : product.stock;
+      const isAtMaxStock = maxStock > 0 && quantity >= maxStock;
       return (
-          <div className="w-full h-11">
-            <QuantitySelector 
-                value={quantity}
-                onChange={(val) => updateQuantity(cartItem!.id, val)}
-                variant={hasCustomColor ? "primary" : "default"}
-                className={cn(
-                    "w-full h-full justify-between px-4",
-                    hasCustomColor 
-                        ? color 
-                        : "bg-white/80 text-primary border-0 shadow-s1 hover:bg-white"
-                )}
-                max={variant ? variant.stock : product.stock}
-            />
+          <div className="w-full">
+            {isAtMaxStock && (
+              <div className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 border border-amber-200">
+                {t('maxStockReached', { count: maxStock })}
+              </div>
+            )}
+
+            <div className="w-full h-11">
+              <QuantitySelector
+                  value={quantity}
+                  onChange={(val) => {
+                    setIsUpdating(true);
+                    updateQuantity(cartItem!.id, val, {
+                      onSuccess: () => setIsUpdating(false),
+                      onError: () => setIsUpdating(false)
+                    });
+                  }}
+                  variant={hasCustomColor ? "primary" : "default"}
+                  className={cn(
+                      "w-full h-full justify-between px-4",
+                      hasCustomColor
+                          ? color
+                          : "bg-white/80 text-primary border-0 shadow-s1 hover:bg-white"
+                  )}
+                  max={maxStock}
+                  isLoading={isItemLoading || isUpdating}
+              />
+            </div>
           </div>
       );
   }
@@ -147,7 +166,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
                 >
                   <ShoppingCart size={18} />
                   <span>
-                    {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                    {product.stock === 0 ? t('outOfStock') : t('addToCart')}
                   </span>
                 </motion.div>
               )}
@@ -210,9 +229,21 @@ function Particles() {
   );
 }
 
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6D2B79F5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function Particle({ index }: { index: number }) {
-  const randomAngle = Math.random() * 360;
-  const randomDistance = Math.random() * 100 + 50;
+  const rand = mulberry32(index + 1);
+  const randomAngle = rand() * 360;
+  const randomDistance = rand() * 100 + 50;
+  const randomRotate = rand() * 360;
+  const randomDuration = 0.6 + rand() * 0.4;
 
   return (
     <motion.div
@@ -222,10 +253,10 @@ function Particle({ index }: { index: number }) {
         y: Math.sin((randomAngle * Math.PI) / 180) * randomDistance,
         scale: [0, 1, 0],
         opacity: [1, 1, 0],
-        rotate: Math.random() * 360,
+        rotate: randomRotate,
       }}
       transition={{
-        duration: 0.6 + Math.random() * 0.4,
+        duration: randomDuration,
         ease: "easeOut",
       }}
       className={cn(

@@ -65,7 +65,7 @@ export default function HomePage() {
 
   const brandItems: ShopByItem[] = brands.map((brand) => ({
     id: brand.id,
-    href: `/brands/brand-${brand.id}`,
+    href: `/brands/${brand.slug}`,
     name: brand.name,
     image: brand.logo,
     isCategory: false,
@@ -73,7 +73,7 @@ export default function HomePage() {
 
   const vendorItems: ShopByItem[] = vendors.map((vendor) => ({
     id: vendor.id,
-    href: `/vendors/${vendor.id}`,
+    href: `/vendors/${vendor.slug}`,
     name: vendor.name,
     image: vendor.logo,
     isCategory: false,

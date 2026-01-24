@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useBrands } from "@/hooks/useBrands";
 import { ListingLayout } from "@/components/layout/listing-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { slugify } from "@/lib/utils";
 
 export default function BrandsPage() {
   const t = useTranslations();
@@ -38,10 +39,12 @@ export default function BrandsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {brands.map((brand) => (
-            <Link 
-                key={brand.id} 
-                href={`/brands/brand-${brand.id}`}
+          {brands.map((brand) => {
+            const brandSlug = `${slugify(brand.name_en)}-${brand.id}`;
+            return (
+            <Link
+                key={brand.id}
+                href={`/brands/${brandSlug}`}
                 className="group block"
             >
               <div className="bg-white border rounded-xl p-6 flex items-center justify-center aspect-square transition-all hover:shadow-lg hover:border-primary/50">
@@ -64,7 +67,8 @@ export default function BrandsPage() {
                 {isAr ? brand.name_ar : brand.name_en}
               </h3>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

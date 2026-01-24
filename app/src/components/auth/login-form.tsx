@@ -40,8 +40,8 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
   const onSubmit = async (data: LoginFormValues) => {
     setError(null);
     try {
-      await syncGuestCart();
       await login(data);
+      await syncGuestCart();
       if (onSuccess) onSuccess();
     } catch (error: any) {
       setError(error.message || t("error"));

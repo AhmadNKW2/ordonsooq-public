@@ -353,6 +353,7 @@
     "noProductsFound": "لا توجد منتجات مطابقة لمعايير البحث.",
     "pagination": "الصفحة {page} من {totalPages}",
     "addedToCart": "تمت الإضافة!",
+    "maxStockReached": "هذه هي الكمية القصوى المتاحة ({count}). لا يمكنك إضافة المزيد.",
     "customerReviews": "تقييمات العملاء",
     "verifiedReviews": "{count} تقييم موثق",
     "freeShipping": "شحن مجاني",

@@ -21,7 +21,8 @@ export function CartSidebar() {
     setIsOpen,
     removeItem,
     updateQuantity,
-    totalAmount
+    totalAmount,
+    loadingItems
   } = useCart();
 
   const closeCart = () => setIsOpen(false);
@@ -207,6 +208,7 @@ export function CartSidebar() {
                             value={item.quantity}
                             onChange={(val) => updateQuantity(item.id, val)}
                             size="sm"
+                            isLoading={loadingItems.has(item.id)}
                           />
                           {(() => {
                             const unitPrice = getEffectiveUnitPrice(item);

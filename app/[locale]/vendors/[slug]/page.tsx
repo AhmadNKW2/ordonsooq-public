@@ -15,7 +15,7 @@ export default function VendorPage() {
     const isAr = locale === 'ar';
     const params = useParams();
     const slug = params.slug as string;
-    const vendorId = parseInt(slug, 10);
+    const vendorId = parseInt(slug.split('-').pop() || '0', 10);
 
     const { data: vendorData, isLoading: vendorLoading, error: vendorError } = useVendor(vendorId);
     const vendor = vendorData;
@@ -29,7 +29,7 @@ export default function VendorPage() {
         );
     }
 
-    if (vendorError || !vendor) {
+    if (!Number.isFinite(vendorId) || vendorId <= 0 || vendorError || !vendor) {
         notFound();
     }
 
@@ -87,7 +87,7 @@ export default function VendorPage() {
             breadcrumbs={[
                 { label: t("common.home"), href: "/" },
                 { label: t("nav.stores"), href: "/vendors" },
-                { label: vendorName, href: `/vendors/${vendorId}` },
+                { label: vendorName, href: `/vendors/${slug}` },
             ]}
         >
             <div className="space-y-16">

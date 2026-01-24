@@ -368,6 +368,7 @@
     "noProductsFound": "No products found matching your criteria.",
     "pagination": "Page {page} of {totalPages}",
     "addedToCart": "Added!",
+    "maxStockReached": "This is the maximum available stock ({count}). You can’t add more.",
     "customerReviews": "Customer Reviews",
     "verifiedReviews": "{count} Verified Reviews",
     "soldBy": "Sold by",

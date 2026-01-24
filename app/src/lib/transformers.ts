@@ -718,13 +718,13 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     brand: brandData ? {
       id: String(brandData.id),
       name: getLocalizedText(brandData.name_en, brandData.name_ar, locale) || 'Brand',
-      slug: generateSlug(brandData.name_en),
+      slug: generateSlug(brandData.name_en) + '-' + brandData.id,
       logo: brandData.logo || undefined,
     } : undefined,
     vendor: apiProduct.vendor ? {
       id: String(apiProduct.vendor.id),
       name: getLocalizedText(apiProduct.vendor.name_en, (apiProduct.vendor as { name_ar?: string }).name_ar, locale) || 'Vendor',
-      slug: generateSlug(apiProduct.vendor.name_en),
+      slug: generateSlug(apiProduct.vendor.name_en) + '-' + apiProduct.vendor.id,
       logo: (apiProduct.vendor as { logo?: string }).logo || undefined,
       description: getLocalizedText((apiProduct.vendor as any).description_en, (apiProduct.vendor as any).description_ar, locale),
       rating: 0,

@@ -48,6 +48,7 @@ export function QuantitySelector({
   size = "default",
   className,
   variant = "default",
+  isLoading = false,
 }: QuantitySelectorProps) {
   const [direction, setDirection] = React.useState(0);
   const [key, setKey] = React.useState(0);
@@ -91,7 +92,7 @@ export function QuantitySelector({
       <motion.button
         type="button"
         onClick={handleDecrease}
-        disabled={value < min && value !== 1}
+        disabled={(value < min && value !== 1) || isLoading}
         className={cn(
           "transition-colors rounded-full relative z-10",
           buttonSizeClasses[size],
@@ -110,27 +111,51 @@ export function QuantitySelector({
       </motion.button>
       
       <div className={cn(
-        "relative overflow-hidden text-center font-medium",
+        "relative h-full overflow-hidden text-center font-medium flex items-center justify-center",
         inputSizeClasses[size],
         isPrimary ? "text-white" : "text-primary"
       )}>
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-          <motion.span
-            key={key}
-            custom={direction}
-            initial={{ y: direction > 0 ? 20 : -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: direction > 0 ? -20 : 20, opacity: 0 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 500, 
-              damping: 30,
-              mass: 0.8
-            }}
-            className={cn("block", isPrimary ? "text-white" : "text-primary")}
-          >
-            {value}
-          </motion.span>
+          {isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center gap-0.5 h-full absolute inset-0"
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className={cn("rounded-full bg-current", size === "sm" ? "w-0.5 h-0.5" : "w-1 h-1")}
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ 
+                    duration: 1, 
+                    repeat: Infinity, 
+                    delay: i * 0.2,
+                    ease: "easeInOut"
+                  }}
+                />
+              ))}
+            </motion.div>
+          ) : (
+            <motion.span
+              key={key}
+              custom={direction}
+              initial={{ y: direction > 0 ? 20 : -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: direction > 0 ? -20 : 20, opacity: 0 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 500, 
+                damping: 30,
+                mass: 0.8
+              }}
+              className={cn("block", isPrimary ? "text-white" : "text-primary")}
+            >
+              {value}
+            </motion.span>
+          )}
         </AnimatePresence>
         <input
           type="number"
@@ -139,13 +164,14 @@ export function QuantitySelector({
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
           min={min}
           max={max}
+          disabled={isLoading}
         />
       </div>
       
       <motion.button
         type="button"
         onClick={handleIncrease}
-        disabled={value >= max}
+        disabled={value >= max || isLoading}
         className={cn(
           "transition-colors rounded-full relative z-10",
           buttonSizeClasses[size],
