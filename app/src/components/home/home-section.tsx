@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ViewAllLink } from "@/components/home/view-all-link";
 import { ArrowButton, Button } from "@/components/ui";
-import { ProductCard } from "@/components/products";
+import { ProductCard } from "@/components/products/product-card";
 import type { Product } from "@/types";
 
 function useHorizontalScroll(scrollAmount = 300) {

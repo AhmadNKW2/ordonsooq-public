@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { useVendors } from "@/hooks/useVendors";
-import { ListingLayout } from "@/components/layout/listing-layout";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Star } from "lucide-react";
 import { slugify } from "@/lib/utils";
 
@@ -27,13 +27,20 @@ export default function VendorsPage() {
       : (vendorsData?.data || []);
 
   return (
-    <ListingLayout
-      title={t("nav.stores")}
-      breadcrumbs={[
-        { label: t("common.home"), href: "/" },
-        { label: t("nav.stores"), href: "/vendors" },
-      ]}
-    >
+    <div className="container mx-auto px-4 md:px-6 py-8">
+      <div className="mb-6">
+        <Breadcrumb 
+          items={[
+            { label: t("common.home"), href: "/" },
+            { label: t("nav.stores"), href: "/vendors" },
+          ]} 
+        />
+      </div>
+
+      <div className="mb-8">
+         <h1 className="text-3xl font-bold text-gray-900">{t("nav.stores")}</h1>
+      </div>
+
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, index) => (
@@ -95,6 +102,6 @@ export default function VendorsPage() {
             <p className="text-lg">{t("common.noResults")}</p>
         </div>
       )}
-    </ListingLayout>
+    </div>
   );
 }

@@ -3,7 +3,7 @@
  * This bridges the gap between backend API responses and frontend UI components
  */
 
-import type { Product as FrontendProduct, Category as FrontendCategory, Vendor as FrontendVendor, Banner as FrontendBanner, Brand as FrontendBrand, ProductDimensions, ProductAttribute } from '@/types';
+import type { Product as FrontendProduct, Category as FrontendCategory, Vendor as FrontendVendor, Banner as FrontendBanner, Brand as FrontendBrand, ProductDimensions, ProductAttribute, ProductAttributeValue } from '@/types';
 import type { Product as ApiProduct, ProductDetail, Category as ApiCategory, CategoryDetail, Vendor as ApiVendor, Banner as ApiBanner, HomeData, HomeCategory, HomeVendor, HomeBanner, HomeBrand } from '@/types/api.types';
 
 // Supported locales
@@ -58,690 +58,243 @@ function extractPrimaryImageUrl(primaryImage: unknown): string | null {
  * Transform API Product to Frontend Product
  */
 export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale: Locale = 'en'): FrontendProduct {
-  // Build images array, filtering out empty strings
+  const product = apiProduct as ApiProduct;
+
+  // 1. Images
   let images: string[] = [];
+  const mediaGroups = product.media_groups ? Object.values(product.media_groups) : [];
   
-  if ('media' in apiProduct && apiProduct.media && apiProduct.media.length > 0) {
-    const mediaItems = [...apiProduct.media]
-      .map((m: any) => {
-        // Normalizing media object to have url property
-        if (m?.image?.url) {
-          return { ...m, url: m.image.url };
-        }
-        return m;
-      })
-      .filter((m: any) => m?.url && typeof m.url === 'string' && m.url.trim() !== '');
+  // Sort media groups: group with is_primary image first
+  mediaGroups.sort((a, b) => {
+    const aHasPrimary = a.media?.some(m => m.is_primary);
+    const bHasPrimary = b.media?.some(m => m.is_primary);
+    if (aHasPrimary && !bHasPrimary) return -1;
+    if (!aHasPrimary && bHasPrimary) return 1;
+    return 0;
+  });
 
-    const groupKeyOf = (m: any) => {
-      const groupValues = m?.media_group?.groupValues;
-      if (!Array.isArray(groupValues) || groupValues.length === 0) return 'ungrouped';
-      return [...groupValues]
-        .map((gv: any) => ({ a: gv?.attribute_id, v: gv?.attribute_value_id }))
-        .filter((x) => x.a != null && x.v != null)
-        .sort((x, y) => (x.a - y.a) || (x.v - y.v))
-        .map((x) => `${x.a}:${x.v}`)
-        .join('|') || 'ungrouped';
-    };
-
-    const mediaSort = (a: any, b: any) => {
-      const aGroupPrimary = a?.is_group_primary ? 1 : 0;
-      const bGroupPrimary = b?.is_group_primary ? 1 : 0;
-      if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
-
-      const aPrimary = a?.is_primary ? 1 : 0;
-      const bPrimary = b?.is_primary ? 1 : 0;
-      if (bPrimary !== aPrimary) return bPrimary - aPrimary;
-
-      const aOrder = typeof a?.sort_order === 'number' ? a.sort_order : 0;
-      const bOrder = typeof b?.sort_order === 'number' ? b.sort_order : 0;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-
-      return (a?.id ?? 0) - (b?.id ?? 0);
-    };
-
-    // Group media by media_group keys and sort within each group
-    const groups = new Map<string, any[]>();
-    for (const m of mediaItems) {
-      const key = groupKeyOf(m);
-      const list = groups.get(key) ?? [];
-      list.push(m);
-      groups.set(key, list);
-    }
-    for (const [key, list] of groups.entries()) {
-      groups.set(key, [...list].sort(mediaSort));
-    }
-
-    // The first media group must be the group that contains the globally primary media.
-    const primaryMedia = mediaItems.find((m: any) => m?.is_primary);
-    const primaryGroupKey = primaryMedia ? groupKeyOf(primaryMedia) : undefined;
-
-    // We prefer ordering groups according to the controlsMedia attribute value order.
-    // Those values' `image` URLs are already mapped to the group's primary image.
-    const preferredPrimaryImages: string[] = [];
-    const mediaAttribute = (('attributes' in apiProduct ? (apiProduct as any).attributes : undefined) as any[] | undefined)
-      ?.find((a) => a?.controls_media);
-
-    if (mediaAttribute && Array.isArray((apiProduct as any).variants)) {
-      // This is a best-effort hint; the authoritative value order comes from the attribute_value.sort_order
-      // we observe in variant combinations.
-      const id = mediaAttribute.attribute_id;
-      const seenValueIds = new Set<number>();
-      const orderedValueIds: Array<{ valueId: number; sortOrder: number }> = [];
-
-      for (const v of (apiProduct as any).variants as any[]) {
-        for (const c of (v?.combinations ?? []) as any[]) {
-          const attrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
-          const valueId = c?.value_id ?? c?.attribute_value_id;
-          if (attrId == id && typeof valueId === 'number' && !seenValueIds.has(valueId)) {
-            seenValueIds.add(valueId);
-            orderedValueIds.push({ valueId, sortOrder: c?.attribute_value?.sort_order ?? 0 });
-          }
-        }
-      }
-
-      orderedValueIds
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .forEach(({ valueId }) => {
-          const match = mediaItems
-            .filter((m: any) => m?.media_group?.groupValues?.some((gv: any) => gv.attribute_id == id && gv.attribute_value_id == valueId))
-            .sort(mediaSort)[0];
-          if (match?.url) preferredPrimaryImages.push(match.url);
+  mediaGroups.forEach(group => {
+     if (Array.isArray(group.media)) {
+        // Sort within group: is_group_primary first
+        const sortedMedia = [...group.media].sort((a, b) => {
+           if (a.is_group_primary && !b.is_group_primary) return -1;
+           if (!a.is_group_primary && b.is_group_primary) return 1;
+           return 0;
         });
-    }
 
-    const groupEntries = Array.from(groups.entries());
+        sortedMedia.forEach(m => {
+           if (m.url && !images.includes(m.url)) {
+              images.push(m.url);
+           }
+        });
+     }
+  });
 
-    const groupPrimaryUrl = (list: any[]) => list?.[0]?.url as string | undefined;
-
-    // Order groups: by preferredPrimaryImages first, then remaining (stable by primary sort_order/id)
-    const preferredIndex = new Map<string, number>();
-    preferredPrimaryImages.forEach((url, idx) => preferredIndex.set(url, idx));
-
-    groupEntries.sort(([aKey, aList], [bKey, bList]) => {
-      if (primaryGroupKey) {
-        if (aKey === primaryGroupKey && bKey !== primaryGroupKey) return -1;
-        if (bKey === primaryGroupKey && aKey !== primaryGroupKey) return 1;
-      }
-
-      const aPrimaryUrl = groupPrimaryUrl(aList);
-      const bPrimaryUrl = groupPrimaryUrl(bList);
-      const aPref = aPrimaryUrl ? preferredIndex.get(aPrimaryUrl) : undefined;
-      const bPref = bPrimaryUrl ? preferredIndex.get(bPrimaryUrl) : undefined;
-
-      if (aPref != null && bPref != null) return aPref - bPref;
-      if (aPref != null) return -1;
-      if (bPref != null) return 1;
-
-      const aOrder = typeof aList?.[0]?.sort_order === 'number' ? aList[0].sort_order : 0;
-      const bOrder = typeof bList?.[0]?.sort_order === 'number' ? bList[0].sort_order : 0;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-
-      return aKey.localeCompare(bKey);
-    });
-
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const [, list] of groupEntries) {
-      // list is already sorted with group-primary first
-      for (const m of list) {
-        const url = m?.url;
-        if (typeof url === 'string' && url.trim() && !seen.has(url)) {
-          seen.add(url);
-          out.push(url);
-        }
-      }
-    }
-
-    images = out;
-  }
-  
-  // Try to get primary image (can be string or object with url)
+  // Fallback to placeholder
   if (images.length === 0) {
-    const primaryImageUrl = extractPrimaryImageUrl(apiProduct.primary_image);
-    if (primaryImageUrl) {
-      images = [primaryImageUrl];
-    }
+     images = ['/placeholder.svg'];
   }
 
-  // If we still have no images, check variants for media
-  if (images.length === 0 && 'variants' in apiProduct && Array.isArray(apiProduct.variants)) {
-    const variantImages = new Set<string>();
-    
-    (apiProduct.variants as any[]).forEach((v: any) => {
-      if (v.media) {
-        // v.media could be array or object
-        if (Array.isArray(v.media)) {
-          v.media.forEach((m: any) => {
-            const url = m?.url ?? m?.image?.url;
-            if (url && typeof url === 'string') variantImages.add(url);
-          });
-        } else if (typeof v.media === 'object') {
-          const url = v.media.url ?? v.media.image?.url;
-          if (url && typeof url === 'string') variantImages.add(url);
-        }
-      }
-    });
-    
-    if (variantImages.size > 0) {
-      images = Array.from(variantImages);
-    }
-  }
-  
-  // Ensure we always have at least the placeholder
-  if (images.length === 0) {
-    images = ['/placeholder.svg'];
-  }
-
+  // 2. Price
+  // Calculate default price range or start price from price_groups
   let actualPrice = 0;
   let compareAtPrice: number | undefined = undefined;
   
-  // Handle price being an array (new API) or prices array (old API)
-  const allPrices = Array.isArray((apiProduct as any).price) 
-    ? (apiProduct as any).price 
-    : ((apiProduct as any).prices || []);
-
-  const getPriceValues = (entry: any) => {
-    const regPrice = entry?.price ? parseFloat(String(entry.price)) : 0;
-    const sPrice = entry?.sale_price ? parseFloat(String(entry.sale_price)) : undefined;
-    
-    // If sale_price exists and is lower than price, then price is the "compareAt" and sale_price is the "actual"
-    const actual = sPrice && sPrice < regPrice ? sPrice : regPrice;
-    const compare = sPrice && sPrice < regPrice ? regPrice : undefined;
-    
-    return { actual, compare };
-  };
-
-  // Check for direct price properties first (scalar value)
-  if ('price' in apiProduct && apiProduct.price && !Array.isArray(apiProduct.price)) {
-    const price = parseFloat(String(apiProduct.price));
-    const salePrice = apiProduct.sale_price ? parseFloat(String(apiProduct.sale_price)) : null;
-
-    if (salePrice !== null && salePrice < price) {
-      actualPrice = salePrice;
-      compareAtPrice = price;
-    } else {
-      actualPrice = price;
-    }
-  } else {
-    // Find default price (one without group values or just the first one)
-    const defaultPriceEntry = allPrices.find((p: any) => !p.groupValues || p.groupValues.length === 0 || (Array.isArray(p.attributes) && p.attributes.length === 0)) || allPrices[0];
-    
-    if (defaultPriceEntry) {
-      const result = getPriceValues(defaultPriceEntry);
-      actualPrice = result.actual;
-      compareAtPrice = result.compare;
-    }
-  }
-
-  // Helper to get variant price
-  const getVariantPriceData = (v: any) => {
-    // 0. Check for direct price object on variant (newest API structure)
-    if (v.price && typeof v.price === 'object' && !Array.isArray(v.price)) {
-      if ('price' in v.price) {
-         return getPriceValues(v.price);
-      }
-    }
-
-    // 1. Check if variant has specific prices array (unlikely in this API but for safety)
-    if (v.prices && v.prices.length > 0) {
-      return getPriceValues(v.prices[0]);
-    }
-
-    // 2. Find matching price in product.prices based on combinations
-    if (allPrices.length > 0 && v.combinations) {
-      const matchingPrice = allPrices.find((p: any) => {
-        if (!p.groupValues || p.groupValues.length === 0) return false;
-        
-        // Check if ALL groupValues in the price entry match the variant's combinations
-        return p.groupValues.every((gv: any) =>
-          (v.combinations as any[]).some((c: any) => {
-            const combAttrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
-            const combValueId = c?.value_id ?? c?.attribute_value_id;
-            return combAttrId == gv.attribute_id && combValueId == gv.attribute_value_id;
-          })
-        );
-      });
-
-      if (matchingPrice) {
-        return getPriceValues(matchingPrice);
-      }
-    }
-
-    // 2b. Find matching price in product.prices based on attributes (when combinations is missing)
-    if (allPrices.length > 0 && v.attributes && Array.isArray(v.attributes)) {
-      const matchingPrice = allPrices.find((p: any) => {
-        // API might return p.attributes or p.groupValues to define the criteria
-        const criteria = p.groupValues || p.attributes;
-        if (!criteria || !Array.isArray(criteria) || criteria.length === 0) return false;
-        
-        // Check if ALL criteria in price entry match the variant's attributes
-        return criteria.every((crit: any) => 
-           (v.attributes as any[]).some((attr: any) => {
-              // crit might be { attribute_id, attribute_value_id or value_id }
-              // attr is { attribute_id, value_id }
-              const critValId = crit.attribute_value_id ?? crit.value_id;
-              return attr.attribute_id == crit.attribute_id && attr.value_id == critValId;
-           })
-        );
-      });
-
-      if (matchingPrice) {
-        return getPriceValues(matchingPrice);
-      }
-    }
-
-    // Fallback to product price
-    return { actual: actualPrice, compare: compareAtPrice };
-  };
-
-  // Get stock - handle both array format and direct properties
-  let stockQuantity = 0;
-  let hasExplicitStock = false;
-
-  if (Array.isArray(apiProduct.stock) && apiProduct.stock.length > 0) {
-    hasExplicitStock = true;
-    // Sum up quantities from all stock entries
-    stockQuantity = apiProduct.stock.reduce((total: number, s: any) => {
-      const qty = s?.quantity ?? 0;
-      const reserved = s?.reserved_quantity ?? 0;
-      return total + Math.max(0, qty - reserved);
-    }, 0);
-  } else if (apiProduct.stock && typeof apiProduct.stock === 'object') {
-    hasExplicitStock = true;
-    const stockData = apiProduct.stock as { total_quantity?: number; available?: number; quantity?: number; in_stock?: boolean };
-    stockQuantity = stockData?.total_quantity ?? stockData?.available ?? stockData?.quantity ?? 0;
-  }
-  
-  // If no product-level stock but variants exist, sum up variant quantities
-  if (!hasExplicitStock && 'variants' in apiProduct && Array.isArray(apiProduct.variants) && apiProduct.variants.length > 0) {
-    const variantStock = (apiProduct.variants as any[]).reduce((total: number, v: any) => {
-      const qty = typeof v.quantity === 'number' ? v.quantity : 0;
-      return total + qty;
-    }, 0);
-    
-    if (variantStock > 0) {
-      stockQuantity = variantStock;
-      hasExplicitStock = true;
-    }
-  }
-
-  // If no explicit stock info found and calculated stock is 0, assume product is in stock (default to 100)
-  // This handles cases where the API doesn't return stock information for active products
-  if (!hasExplicitStock && stockQuantity === 0) {
-    stockQuantity = 100;
-  }
-
-  // Handle brand data from ProductDetail
-  const brandData = 'brand' in apiProduct ? (apiProduct as ProductDetail).brand : undefined;
-
-  // Extract dimensions
-  let dimensions: ProductDimensions | undefined = undefined;
-  if ('weights' in apiProduct && Array.isArray(apiProduct.weights) && apiProduct.weights.length > 0) {
-    const w = apiProduct.weights[0] as any;
-    dimensions = {
-      weight: w.weight ? String(w.weight) : undefined,
-      length: w.length ? String(w.length) : undefined,
-      width: w.width ? String(w.width) : undefined,
-      height: w.height ? String(w.height) : undefined,
-    };
-  } else if ('variants' in apiProduct && Array.isArray(apiProduct.variants) && apiProduct.variants.length > 0) {
-    // Fallback to first variant dimensions if product-level weights are not available
-    const v = apiProduct.variants[0] as any;
-    const hasDimensions = v.weight || (v.dimensions && (v.dimensions.length || v.dimensions.width || v.dimensions.height));
-    
-    if (hasDimensions) {
-      dimensions = {
-        weight: v.weight ? String(v.weight) : undefined,
-        length: v.dimensions?.length ? String(v.dimensions.length) : undefined,
-        width: v.dimensions?.width ? String(v.dimensions.width) : undefined,
-        height: v.dimensions?.height ? String(v.dimensions.height) : undefined,
-      };
-    }
-  }
-
-  // Create a map of variant stock if stock is an array at product level
-  const variantStockMap = new Map<number, number>();
-  if (Array.isArray(apiProduct.stock)) {
-    apiProduct.stock.forEach((s: any) => {
-      if (s.variant_id) {
-        const qty = s?.quantity ?? 0;
-        const reserved = s?.reserved_quantity ?? 0;
-        variantStockMap.set(s.variant_id, Math.max(0, qty - reserved));
-      }
+  // Collect all prices from groups
+  const prices: { price: number, sale_price?: number }[] = [];
+  if (product.price_groups) {
+    Object.values(product.price_groups).forEach(pg => {
+       const p = parseFloat(String(pg.price));
+       const s = pg.sale_price ? parseFloat(String(pg.sale_price)) : undefined;
+       prices.push({ price: p, sale_price: s });
     });
   }
 
-  // Extract attributes
-  let attributes: ProductAttribute[] | undefined = undefined;
-  const attributeIdToName = new Map<number, string>();
-
-  if ('attributes' in apiProduct && Array.isArray(apiProduct.attributes)) {
-    attributes = (apiProduct.attributes as any[])
-      .sort((a, b) => (a.attribute?.sort_order ?? 0) - (b.attribute?.sort_order ?? 0))
-      .map(attr => {
-      const attrName = getLocalizedText(attr.attribute?.name_en, attr.attribute?.name_ar, locale);
-      attributeIdToName.set(attr.attribute_id, attrName);
+  if (prices.length > 0) {
+      // Use the lowest price for display
+      const lowestPrice = prices.sort((a, b) => {
+         const priceA = a.sale_price ?? a.price;
+         const priceB = b.sale_price ?? b.price;
+         return priceA - priceB;
+      })[0];
       
-      const valuesMap = new Map<string, { meta?: string, image?: string, sortOrder: number }>();
-      
-      if ('variants' in apiProduct && Array.isArray(apiProduct.variants)) {
-        (apiProduct.variants as any[]).forEach(v => {
-          if (v.combinations && Array.isArray(v.combinations) && v.combinations.length > 0) {
-            v.combinations.forEach((c: any) => {
-              const combAttrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
-              if (combAttrId === attr.attribute_id) {
-                const val = getLocalizedText(
-                  c?.value_name_en ?? c?.value_name ?? c?.attribute_value?.value_en,
-                  c?.value_name_ar ?? c?.attribute_value?.value_ar,
-                  locale
-                );
-                if (!val) return;
-
-                // Use image_url if available (for media control), otherwise color_code
-                // If controls_media is true, we prioritize image_url from the attribute value if it exists
-                // But wait, the attribute value itself might not have the image url directly if it's just a "Color" value definition.
-                // The image is usually in the product media gallery, linked to the attribute value.
-                
-                // Let's check if we can find media linked to this attribute value in the product media
-                let mediaUrl = c?.attribute_value?.image_url;
-                const valueId = c?.value_id ?? c?.attribute_value_id;
-                
-                if (!mediaUrl && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
-                   // Find media that belongs to this attribute value
-                   const matchingMedia = (apiProduct.media as any[])
-                     .filter(m => 
-                       m?.media_group?.groupValues?.some((gv: any) => 
-                         gv.attribute_id === attr.attribute_id && gv.attribute_value_id === valueId
-                       )
-                     )
-                     .sort((a: any, b: any) => {
-                       const aGroupPrimary = a?.is_group_primary ? 1 : 0;
-                       const bGroupPrimary = b?.is_group_primary ? 1 : 0;
-                       if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
-
-                       const aPrimary = a?.is_primary ? 1 : 0;
-                       const bPrimary = b?.is_primary ? 1 : 0;
-                       if (bPrimary !== aPrimary) return bPrimary - aPrimary;
-
-                       const aOrder = typeof a?.sort_order === 'number' ? a.sort_order : 0;
-                       const bOrder = typeof b?.sort_order === 'number' ? b.sort_order : 0;
-                       return aOrder - bOrder;
-                     });
-
-                   if (matchingMedia.length > 0) {
-                     mediaUrl = matchingMedia[0].url;
-                   }
-                }
-                
-                const meta = c?.color_code ?? c?.attribute_value?.color_code;
-                const sortOrder = c?.attribute_value?.sort_order ?? 0;
-                valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
-              }
-            });
-          } else if (v.attributes && Array.isArray(v.attributes)) {
-             // Handle attributes array format (v.attributes instead of v.combinations)
-             v.attributes.forEach((attrData: any) => {
-                if (attrData.attribute_id === attr.attribute_id) {
-                    const val = getLocalizedText(attrData.value_name_en || attrData.value_name, attrData.value_name_ar, locale);
-                    
-                    let mediaUrl = attrData.image; 
-                    const valueId = attrData.value_id;
-                    
-                    // Fallback to check product media if attrData.image is missing
-                    if (!mediaUrl && valueId && 'media' in apiProduct && Array.isArray(apiProduct.media)) {
-                       const matchingMedia = (apiProduct.media as any[])
-                         .filter(m => 
-                           m?.media_group?.groupValues?.some((gv: any) => 
-                             gv.attribute_id === attr.attribute_id && gv.attribute_value_id === valueId
-                           )
-                         )
-                         .sort((a: any, b: any) => {
-                            // Sort logic...
-                           const aGroupPrimary = a?.is_group_primary ? 1 : 0;
-                           const bGroupPrimary = b?.is_group_primary ? 1 : 0;
-                           if (bGroupPrimary !== aGroupPrimary) return bGroupPrimary - aGroupPrimary;
-                           return (a?.sort_order ?? 0) - (b?.sort_order ?? 0);
-                         });
-
-                       if (matchingMedia.length > 0) mediaUrl = matchingMedia[0].url;
-                    }
-
-                    const meta = attrData.color_code;
-                    // For attributes array, sort order might not be available, default to 0
-                    const sortOrder = 0;
-                    
-                    valuesMap.set(val, { meta, image: mediaUrl, sortOrder });
-                }
-             });
-          }
-        });
-      }
-      
-      return {
-        id: String(attr.attribute_id),
-        name: attrName,
-        values: Array.from(valuesMap.entries())
-          .sort(([, a], [, b]) => a.sortOrder - b.sortOrder)
-          .map(([value, data]) => ({ 
-          value, 
-          meta: data.meta,
-          image: data.image
-        })),
-        isColor: attr.attribute?.is_color || false,
-        controlsPricing: attr.controls_pricing || false,
-        controlsMedia: attr.controls_media || false,
-        controlsWeight: attr.controls_weight || false
-      };
-    }).filter(a => a.values.length > 0);
-  } else if ('variants' in apiProduct && Array.isArray((apiProduct as any).variants)) {
-    // Newer API shape: product-level attributes are omitted; variant carries its own attributes.
-    // Build a product-level attribute list from the union of variant attributes.
-    const byAttrId = new Map<number, {
-      name: string;
-      values: Map<string, { meta?: string; image?: string }>;
-      isColor: boolean;
-    }>();
-
-    for (const v of (apiProduct as any).variants as any[]) {
-      const variantMediaUrl: string | undefined =
-        v?.media?.url ?? v?.media?.image?.url;
-
-      const attrs = v?.attributes;
-      if (!Array.isArray(attrs)) continue;
-
-      for (const a of attrs as any[]) {
-        const attrId: number | undefined = a?.attribute_id;
-        if (typeof attrId !== 'number') continue;
-
-        const attrName = getLocalizedText(a?.attribute_name, a?.attribute_name_ar, locale);
-        if (attrName) attributeIdToName.set(attrId, attrName);
-
-        const valueLabel = getLocalizedText(
-          a?.value_name_en ?? a?.value_name,
-          a?.value_name_ar,
-          locale
-        );
-        if (!valueLabel) continue;
-
-        const meta: string | undefined = typeof a?.color_code === 'string' ? a.color_code : undefined;
-        const isColor = Boolean(meta);
-        const image = isColor ? variantMediaUrl : undefined;
-
-        const existing = byAttrId.get(attrId) ?? {
-          name: attrName || String(attrId),
-          values: new Map<string, { meta?: string; image?: string }>(),
-          isColor: false,
-        };
-
-        if (attrName) existing.name = attrName;
-        existing.isColor = existing.isColor || isColor;
-        if (!existing.values.has(valueLabel)) {
-          existing.values.set(valueLabel, { meta, image });
-        }
-
-        byAttrId.set(attrId, existing);
-      }
-    }
-
-    attributes = Array.from(byAttrId.entries())
-      .sort(([aId], [bId]) => aId - bId)
-      .map(([attrId, data]) => ({
-        id: String(attrId),
-        name: data.name,
-        values: Array.from(data.values.entries()).map(([value, vData]) => ({
-          value,
-          meta: vData.meta,
-          image: vData.image,
-        })),
-        isColor: data.isColor,
-        controlsPricing: false,
-        controlsMedia: data.isColor,
-        controlsWeight: false,
-      }))
-      .filter((a) => a.values.length > 0);
+      actualPrice = lowestPrice.sale_price ?? lowestPrice.price;
+      compareAtPrice = lowestPrice.sale_price ? lowestPrice.price : undefined;
   }
 
-  const variantIds = Array.isArray((apiProduct as any).variants_ids)
-    ? (apiProduct as any).variants_ids.map((id: any) => String(id))
-    : [];
+  // 3. Attributes
+  const attributes: ProductAttribute[] = [];
+  const attributeIdToName = new Map<number, string>();
+  const attributeIdToValuesMap = new Map<number, Map<number, string>>(); 
 
-  const mappedVariants = 'variants' in apiProduct && apiProduct.variants
-    ? apiProduct.variants.map(v => {
-        let variantImage: string | undefined = undefined;
-        const variantAttributes: Record<string, string> = {};
-        if (v.combinations && Array.isArray(v.combinations) && v.combinations.length > 0) {
-          v.combinations.forEach((c: any) => {
-            const attrId = c?.attribute_id ?? c?.attribute_value?.attribute_id;
-            const attrName = attributeIdToName.get(attrId) ?? getLocalizedText(c?.attribute_name, c?.attribute_name_ar, locale);
-            const valName = getLocalizedText(
-              c?.value_name_en ?? c?.value_name ?? c?.attribute_value?.value_en,
-              c?.value_name_ar ?? c?.attribute_value?.value_ar,
-              locale
-            );
+  if (product.attributes) {
+    Object.entries(product.attributes).forEach(([key, attrGroup]) => {
+       const attrId = parseInt(key);
+       const attrName = getLocalizedText(attrGroup.name_en, attrGroup.name_ar, locale);
+       attributeIdToName.set(attrId, attrName);
 
-            if (attrName && valName) {
+       const values: ProductAttributeValue[] = [];
+       const valuesMap = new Map<number, string>();
+
+       if (attrGroup.values) {
+         Object.entries(attrGroup.values).forEach(([valKey, valData]) => {
+             const valId = parseInt(valKey);
+             const valName = getLocalizedText(valData.name_en, valData.name_ar, locale);
+             valuesMap.set(valId, valName);
+             
+             values.push({
+               value: valName,
+               meta: valData.color_code ?? undefined
+             });
+         });
+       }
+
+       attributeIdToValuesMap.set(attrId, valuesMap);
+
+       attributes.push({
+         id: key,
+         name: attrName,
+         values: values,
+         isColor: attrName.toLowerCase().includes('color') || attrName.includes('اللون') || Object.values(attrGroup.values || {}).some(v => !!v.color_code),
+         controlsPricing: false, 
+         controlsMedia: false, 
+         controlsWeight: false
+       });
+    });
+  }
+  
+  // 4. Stock
+  let stock = 0;
+  if (product.variants && product.variants.length > 0) {
+      stock = product.variants.reduce((acc, v) => acc + (v.quantity || 0), 0);
+  } else {
+      stock = product.quantity || 0;
+  }
+
+  // 5. Variants
+  const variants = product.variants?.map(v => {
+     // Resolve attributes
+     const variantAttributes: Record<string, string> = {};
+     if (v.attribute_values) {
+        Object.entries(v.attribute_values).forEach(([attrIdStr, valId]) => {
+           const attrId = parseInt(attrIdStr);
+           const pValId = typeof valId === 'number' ? valId : parseInt(valId as any);
+           const valName = attributeIdToValuesMap.get(attrId)?.get(pValId);
+           const attrName = attributeIdToName.get(attrId);
+           if (attrName && valName) {
               variantAttributes[attrName] = valName;
-            }
-          });
-        } else if (v.attributes && Array.isArray(v.attributes)) {
-           v.attributes.forEach((attr: any) => {
-             const attrName = locale === 'ar' ? (attr.attribute_name_ar || attr.attribute_name) : attr.attribute_name;
-             const valName = locale === 'ar' 
-               ? (attr.value_name_ar || attr.value_name) 
-               : (attr.value_name_en || attr.value_name || attr.value_name_ar);
-
-             if (attrName && valName) {
-               variantAttributes[attrName] = valName;
-             }
-          });
-        }
-        if (v.media) {
-           // v.media could be array or object
-           if (Array.isArray(v.media) && v.media.length > 0) {
-             const m = v.media[0];
-             variantImage = m?.url ?? m?.image?.url;
-           } else if (typeof v.media === 'object') {
-             const m = v.media as any;
-             variantImage = m.url ?? m.image?.url;
            }
+        });
+     }
+
+     // Resolve Price
+     let vPrice = 0;
+     let vComparePrice: number | undefined = undefined;
+     if (product.price_groups && v.price_group_id && product.price_groups[v.price_group_id]) {
+        const pg = product.price_groups[v.price_group_id];
+        const p = parseFloat(String(pg.price));
+        const s = pg.sale_price ? parseFloat(String(pg.sale_price)) : undefined;
+        vPrice = s ?? p;
+        vComparePrice = s ? p : undefined;
+     }
+
+     // Resolve Image
+     let vImage: string | undefined = undefined;
+     if (product.media_groups && v.media_group_id && product.media_groups[v.media_group_id]) {
+        const mg = product.media_groups[v.media_group_id];
+        if (mg.media) {
+            const groupPrimary = mg.media.find(m => m.is_group_primary);
+            if (groupPrimary) vImage = groupPrimary.url;
         }
+     }
 
-        const priceData = getVariantPriceData(v);
-        
-        const variantWeight = v.weight ? String(v.weight) : undefined;
-        let variantDims: ProductDimensions | undefined = undefined;
+     // Resolve Dimensions
+     let vDimensions: ProductDimensions | undefined = undefined;
+     if (product.weight_groups && v.weight_group_id && product.weight_groups[v.weight_group_id]) {
+         const wg = product.weight_groups[v.weight_group_id];
+         vDimensions = {
+             weight: String(wg.weight),
+             length: String(wg.dimensions?.length),
+             width: String(wg.dimensions?.width),
+             height: String(wg.dimensions?.height),
+         };
+     }
 
-        if (v.dimensions || variantWeight) {
-             variantDims = {
-                 weight: variantWeight,
-                 length: v.dimensions?.length ? String(v.dimensions.length) : undefined,
-                 width: v.dimensions?.width ? String(v.dimensions.width) : undefined,
-                 height: v.dimensions?.height ? String(v.dimensions.height) : undefined,
-             };
-        }
-
-        return {
-          id: String(v.id),
-          name: getLocalizedText(v.name_en, v.name_ar, locale) || '',
-          price: priceData.actual,
-          compareAtPrice: priceData.compare,
-          stock: typeof v.quantity === 'number' ? v.quantity : (variantStockMap.get(v.id) ?? (v.stock?.[0]?.quantity ?? v.stock?.[0]?.available ?? 0)),
-          sku: v.sku || '',
-          attributes: variantAttributes,
-          image: variantImage,
-          weight: variantWeight,
-          dimensions: variantDims
-        };
-      })
-    : undefined;
+     return {
+         id: String(v.id),
+         name: getLocalizedText(product.name_en, product.name_ar, locale),
+         price: vPrice,
+         compareAtPrice: vComparePrice,
+         stock: v.quantity,
+         sku: product.sku + '-' + v.id,
+         attributes: variantAttributes,
+         image: vImage,
+         dimensions: vDimensions
+     } as any;
+  }) || [];
 
   return {
-    id: String(apiProduct.id),
-    name: getLocalizedText(apiProduct.name_en, apiProduct.name_ar, locale) || 'Unnamed Product',
-    nameAr: apiProduct.name_ar,
-    slug: generateSlug(apiProduct.name_en) + '-' + apiProduct.id,
-    description: getLocalizedText(apiProduct.short_description_en, apiProduct.short_description_ar, locale),
-    descriptionAr: apiProduct.short_description_ar || undefined,
-    longDescription: getLocalizedText(apiProduct.long_description_en, apiProduct.long_description_ar, locale) || undefined,
-    attributes,
-    dimensions,
+    id: String(product.id),
+    name: getLocalizedText(product.name_en, product.name_ar, locale),
+    nameAr: product.name_ar,
+    slug: product.slug || generateSlug(product.name_en),
+    description: getLocalizedText(product.short_description_en, product.short_description_ar, locale),
+    descriptionAr: product.short_description_ar || undefined, // short_description_ar is string|null
+    longDescription: getLocalizedText(product.long_description_en, product.long_description_ar, locale),
     price: actualPrice,
     compareAtPrice: compareAtPrice,
-    images,
-    category: (() => {
-      // Check if categories array exists and has items
-      if ('categories' in apiProduct && apiProduct.categories && Array.isArray(apiProduct.categories) && apiProduct.categories.length > 0) {
-        const cat = apiProduct.categories[0];
-        return {
-          id: String(cat.id),
-          name: getLocalizedText(cat.name_en, cat.name_ar, locale) || 'Category',
-          nameAr: cat.name_ar,
-          slug: generateSlug(cat.name_en) + '-' + cat.id,
-        };
-      }
-      // Fallback to category object if it exists
-      if (apiProduct.category) {
-        return {
-          id: String(apiProduct.category.id),
-          name: getLocalizedText(apiProduct.category.name_en, apiProduct.category.name_ar, locale) || 'Category',
-          nameAr: apiProduct.category.name_ar,
-          slug: generateSlug(apiProduct.category.name_en) + '-' + apiProduct.category.id,
-        };
-      }
-      // Default fallback
-      return {
-        id: '0',
-        name: locale === 'ar' ? 'غير مصنف' : 'Uncategorized',
-        slug: 'uncategorized',
-      };
-    })(),
-    brand: brandData ? {
-      id: String(brandData.id),
-      name: getLocalizedText(brandData.name_en, brandData.name_ar, locale) || 'Brand',
-      slug: generateSlug(brandData.name_en) + '-' + brandData.id,
-      logo: brandData.logo || undefined,
+    images: images,
+    category: {
+      id: String(product.categories?.[0]?.id ?? ''),
+      name: getLocalizedText(product.categories?.[0]?.name_en, product.categories?.[0]?.name_ar, locale),
+      nameAr: product.categories?.[0]?.name_ar,
+      slug: generateSlug(product.categories?.[0]?.name_en),
+      description: product.categories?.[0]?.description_en ? getLocalizedText(product.categories[0].description_en, product.categories[0].description_ar, locale) : undefined,
+      image: product.categories?.[0]?.image || undefined,
+      children: [], // Add required properties
+      // ProductCount is not typically in product category object
+    } as any, // Cast because Category type might expect fields not present in this minimal mapping if type is strict
+    brand: product.brand ? {
+      id: String(product.brand.id),
+      name: getLocalizedText(product.brand.name_en, product.brand.name_ar, locale),
+      slug: generateSlug(product.brand.name_en),
+      logo: product.brand.logo || undefined
     } : undefined,
-    vendor: apiProduct.vendor ? {
-      id: String(apiProduct.vendor.id),
-      name: getLocalizedText(apiProduct.vendor.name_en, (apiProduct.vendor as { name_ar?: string }).name_ar, locale) || 'Vendor',
-      slug: generateSlug(apiProduct.vendor.name_en) + '-' + apiProduct.vendor.id,
-      logo: (apiProduct.vendor as { logo?: string }).logo || undefined,
-      description: getLocalizedText((apiProduct.vendor as any).description_en, (apiProduct.vendor as any).description_ar, locale),
-      rating: 0,
-      reviewCount: 0,
+    vendor: product.vendor ? {
+      id: String(product.vendor.id),
+      name: getLocalizedText(product.vendor.name_en, product.vendor.name_ar, locale),
+      slug: generateSlug(product.vendor.name_en),
+      description: getLocalizedText(product.vendor.description_en, product.vendor.description_ar, locale),
+      logo: product.vendor.logo || undefined,
+      rating: typeof product.vendor.rating === 'string' ? parseFloat(product.vendor.rating) : (product.vendor.rating || 0),
+      reviewCount: product.vendor.rating_count || 0
     } : undefined,
     tags: [],
-    variants: mappedVariants,
-    variantIds,
-    hasVariants: (mappedVariants?.length ?? 0) > 0 || variantIds.length > 0,
-    stock: stockQuantity,
-    sku: apiProduct.sku,
-    rating: typeof apiProduct.average_rating === 'string' ? parseFloat(apiProduct.average_rating) : apiProduct.average_rating,
-    reviewCount: apiProduct.total_ratings,
+    variants: variants,
+    hasVariants: variants.length > 0,
+    attributes: attributes,
+    dimensions: (() => {
+        if (product.weight_groups) {
+            const firstWg = Object.values(product.weight_groups)[0];
+             if (firstWg) {
+                 return {
+                    weight: String(firstWg.weight),
+                    length: String(firstWg.dimensions?.length),
+                    width: String(firstWg.dimensions?.width),
+                    height: String(firstWg.dimensions?.height),
+                 };
+             }
+        }
+        return undefined;
+    })(),
+    stock: stock,
+    sku: product.sku,
+    rating: parseFloat(String(product.average_rating)),
+    reviewCount: product.total_ratings,
     isFeatured: false,
-    isNew: isNewProduct(apiProduct.created_at),
-    createdAt: apiProduct.created_at,
-    updatedAt: apiProduct.updated_at,
+    isNew: isNewProduct(product.created_at),
+    createdAt: product.created_at,
+    updatedAt: product.updated_at
   };
 }
 

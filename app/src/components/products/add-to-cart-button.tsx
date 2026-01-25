@@ -93,7 +93,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
       return (
           <div className="w-full">
             {isAtMaxStock && (
-              <div className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 border border-amber-200">
+              <div className="mb-2 text-center rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 border border-amber-200">
                 {t('maxStockReached', { count: maxStock })}
               </div>
             )}

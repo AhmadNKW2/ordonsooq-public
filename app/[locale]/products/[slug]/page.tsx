@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { notFound, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-react";
 import { useProduct, useProductsByCategory, useListingVariantProducts } from "@/hooks";
@@ -34,7 +35,7 @@ export default function ProductPage() {
   const { data: productData, isLoading, error } = useProduct(productId);
 
   // Fetch related products by category
-  const categoryId = productData?.category?.id;
+  const categoryId = productData?.categories?.[0]?.id;
   const { data: relatedData } = useProductsByCategory(
     categoryId || 0,
     { limit: 4, status: 'active' }
@@ -109,26 +110,20 @@ export default function ProductPage() {
 
   // Determine which image index to show
   const selectedImageIndex = useMemo(() => {
-    if (!product || !product.attributes) return 0;
+    if (!product || !product.images) return 0;
 
-    // Find attribute that controls media
-    const mediaAttribute = product.attributes.find(a => a.controlsMedia);
-    if (!mediaAttribute) return 0;
-
-    // Get selected value for that attribute
-    const selectedValue = selectedOptions[mediaAttribute.name];
-    if (!selectedValue) return 0;
-
-    // Find the image url for this value
-    const attributeValue = mediaAttribute.values.find(v => v.value === selectedValue);
-
-    if (attributeValue?.image) {
-      const index = product.images.indexOf(attributeValue.image);
-      return index >= 0 ? index : 0;
+    // 1. If we have a selected variant with an image, try to find it
+    if (selectedVariant?.image) {
+       const index = product.images.indexOf(selectedVariant.image);
+       if (index >= 0) return index;
     }
 
+    // 2. Fallback: Find attribute that controls media (legacy behavior support if needed, but variant image is preferred)
+    // Using variant image is safer as per new requirement "selected variant must appear its primary media group".
+    // If no variant selected or it has no image, default to 0 (which is the global primary image due to sorting order).
+    
     return 0;
-  }, [product, selectedOptions]);
+  }, [product, selectedVariant]);
 
   // Sync internal gallery state
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -253,16 +248,13 @@ export default function ProductPage() {
         <div className="flex flex-col gap-2">
           {product.brand && (
             <div className="flex items-center gap-2">
-              {product.brand.logo && (
-                <Image
-                  src={product.brand.logo}
-                  alt={product.brand.name}
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                />
-              )}
-              <p className="text-sm text-primary font-medium">{product.brand.name}</p>
+              <Link
+                href={`/brands/${product.brand.slug}`}
+                className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
+              >
+                {product.brand.name}
+                <ChevronRight size={16} />
+              </Link>
             </div>
           )}
 
@@ -398,16 +390,13 @@ export default function ProductPage() {
           <div>
             {product.brand && (
               <div className="flex items-center gap-2 mb-2">
-                {product.brand.logo && (
-                  <Image
-                    src={product.brand.logo}
-                    alt={product.brand.name}
-                    width={32}
-                    height={32}
-                    className="object-contain"
-                  />
-                )}
-                <p className="text-sm text-primary font-medium">{product.brand.name}</p>
+                <Link
+                  href={`/brands/${product.brand.slug}`}
+                  className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
+                >
+                  {product.brand.name}
+                  <ChevronRight size={16} />
+                </Link>
               </div>
             )}
             <h1 className="text-2xl md:text-3xl font-bold text-primary">

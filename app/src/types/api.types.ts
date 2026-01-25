@@ -88,43 +88,62 @@ export type ProductWeight = {
   weightGroup?: Record<string, unknown>;
 };
 
-export type ProductVariant = {
+
+
+export type ProductAttributeValue = {
+  name_en: string;
+  name_ar: string;
+  color_code: string | null;
+};
+
+export type ProductAttributeGroup = {
+  name_en: string;
+  name_ar: string;
+  values: Record<string, ProductAttributeValue>;
+};
+
+export type ProductMediaItem = {
   id: number;
-  name_en?: string;
-  name_ar?: string;
-  sku?: string;
-  prices?: ProductPrice[];
-  price?: ProductPrice | { price: string; sale_price?: string | null };
-  stock?: ProductStock[];
-  quantity?: number;
-  combinations?: any[];
-  attributes?: any[];
-  is_active?: boolean;
-  media?: ProductMedia | { url: string; [key: string]: any } | ProductMedia[];
-  weight?: number | string;
-  dimensions?: {
-    length?: number | string;
-    width?: number | string;
-    height?: number | string;
+  url: string;
+  type: string;
+  alt_text: string | null;
+  is_primary: boolean;
+  is_group_primary: boolean;
+};
+
+export type ProductMediaGroup = {
+  media: ProductMediaItem[];
+};
+
+export type ProductPriceGroup = {
+  price: string;
+  sale_price: string | null;
+};
+
+export type ProductWeightGroup = {
+  weight: string;
+  dimensions: {
+    length: string;
+    width: string;
+    height: string;
   };
 };
 
-export type ProductAttribute = {
+export type ProductVariant = {
   id: number;
-  name_en?: string;
-  name_ar?: string;
-  value_en?: string;
-  value_ar?: string;
-  is_color?: boolean;
-  controls_pricing?: boolean;
-  controls_media?: boolean;
-  controls_weight?: boolean;
+  is_active: boolean;
+  quantity: number;
+  attribute_values: Record<string, number>;
+  price_group_id: string;
+  media_group_id: string;
+  weight_group_id: string;
 };
 
 export type Product = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   sku: string;
   short_description_en: string | null;
   short_description_ar: string | null;
@@ -132,53 +151,29 @@ export type Product = {
   long_description_ar: string | null;
   status: Status;
   visible: boolean;
-  average_rating: number | string;
+  average_rating: string;
   total_ratings: number;
   created_at: string;
   updated_at: string;
-  category?: ProductCategory | null;
-  categories: ProductCategory[];
-  vendor: ProductVendor | null;
-  brand_id?: number | null;
-  brand?: any;
-  primary_image?: string | { url: string } | null;
-  stock?: ProductStock | { total_quantity: number; in_stock: boolean } | null;
-  prices?: ProductPrice[];
-  price?: ProductPrice[] | string;
-  sale_price?: string | null;
-  media?: ProductMedia[];
-  variants?: ProductVariant[];
+  
+  // Relations
+  vendor: Vendor;
+  brand: Brand | null;
+  categories: Category[];
+  
+  // New Complex Structures
+  attributes: Record<string, ProductAttributeGroup>;
+  media_groups: Record<string, ProductMediaGroup>;
+  price_groups: Record<string, ProductPriceGroup>;
+  weight_groups: Record<string, ProductWeightGroup>;
+  
+  quantity?: number;
+  
+  variants: ProductVariant[];
 };
 
-export type ProductDetail = Product & {
-  media: ProductMedia[];
-  weights: ProductWeight[];
-  variants: ProductVariant[];
-  attributes: {
-    id: number;
-    product_id: number;
-    attribute_id: number;
-    attribute: ProductAttribute;
-    controls_pricing: boolean;
-    controls_media: boolean;
-    controls_weight: boolean;
-  }[];
-  brand?: {
-    id: number;
-    name_en: string;
-    name_ar: string;
-    logo?: string;
-    status: Status;
-  };
-  stock: Array<{
-    id: number;
-    product_id: number;
-    variant_id: number | null;
-    quantity: number;
-    reserved_quantity: number;
-    low_stock_threshold: number;
-  }>;
-};
+
+export type ProductDetail = Product;
 
 // ===== Category Types =====
 export type CategorySortBy =
@@ -229,8 +224,8 @@ export type Category = {
   parent_id: number | null;
   createdAt: string;
   updatedAt: string;
-  parent: CategoryChild | null;
-  children: CategoryChild[];
+  parent?: CategoryChild | null;
+  children?: CategoryChild[];
 };
 
 export type CategoryDetail = Category & {
@@ -260,12 +255,14 @@ export type Vendor = {
   name_ar: string;
   description_en: string | null;
   description_ar: string | null;
-  email: string;
+  email: string | null;
   phone: string | null;
   address: string | null;
   logo: string | null;
   status: Status;
   visible: boolean;
+  rating: string | number;
+  rating_count: number;
   sort_order: number;
   created_at: string;
   updated_at: string;

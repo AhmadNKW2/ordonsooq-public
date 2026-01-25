@@ -8,5 +8,8 @@ export const routing = defineRouting({
   defaultLocale: 'ar',
 
   // The prefix for localized routes
-  localePrefix: 'as-needed'
+  localePrefix: 'as-needed',
+
+  // Disable automatic locale detection
+  localeDetection: false
 });

@@ -4,10 +4,10 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
-import { useRootCategories } from "@/hooks";
+import { useRootCategories } from "@/hooks/useCategories";
 import { transformCategories, type Locale } from "@/lib/transformers";
 import { CategoryCardSkeleton } from "@/components/ui/skeleton";
-import { ListingLayout } from "@/components/layout/listing-layout";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function CategoriesPage() {
   const locale = useLocale() as Locale;
@@ -25,30 +25,41 @@ export default function CategoriesPage() {
 
   if (error) {
     return (
-      <ListingLayout
-         title={t('shopByCategory')}
-         subtitle={t('shopByCategoryDesc')}
-         breadcrumbs={[
-            { label: tCommon("home"), href: "/" },
-            { label: tNav("categories"), href: "/categories" },
-         ]}
-      >
+      <div className="container mx-auto px-4 md:px-6 py-8">
+         <div className="mb-6">
+            <Breadcrumb 
+              items={[
+                { label: tCommon("home"), href: "/" },
+                { label: tNav("categories"), href: "/categories" },
+              ]} 
+            />
+         </div>
+         <div className="mb-8">
+           <h1 className="text-3xl font-bold text-gray-900">{t('shopByCategory')}</h1>
+           <p className="text-gray-500 mt-2">{t('shopByCategoryDesc')}</p>
+        </div>
         <div className="text-center py-12">
           <p className="text-secondary">{t('errorLoading')}</p>
         </div>
-      </ListingLayout>
+      </div>
     );
   }
 
   return (
-    <ListingLayout
-         title={t('shopByCategory')}
-         subtitle={t('shopByCategoryDesc')}
-         breadcrumbs={[
+    <div className="container mx-auto px-4 md:px-6 py-8">
+      <div className="mb-6">
+        <Breadcrumb 
+            items={[
             { label: tCommon("home"), href: "/" },
             { label: tNav("categories"), href: "/categories" },
-         ]}
-    >
+            ]} 
+        />
+      </div>
+      <div className="mb-8">
+           <h1 className="text-3xl font-bold text-gray-900">{t('shopByCategory')}</h1>
+           <p className="text-gray-500 mt-2">{t('shopByCategoryDesc')}</p>
+      </div>
+
       {/* Categories Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -61,7 +72,7 @@ export default function CategoriesPage() {
           <p className="text-third">{t('noCategories')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {categories.map((category) => {
             const subcategories = category.children || [];
             
@@ -125,6 +136,6 @@ export default function CategoriesPage() {
           })}
         </div>
       )}
-    </ListingLayout>
+    </div>
   );
 }

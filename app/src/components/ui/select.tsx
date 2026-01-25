@@ -198,7 +198,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
             ref={listRef}
             role="listbox"
             className={cn(
-              "bg-white rounded-lg shadow-lg",
+              "bg-white rounded-lg shadow-lg border border-secondary/50",
               "max-h-80 overflow-auto",
               "py-2"
             )}

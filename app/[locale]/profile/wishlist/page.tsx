@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { Heart, ShoppingBag, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Product } from "@/types";
+import { transformProduct } from "@/lib/transformers";
 
 function toNumber(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
@@ -30,50 +31,7 @@ export default function WishlistPage() {
       {items.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => {
-            const rawRegularPrice = toNumber((item.product as any)?.price) ?? 0;
-            const rawSalePrice =
-              toNumber((item.product as any)?.sale_price) ??
-              toNumber((item.product as any)?.salePrice);
-
-            const isValidSale =
-              rawSalePrice !== undefined && rawSalePrice > 0 && rawSalePrice < rawRegularPrice;
-
-            const price = isValidSale ? (rawSalePrice as number) : rawRegularPrice;
-            const compareAtPrice = isValidSale ? rawRegularPrice : undefined;
-
-            const productName =
-              locale === "ar"
-                ? item.product.name_ar || item.product.name_en
-                : item.product.name_en;
-
-            const image =
-              (item.product as any)?.primary_image ||
-              (item.product as any)?.image ||
-              (item.product as any)?.images?.[0];
-
-            const slug = (item.product as any)?.slug ?? String(item.product.id);
-
-            const mappedProduct: Product = {
-              id: String(item.product.id),
-              name: productName,
-              nameAr: item.product.name_ar,
-              slug,
-              description: "",
-              descriptionAr: "",
-              price,
-              compareAtPrice,
-              images: image ? [String(image)] : ["/placeholder.svg"],
-              category: { id: "", name: "", slug: "" },
-              tags: [],
-              stock: toNumber((item.product as any)?.stock) ?? 999,
-              sku: String((item.product as any)?.sku ?? ""),
-              rating: 0,
-              reviewCount: 0,
-              isFeatured: false,
-              isNew: false,
-              createdAt: item.created_at,
-              updatedAt: item.created_at,
-            };
+            const mappedProduct = transformProduct(item.product as any, locale as any);
 
             return (
               <div key={item.id} className="relative group">

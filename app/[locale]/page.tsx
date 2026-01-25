@@ -1,13 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import {
-  HeroBanner,
-  ShopBySection,
-  ProductsSection,
-  FeaturesSection,
-  Newsletter,
-} from "@/components/home";
+import { HeroBanner } from "@/components/home/hero-banner";
+import { ShopBySection } from "@/components/home/shop-by-section";
+import { ProductsSection } from "@/components/home/featured-products";
+import { FeaturesSection } from "@/components/home/features-section";
+import { Newsletter } from "@/components/home/newsletter";
 import type { ShopByItem } from "@/components/home/shop-by-section";
 import { useProducts, useHome, useListingVariantProducts } from "@/hooks";
 import { transformHomeData, type Locale } from "@/lib/transformers";
