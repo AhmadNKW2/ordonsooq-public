@@ -16,3 +16,4 @@ export * from './useOrders';
 export * from './useWallet';
 
 export * from './useAuth';
+export * from './useHorizontalScroll';

@@ -24,7 +24,7 @@ export function EntityHeader({
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl p-6 md:p-8 mb-8 border border-gray-100 flex flex-col md:flex-row gap-8",
+        "bg-white rounded-2xl p-6 md:p-8 border border-gray-100 flex flex-col md:flex-row gap-8",
         className
       )}
     >
@@ -34,7 +34,7 @@ export function EntityHeader({
             src={image}
             alt={title}
             fill
-            className="object-contain p-4"
+            className="object-contain "
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">

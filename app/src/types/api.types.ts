@@ -201,6 +201,7 @@ export type CategoryChild = {
   name_ar: string;
   level?: number;
   sortOrder?: number;
+  image: string | null;
 };
 
 export type CategoryProduct = {
@@ -229,7 +230,7 @@ export type Category = {
 };
 
 export type CategoryDetail = Category & {
-  products: CategoryProduct[];
+  products: Product[];
 };
 
 // ===== Vendor Types =====

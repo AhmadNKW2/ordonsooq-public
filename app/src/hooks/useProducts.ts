@@ -21,10 +21,11 @@ export const PRODUCT_QUERY_KEYS = {
 /**
  * Hook to fetch paginated products with filters
  */
-export function useProducts(filters: ProductFilters = {}) {
+export function useProducts(filters: ProductFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: PRODUCT_QUERY_KEYS.list(filters),
     queryFn: () => productService.getAll(filters),
+    enabled: options?.enabled,
   });
 }
 

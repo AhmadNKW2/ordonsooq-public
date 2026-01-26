@@ -13,10 +13,11 @@ export const BRAND_QUERY_KEYS = {
 /**
  * Hook to fetch all brands with optional filters
  */
-export function useBrands(filters: BrandFilters = {}) {
+export function useBrands(filters: BrandFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: BRAND_QUERY_KEYS.list(filters),
     queryFn: () => brandService.getAll(filters),
+    enabled: options?.enabled,
   });
 }
 

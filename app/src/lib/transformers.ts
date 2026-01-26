@@ -315,8 +315,12 @@ export function transformCategory(apiCategory: ApiCategory | CategoryDetail, loc
       name: getLocalizedText(child.name_en, child.name_ar, locale),
       nameAr: child.name_ar,
       slug: generateSlug(child.name_en) + '-' + child.id,
+      image: child.image || undefined,
     })),
     productCount: 'products' in apiCategory ? apiCategory.products?.length : undefined,
+    products: 'products' in apiCategory && apiCategory.products 
+      ? transformProducts(apiCategory.products as any[], locale)
+      : undefined
   };
 }
 

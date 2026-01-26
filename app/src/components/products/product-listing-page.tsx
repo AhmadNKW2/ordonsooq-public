@@ -8,7 +8,7 @@ import { Button, Badge, Card, Sheet, Select } from "@/components/ui";
 import { useProducts, useCategories, useBrands, useListingVariantProducts } from "@/hooks";
 import { transformCategories, transformBrands, type Locale } from "@/lib/transformers";
 import { cn } from "@/lib/utils";
-import type { ProductFilters as ApiProductFilters } from "@/types/api.types";
+import type { ProductFilters as ApiProductFilters, Product as ApiProduct, Brand as ApiBrand } from "@/types/api.types";
 import { Category } from "@/types";
 
 // Map frontend sort options to API sort options
@@ -27,6 +27,8 @@ interface ProductListingPageProps {
   headerContent?: React.ReactNode;
   showBreadcrumb?: boolean;
   availableCategories?: Category[]; // Optional Categories to show in filters
+  preloadedProducts?: ApiProduct[];
+  preloadedBrands?: ApiBrand[];
 }
 
 export function ProductListingPage({
@@ -34,7 +36,9 @@ export function ProductListingPage({
   title,
   subtitle,
   headerContent,
-  availableCategories
+  availableCategories,
+  preloadedProducts,
+  preloadedBrands
 }: ProductListingPageProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations('product');
@@ -96,11 +100,11 @@ export function ProductListingPage({
   }, [page, sortBy, filters, initialFilters]);
 
   // Fetch products
-  const { data, isLoading, error } = useProducts(apiFilters);
+  const { data, isLoading, error } = useProducts(apiFilters, { enabled: !preloadedProducts });
 
   // Safe unwrap for products
-  const productList = Array.isArray(data) ? data : (data?.data || []);
-  const meta = Array.isArray(data) ? undefined : data?.meta;
+  const productList = preloadedProducts || (Array.isArray(data) ? data : (data?.data || []));
+  const meta = preloadedProducts ? undefined : (Array.isArray(data) ? undefined : data?.meta);
 
   // Fetch categories (only if not provided)
   const { data: categoriesData } = useCategories({
@@ -118,8 +122,8 @@ export function ProductListingPage({
     status: 'active',
     sortBy: 'sort_order',
     sortOrder: 'ASC'
-  });
-  const brandList = Array.isArray(brandsData) ? brandsData : (brandsData?.data || []);
+  }, { enabled: !preloadedBrands });
+  const brandList = preloadedBrands || (Array.isArray(brandsData) ? brandsData : (brandsData?.data || []));
 
 
   // Transform data

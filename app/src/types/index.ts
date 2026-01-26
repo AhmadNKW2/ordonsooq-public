@@ -100,6 +100,7 @@ export interface Category {
   parentId?: string;
   children?: Category[];
   productCount?: number;
+  products?: Product[];
 }
 
 // Brand Types
