@@ -8,8 +8,8 @@ import { useTranslations, useLocale } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { useCategories } from "@/hooks";
-import { transformCategories, type Locale } from "@/lib/transformers";
+import { useHome } from "@/hooks";
+import { transformHomeCategory, type Locale } from "@/lib/transformers";
 import { Category } from "@/types";
 
 interface MobileNavProps {
@@ -33,15 +33,9 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   }, [pathname, onClose]);
 
   // Fetch Categories
-  const { data: categoriesData } = useCategories({ 
-    limit: 100, 
-    status: 'active',
-    sortBy: 'sortOrder',
-    sortOrder: 'ASC'
-  });
+  const { data: homeData } = useHome();
   
-  const fetchedCategories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
-  const categories = transformCategories(fetchedCategories, locale);
+  const categories = (homeData?.categories || []).map(c => transformHomeCategory(c, locale));
 
   const currentCategory = history.length > 0 ? history[history.length - 1] : null;
   const displayedCategories = currentCategory ? currentCategory.children || [] : categories;

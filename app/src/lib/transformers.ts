@@ -20,19 +20,6 @@ function getLocalizedText(en: string | null | undefined, ar: string | null | und
 }
 
 /**
- * Generate a slug from a string (with null safety)
- */
-function generateSlug(text: string | null | undefined): string {
-  if (!text) return 'item';
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim() || 'item';
-}
-
-/**
  * Extract image URL from primary_image (can be string or object)
  */
 function extractPrimaryImageUrl(primaryImage: unknown): string | null {
@@ -237,7 +224,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     id: String(product.id),
     name: getLocalizedText(product.name_en, product.name_ar, locale),
     nameAr: product.name_ar,
-    slug: product.slug || generateSlug(product.name_en),
+    slug: product.slug,
     description: getLocalizedText(product.short_description_en, product.short_description_ar, locale),
     descriptionAr: product.short_description_ar || undefined, // short_description_ar is string|null
     longDescription: getLocalizedText(product.long_description_en, product.long_description_ar, locale),
@@ -248,7 +235,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
       id: String(product.categories?.[0]?.id ?? ''),
       name: getLocalizedText(product.categories?.[0]?.name_en, product.categories?.[0]?.name_ar, locale),
       nameAr: product.categories?.[0]?.name_ar,
-      slug: generateSlug(product.categories?.[0]?.name_en),
+      slug: product.categories?.[0]?.slug || '',
       description: product.categories?.[0]?.description_en ? getLocalizedText(product.categories[0].description_en, product.categories[0].description_ar, locale) : undefined,
       image: product.categories?.[0]?.image || undefined,
       children: [], // Add required properties
@@ -257,13 +244,13 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     brand: product.brand ? {
       id: String(product.brand.id),
       name: getLocalizedText(product.brand.name_en, product.brand.name_ar, locale),
-      slug: generateSlug(product.brand.name_en),
+      slug: product.brand.slug || '',
       logo: product.brand.logo || undefined
     } : undefined,
     vendor: product.vendor ? {
       id: String(product.vendor.id),
       name: getLocalizedText(product.vendor.name_en, product.vendor.name_ar, locale),
-      slug: generateSlug(product.vendor.name_en),
+      slug: product.vendor.slug || '',
       description: getLocalizedText(product.vendor.description_en, product.vendor.description_ar, locale),
       logo: product.vendor.logo || undefined,
       rating: typeof product.vendor.rating === 'string' ? parseFloat(product.vendor.rating) : (product.vendor.rating || 0),
@@ -306,7 +293,7 @@ export function transformCategory(apiCategory: ApiCategory | CategoryDetail, loc
     id: String(apiCategory.id),
     name: getLocalizedText(apiCategory.name_en, apiCategory.name_ar, locale),
     nameAr: apiCategory.name_ar,
-    slug: generateSlug(apiCategory.name_en) + '-' + apiCategory.id,
+    slug: apiCategory.slug || '',
     description: getLocalizedText(apiCategory.description_en, apiCategory.description_ar, locale) || undefined,
     image: apiCategory.image || undefined,
     parentId: apiCategory.parent_id ? String(apiCategory.parent_id) : undefined,
@@ -314,7 +301,7 @@ export function transformCategory(apiCategory: ApiCategory | CategoryDetail, loc
       id: String(child.id),
       name: getLocalizedText(child.name_en, child.name_ar, locale),
       nameAr: child.name_ar,
-      slug: generateSlug(child.name_en) + '-' + child.id,
+      slug: child.slug || '',
       image: child.image || undefined,
     })),
     productCount: 'products' in apiCategory ? apiCategory.products?.length : undefined,
@@ -331,7 +318,7 @@ export function transformVendor(apiVendor: ApiVendor, locale: Locale = 'en'): Fr
   return {
     id: String(apiVendor.id),
     name: getLocalizedText(apiVendor.name_en, apiVendor.name_ar, locale),
-    slug: generateSlug(apiVendor.name_en) + '-' + apiVendor.id,
+    slug: apiVendor.slug || '',
     logo: apiVendor.logo || undefined,
     rating: 0, // Not in API response
     reviewCount: 0, // Not in API response
@@ -391,7 +378,7 @@ export function transformBrand(apiBrand: HomeBrand | any, locale: Locale = 'en')
   return {
     id: String(apiBrand.id),
     name,
-    slug: apiBrand.slug || `brand-${generateSlug(name)}-${apiBrand.id}`,
+    slug: apiBrand.slug || '',
     logo: apiBrand.logo || undefined,
     description: getLocalizedText(apiBrand.description_en, apiBrand.description_ar, locale),
   };
@@ -447,8 +434,10 @@ export function transformHomeCategory(homeCategory: HomeCategory, locale: Locale
     id: String(homeCategory.id),
     name: getLocalizedText(homeCategory.name_en, homeCategory.name_ar, locale),
     nameAr: homeCategory.name_ar,
-    slug: generateSlug(homeCategory.name_en) + '-' + homeCategory.id,
+    slug: homeCategory.slug || '',
+    description: getLocalizedText(homeCategory.description_en, homeCategory.description_ar, locale) || undefined,
     image: homeCategory.image || undefined,
+    children: homeCategory.children?.map(child => transformHomeCategory(child, locale)),
   };
 }
 
@@ -459,7 +448,7 @@ export function transformHomeVendor(homeVendor: HomeVendor, locale: Locale = 'en
   return {
     id: String(homeVendor.id),
     name: getLocalizedText(homeVendor.name_en, homeVendor.name_ar, locale),
-    slug: generateSlug(homeVendor.name_en) + '-' + homeVendor.id,
+    slug: homeVendor.slug || '',
     logo: homeVendor.logo || undefined,
     rating: 0,
     reviewCount: 0,
@@ -473,7 +462,7 @@ export function transformHomeBrand(homeBrand: HomeBrand, locale: Locale = 'en'):
   return {
     id: String(homeBrand.id),
     name: getLocalizedText(homeBrand.name_en, homeBrand.name_ar, locale),
-    slug: generateSlug(homeBrand.name_en) + '-' + homeBrand.id,
+    slug: homeBrand.slug || '',
     logo: homeBrand.logo || undefined,
   };
 }

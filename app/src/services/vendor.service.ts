@@ -21,6 +21,13 @@ export const vendorService = {
   },
 
   /**
+   * Get a single vendor by Slug
+   */
+  getBySlug: (slug: string) => {
+    return apiClient.get<Vendor>(`/vendors/slug/${slug}`);
+  },
+
+  /**
    * Get a single vendor by ID
    */
   getById: (id: number) => {

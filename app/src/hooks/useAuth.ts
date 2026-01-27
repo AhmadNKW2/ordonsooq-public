@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type User } from "@/types";
 import { authService } from "@/services/auth.service";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect } from "react";
 import { apiClient, ApiError } from "@/lib/api-client";
 

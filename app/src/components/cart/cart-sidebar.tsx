@@ -7,7 +7,7 @@ import { useCart } from "@/hooks/use-cart";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
-import { cn, formatPrice, slugify } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 
 export function CartSidebar() {
@@ -157,7 +157,7 @@ export function CartSidebar() {
             items.map((item) => (
               <div key={item.id} className="flex gap-5 bg-white p-3 rounded-xl border border-gray-100 hover:border-primary/20 transition-colors">
                 {(() => {
-                  const productSlug = item.product.slug || `${slugify(item.product.name_en)}-${item.product_id}`;
+                  const productSlug = item.product.slug;
                   const productHref = item.variant_id
                     ? `/products/${productSlug}?variant=${item.variant_id}`
                     : `/products/${productSlug}`;

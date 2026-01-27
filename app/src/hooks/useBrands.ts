@@ -8,6 +8,7 @@ export const BRAND_QUERY_KEYS = {
   list: (filters: BrandFilters) => [...BRAND_QUERY_KEYS.lists(), filters] as const,
   details: () => [...BRAND_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...BRAND_QUERY_KEYS.details(), id] as const,
+  detailBySlug: (slug: string) => [...BRAND_QUERY_KEYS.details(), 'slug', slug] as const,
 };
 
 /**
@@ -29,5 +30,16 @@ export function useBrand(id: number) {
     queryKey: BRAND_QUERY_KEYS.detail(id),
     queryFn: () => brandService.getById(id),
     enabled: !!id && id > 0,
+  });
+}
+
+/**
+ * Hook to fetch a single brand by Slug
+ */
+export function useBrandBySlug(slug: string) {
+  return useQuery({
+    queryKey: BRAND_QUERY_KEYS.detailBySlug(slug),
+    queryFn: () => brandService.getBySlug(slug),
+    enabled: !!slug,
   });
 }

@@ -6,7 +6,7 @@ import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight, ChevronUp, Chev
 import { Button, Card, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useWishlist } from "@/hooks/use-wishlist";
-import { formatPrice, calculateDiscount, cn, slugify } from "@/lib/utils";
+import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -113,7 +113,7 @@ export default function CartPage() {
             const unitCompareAtPrice = variantPricing?.compareAtPrice ?? productPricing.compareAtPrice;
 
             const discount = unitCompareAtPrice ? calculateDiscount(unitCompareAtPrice, unitPrice) : 0;
-            const productSlug = item.product.slug || `${slugify(item.product.name_en)}-${item.product_id}`;
+            const productSlug = item.product.slug;
             const productHref = item.variant_id
               ? `/products/${productSlug}?variant=${item.variant_id}`
               : `/products/${productSlug}`;

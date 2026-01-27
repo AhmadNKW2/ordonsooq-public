@@ -43,15 +43,17 @@ export function EntityHeader({
         )}
       </div>
       
-      <div className="flex-grow flex flex-col text-center md:text-start">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
+      <div className="flex-grow flex flex-col text-center md:text-start gap-5">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
           {title}
         </h1>
 
         {children}
 
+        {children && description && <div className="h-px bg-gray-100 w-full" />}
+
         {description && (
-          <div className={cn("text-gray-600", children && "mt-4 pt-4 border-t border-gray-100")}>
+          <div className="text-gray-600">
             <p>{description}</p>
           </div>
         )}

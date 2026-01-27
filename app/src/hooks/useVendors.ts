@@ -8,6 +8,7 @@ export const VENDOR_QUERY_KEYS = {
   list: (filters: VendorFilters) => [...VENDOR_QUERY_KEYS.lists(), filters] as const,
   details: () => [...VENDOR_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...VENDOR_QUERY_KEYS.details(), id] as const,
+  detailBySlug: (slug: string) => [...VENDOR_QUERY_KEYS.details(), 'slug', slug] as const,
 };
 
 /**
@@ -28,5 +29,16 @@ export function useVendor(id: number) {
     queryKey: VENDOR_QUERY_KEYS.detail(id),
     queryFn: () => vendorService.getById(id),
     enabled: !!id && id > 0,
+  });
+}
+
+/**
+ * Hook to fetch a single vendor by Slug
+ */
+export function useVendorBySlug(slug: string) {
+  return useQuery({
+    queryKey: VENDOR_QUERY_KEYS.detailBySlug(slug),
+    queryFn: () => vendorService.getBySlug(slug),
+    enabled: !!slug,
   });
 }

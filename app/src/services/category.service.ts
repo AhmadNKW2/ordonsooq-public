@@ -29,6 +29,13 @@ export const categoryService = {
   },
 
   /**
+   * Get a single category by Slug with full details
+   */
+  getBySlug: (slug: string) => {
+    return apiClient.get<CategoryDetail>(`/categories/slug/${slug}`);
+  },
+
+  /**
    * Get a single category by ID with full details
    */
   getById: (id: number) => {

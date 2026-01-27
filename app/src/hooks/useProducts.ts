@@ -8,6 +8,7 @@ export const PRODUCT_QUERY_KEYS = {
   list: (filters: ProductFilters) => [...PRODUCT_QUERY_KEYS.lists(), filters] as const,
   details: () => [...PRODUCT_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...PRODUCT_QUERY_KEYS.details(), id] as const,
+  detailBySlug: (slug: string) => [...PRODUCT_QUERY_KEYS.details(), 'slug', slug] as const,
   byCategory: (categoryId: number, filters?: Omit<ProductFilters, 'categoryId'>) =>
     [...PRODUCT_QUERY_KEYS.lists(), 'category', categoryId, filters] as const,
   byVendor: (vendorId: number, filters?: Omit<ProductFilters, 'vendorId'>) =>
@@ -37,6 +38,17 @@ export function useProduct(id: number) {
     queryKey: PRODUCT_QUERY_KEYS.detail(id),
     queryFn: () => productService.getById(id),
     enabled: !!id && id > 0,
+  });
+}
+
+/**
+ * Hook to fetch a single product by Slug
+ */
+export function useProductBySlug(slug: string) {
+  return useQuery({
+    queryKey: PRODUCT_QUERY_KEYS.detailBySlug(slug),
+    queryFn: () => productService.getBySlug(slug),
+    enabled: !!slug,
   });
 }
 

@@ -6,8 +6,8 @@ import { ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
 import { useTranslations, useLocale } from "next-intl";
-import { useRootCategories } from "@/hooks/useCategories";
-import type { Category } from "@/types/api.types";
+import { useHome } from "@/hooks";
+import type { Category, HomeCategory } from "@/types/api.types";
 
 export function NavigationBar() {
   const t = useTranslations("navigation");
@@ -15,18 +15,19 @@ export function NavigationBar() {
   const locale = useLocale();
   const isAr = locale === 'ar';
   
-  const { data: categoriesData } = useRootCategories();
-  const categories = categoriesData?.data || [];
+  const { data: homeData } = useHome();
+  const categories = homeData?.categories || [];
 
 
   // Mega menu content for different nav items
-  const MEGA_MENU_CONTENT: Record<string, { title: string; links: { label: string; href: string; description?: string }[] }[]> = useMemo(() => {
+  const MEGA_MENU_CONTENT: Record<string, { title: string; href?: string; links: { label: string; href: string; description?: string }[] }[]> = useMemo(() => {
     // Dynamic Categories
-    const dynamicCategories = categories.slice(0, 4).map((category: Category) => ({
+    const dynamicCategories = categories.slice(0, 4).map((category: HomeCategory | Category) => ({
       title: isAr ? category.name_ar : category.name_en,
+      href: `/categories/${category.slug}`,
       links: (category.children || []).slice(0, 5).map((child) => ({
         label: isAr ? child.name_ar : child.name_en,
-        href: `/categories/${child.id}`,
+        href: `/categories/${child.slug}`,
         description: "" // Description not available in basic child type
       }))
     }));
@@ -252,9 +253,18 @@ export function NavigationBar() {
                         transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(12px)",
                       }}
                     >
-                      <h3 className="text-xs font-semibold text-third uppercase tracking-wider">
-                        {section.title}
-                      </h3>
+                      {section.href ? (
+                        <Link href={section.href} onClick={handleLinkClick}>
+                          <h3 className="mb-2 text-xs font-semibold text-third uppercase tracking-wider hover:text-primary transition-colors cursor-pointer">
+                            {section.title}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3 className="mb-2 text-xs font-semibold text-third uppercase tracking-wider">
+                          {section.title}
+                        </h3>
+                      )}
+                      
                       <ul className="flex flex-col gap-1">
                         {section.links.map((link, linkIdx) => (
                           <li key={linkIdx}>
@@ -274,7 +284,14 @@ export function NavigationBar() {
                                   </span>
                                 )}
                               </div>
-                              <ArrowRight className="w-4 h-4 text-third opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 mt-1" />
+                              <ArrowRight 
+                                className={cn(
+                                  "w-4 h-4 text-third opacity-0 transition-all duration-300 mt-1 group-hover:opacity-100",
+                                  isAr 
+                                    ? "translate-x-2 group-hover:translate-x-0 rotate-180" 
+                                    : "-translate-x-2 group-hover:translate-x-0"
+                                )} 
+                              />
                             </Link>
                           </li>
                         ))}

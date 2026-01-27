@@ -8,6 +8,7 @@ export const CATEGORY_QUERY_KEYS = {
   list: (filters: CategoryFilters) => [...CATEGORY_QUERY_KEYS.lists(), filters] as const,
   details: () => [...CATEGORY_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...CATEGORY_QUERY_KEYS.details(), id] as const,
+  detailBySlug: (slug: string) => [...CATEGORY_QUERY_KEYS.details(), 'slug', slug] as const,
   root: (filters?: Omit<CategoryFilters, 'level' | 'parent_id'>) =>
     [...CATEGORY_QUERY_KEYS.lists(), 'root', filters] as const,
   subcategories: (parentId: number, filters?: Omit<CategoryFilters, 'parent_id'>) =>
@@ -37,6 +38,17 @@ export function useCategory(id: number) {
     queryKey: CATEGORY_QUERY_KEYS.detail(id),
     queryFn: () => categoryService.getById(id),
     enabled: !!id && id > 0,
+  });
+}
+
+/**
+ * Hook to fetch a single category by Slug
+ */
+export function useCategoryBySlug(slug: string) {
+  return useQuery({
+    queryKey: CATEGORY_QUERY_KEYS.detailBySlug(slug),
+    queryFn: () => categoryService.getBySlug(slug),
+    enabled: !!slug,
   });
 }
 

@@ -10,7 +10,7 @@ import { ArrowButton } from "@/components/ui";
 import { useHorizontalScroll } from "@/hooks/useHorizontalScroll";
 import { SectionHeader } from "./section-header";
 
-export interface ShopByItem {
+export interface EntityCarouselItem {
   id: string | number;
   href: string;
   name: string;
@@ -18,12 +18,12 @@ export interface ShopByItem {
   isCategory?: boolean;
 }
 
-export type ShopBySectionProps = {
+export type EntityCarouselProps = {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   viewAllHref?: string;
   showViewAll?: boolean;
-  items: ShopByItem[];
+  items: EntityCarouselItem[];
   scrollAmount?: number;
   fadeClassName?: string;
   fadePositionClassName?: string;
@@ -34,7 +34,7 @@ export type ShopBySectionProps = {
   layoutVariant?: 'default' | 'compact';
 };
 
-export function ShopBySection(props: ShopBySectionProps) {
+export function EntityCarousel(props: EntityCarouselProps) {
   const {
     title,
     subtitle,
@@ -62,7 +62,7 @@ export function ShopBySection(props: ShopBySectionProps) {
   const resolvedArrowBackgroundColor = arrowBackgroundColor ?? "black/20";
   const resolvedFadeClassName =
     fadeClassName ?? "bg-linear-to-r from-white to-transparent";
-    const resolvedFadePositionClassName = fadePositionClassName ?? "top-0 bottom-4";
+  const resolvedFadePositionClassName = fadePositionClassName ?? "top-0 bottom-4";
 
   const isCompact = layoutVariant === 'compact';
   const imageSizeClasses = isCompact 
@@ -88,7 +88,7 @@ export function ShopBySection(props: ShopBySectionProps) {
           showOnHover
           backgroundColor={resolvedArrowBackgroundColor}
           arrowColor={arrowColor}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20"
+          className="absolute -left-1 top-1/2 -translate-y-1/2 z-20"
         />
 
         <ArrowButton
@@ -99,7 +99,7 @@ export function ShopBySection(props: ShopBySectionProps) {
           showOnHover
           backgroundColor={resolvedArrowBackgroundColor}
           arrowColor={arrowColor}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20"
+          className="absolute -right-1 top-1/2 -translate-y-1/2 z-20"
         />
 
         <div

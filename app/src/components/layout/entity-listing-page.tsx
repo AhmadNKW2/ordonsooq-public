@@ -9,7 +9,7 @@ import { ProductListingPage } from "@/components/products/product-listing-page";
 import { ProductReviews } from "@/components/products/product-reviews";
 import { ListingLayout } from "@/components/layout/listing-layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShopBySection, type ShopByItem } from "@/components/home/shop-by-section";
+import { EntityCarousel, type EntityCarouselItem } from "@/components/home/entity-carousel";
 import { Star, MapPin, Phone, Mail } from "lucide-react";
 
 interface EntityListingPageProps {
@@ -25,10 +25,11 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   const isAr = locale === 'ar';
   const t = useTranslations();
   
-  // Parse ID from slug
+  // Get ID from data if available, otherwise fallback to parsing from slug (legacy)
   const id = useMemo(() => {
+    if (data?.id) return data.id;
     return parseInt(slug.split('-').pop() || '0', 10);
-  }, [slug]);
+  }, [slug, data]);
 
   // Determine entity type flags
   const isBrand = type === 'brand';
@@ -46,7 +47,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
 
   const subcategories = transformedCategory?.children || [];
   
-  const subCategoryItems: ShopByItem[] = useMemo(() => {
+  const subCategoryItems: EntityCarouselItem[] = useMemo(() => {
     return subcategories.map((sub: any) => ({
       id: sub.id,
       href: `/categories/${sub.slug}`,
@@ -153,8 +154,8 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
       description={viewData.description}
     >
       {isVendor && (
-        <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-2">
+        <div className="flex flex-col">
+            <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-secondary/10 border border-secondary/25 px-2 py-1 rounded-md text-secondary">
                     <Star className="fill-current w-4 h-4" />
                     <span className="font-bold">{rating}</span>
@@ -216,7 +217,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
       breadcrumbs={breadcrumbs}
     >
       {isCategory && subcategories.length > 0 && (
-        <ShopBySection
+        <EntityCarousel
           title=""
           items={subCategoryItems}
           viewAllHref=""

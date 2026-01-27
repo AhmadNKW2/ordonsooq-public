@@ -7,6 +7,7 @@ import { getQueryClient } from "@/lib/query-client";
 import { CartProvider } from "@/hooks/use-cart";
 import { WishlistProvider } from "@/hooks/use-wishlist";
 import { AuthModalProvider } from "@/contexts/auth-modal-context";
+import { GlobalLoaderProvider } from "@/components/ui/global-loader";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -17,13 +18,15 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <AuthModalProvider>
-          <WishlistProvider>
-            {children}
-          </WishlistProvider>
-        </AuthModalProvider>
-      </CartProvider>
+      <GlobalLoaderProvider>
+        <CartProvider>
+          <AuthModalProvider>
+            <WishlistProvider>
+              {children}
+            </WishlistProvider>
+          </AuthModalProvider>
+        </CartProvider>
+      </GlobalLoaderProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

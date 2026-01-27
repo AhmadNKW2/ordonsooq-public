@@ -199,6 +199,7 @@ export type CategoryChild = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   level?: number;
   sortOrder?: number;
   image: string | null;
@@ -215,6 +216,7 @@ export type Category = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   description_en: string | null;
   description_ar: string | null;
   image: string | null;
@@ -254,6 +256,7 @@ export type Vendor = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   description_en: string | null;
   description_ar: string | null;
   email: string | null;
@@ -290,6 +293,7 @@ export type Brand = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   description_en: string | null;
   description_ar: string | null;
   logo: string | null;
@@ -339,15 +343,20 @@ export type HomeCategory = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
+  description_en?: string;
+  description_ar?: string;
   image: string | null;
   level: number;
   sortOrder: number;
+  children?: HomeCategory[];
 };
 
 export type HomeVendor = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   logo: string | null;
   sort_order: number;
 };
@@ -368,6 +377,7 @@ export type HomeBrand = {
   id: number;
   name_en: string;
   name_ar: string;
+  slug: string;
   logo: string | null;
   sort_order: number;
 };

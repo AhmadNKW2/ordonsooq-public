@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-react";
-import { useProduct, useProductsByCategory, useListingVariantProducts } from "@/hooks";
+import { useProductBySlug, useProductsByCategory, useListingVariantProducts } from "@/hooks";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
@@ -14,6 +14,81 @@ import { CURRENCY_CONFIG } from "@/lib/constants";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
 import { Badge, Card, IconButton, Breadcrumb } from "@/components/ui";
 import { ProductActions } from "./product-actions";
+
+// Helper Components to reduce duplication
+function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, selectedOptionsSummary: string, t: any }) {
+  return (
+    <>
+      {product.brand && (
+        <div className="flex items-center gap-2 mb-2">
+          <Link
+            href={`/brands/${product.brand.slug}`}
+            className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
+          >
+            {product.brand.name}
+            <ChevronRight size={16} />
+          </Link>
+        </div>
+      )}
+      <h1 className="text-2xl md:text-3xl font-bold text-primary">
+        {product.name}
+        {selectedOptionsSummary ? (
+          <span className="font-medium text-third text-sm md:text-base">
+            {" "}({selectedOptionsSummary})
+          </span>
+        ) : null}
+      </h1>
+      <div className="flex items-center gap-1 mt-2">
+        <Star size={16} className="fill-secondary text-secondary mb-1" />
+        <span className="text-sm font-bold text-primary">{product.rating || 0}</span>
+        {product.reviewCount > 0 && (
+          <span className="text-sm text-gray-500">({product.reviewCount || 0})</span>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ProductPrice({ currentPrice, currentCompareAtPrice, discount, t, locale, className = "" }: any) {
+  return (
+    <div className={cn("flex items-center gap-3 flex-wrap", className)}>
+      <p className="text-2xl md:text-3xl font-bold text-primary">
+        {formatPrice(currentPrice, CURRENCY_CONFIG.code, locale)}
+      </p>
+      {currentCompareAtPrice && currentCompareAtPrice > currentPrice && (
+        <>
+          <p className="text-lg md:text-xl text-gray-400 line-through">
+            {formatPrice(currentCompareAtPrice, CURRENCY_CONFIG.code, locale)}
+          </p>
+          {discount > 0 && (
+             <Badge variant="sale">
+               {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, CURRENCY_CONFIG.code, locale) })}
+             </Badge>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function WishlistBtn({ product, selectedVariant, toggleItem, isInWishlist, isItemLoading, t, className }: any) {
+  const variantId = selectedVariant ? parseInt(selectedVariant.id, 10) : null;
+  const inWishlist = isInWishlist(product.id, variantId);
+  const loading = isItemLoading(product.id, variantId);
+
+  return (
+    <IconButton
+      onClick={() => toggleItem(product, variantId)}
+      isActive={inWishlist}
+      isLoading={loading}
+      className={className}
+      aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+      icon="heart"
+      shape="circle"
+      variant="wishlist"
+    />
+  );
+}
 
 export default function ProductPage() {
   const locale = useLocale() as Locale;
@@ -29,10 +104,7 @@ export default function ProductPage() {
     return Number.isFinite(id) ? String(id) : undefined;
   }, [searchParams]);
 
-  // Extract product ID from slug (format: product-name-ID)
-  const productId = parseInt(slug.split('-').pop() || '0', 10);
-
-  const { data: productData, isLoading, error } = useProduct(productId);
+  const { data: productData, isLoading, error } = useProductBySlug(slug);
 
   // Fetch related products by category
   const categoryId = productData?.categories?.[0]?.id;
@@ -230,6 +302,20 @@ export default function ProductPage() {
   const discount = currentCompareAtPrice
     ? calculateDiscount(currentCompareAtPrice, currentPrice)
     : 0;
+  
+  const galleryProps = {
+    images: product.images,
+    productName: product.name,
+    initialIndex: selectedImageIndex,
+    selectedIndex: activeImageIndex,
+    onIndexChange: setActiveImageIndex,
+    showThumbnails: true,
+    showMainImage: true,
+  };
+
+  const wishlistBtnProps = {
+      product, selectedVariant, toggleItem, isInWishlist, isItemLoading, t
+  };
 
   return (
     <>
@@ -242,92 +328,30 @@ export default function ProductPage() {
         ]}
       />
 
-      {/* Product Details - Mobile Layout (Brand -> Name -> Rating -> Wishlist -> Main Image -> Thumbnails -> Price) */}
+      {/* Product Details - Mobile Layout */}
       <div className="lg:hidden flex flex-col gap-4 mb-8">
-        {/* Header Info */}
         <div className="flex flex-col gap-2">
-          {product.brand && (
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/brands/${product.brand.slug}`}
-                className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
-              >
-                {product.brand.name}
-                <ChevronRight size={16} />
-              </Link>
-            </div>
-          )}
-
-          <div className="flex justify-between items-start gap-4">
-            <h1 className="text-2xl font-bold text-primary flex-1">
-              {product.name}
-              {selectedOptionsSummary ? (
-                <span className="font-medium text-third text-sm">
-                  {" "}({selectedOptionsSummary})
-                </span>
-              ) : null}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Star size={16} className="fill-secondary text-secondary mb-1" />
-            <span className="text-sm font-bold text-primary">{product.rating || 0}</span>
-            {
-              product.reviewCount > 0 &&
-              <span className="text-sm text-gray-500">
-                ({product.reviewCount || 0})
-              </span>
-            }
-          </div>
+           <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
         </div>
 
-        {/* Gallery (Main Image -> Thumbnails) */}
         <ProductGallery
-          images={product.images}
-          productName={product.name}
-          initialIndex={selectedImageIndex}
-          selectedIndex={activeImageIndex}
-          onIndexChange={setActiveImageIndex}
-          showThumbnails={true}
-          showMainImage={true}
+          {...galleryProps}
           wishlistButton={
-            <IconButton
-              onClick={() => toggleItem(product, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-              isActive={isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-              isLoading={isItemLoading(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-              className={cn(
-                "shadow-sm shrink-0",
-                !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/80 backdrop-blur-sm"
-              )}
-              aria-label={
-                isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)
-                  ? t('product.removeFromWishlist')
-                  : t('product.addToWishlist')
-              }
-              icon="heart"
-              shape="circle"
-              variant="wishlist"
+            <WishlistBtn 
+                {...wishlistBtnProps}
+                className={cn("shadow-sm shrink-0", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/80 backdrop-blur-sm")}
             />
           }
         />
 
-        {/* Price & Actions */}
         <div className="flex flex-col gap-5 mt-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <p className="text-2xl font-bold text-primary">
-              {formatPrice(currentPrice, CURRENCY_CONFIG.code, locale)}
-            </p>
-            {currentCompareAtPrice && currentCompareAtPrice > currentPrice && (
-              <>
-                <p className="text-lg text-gray-400 line-through">
-                  {formatPrice(currentCompareAtPrice, CURRENCY_CONFIG.code, locale)}
-                </p>
-                <Badge variant="sale">
-                  {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, CURRENCY_CONFIG.code, locale) })}
-                </Badge>
-              </>
-            )}
-          </div>
+          <ProductPrice 
+            currentPrice={currentPrice} 
+            currentCompareAtPrice={currentCompareAtPrice} 
+            discount={discount} 
+            t={t} 
+            locale={locale} 
+          />
 
           <ProductOptions
             attributes={product.attributes || []}
@@ -340,44 +364,23 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Product Details - 3 Column Layout */}
-      {/* Desktop Layout */}
+      {/* Product Details - Desktop Layout */}
       <div className="hidden lg:grid lg:grid-cols-12 gap-8 mb-16">
-        {/* Gallery - Column 1 */}
+        {/* Gallery */}
         <div className="lg:col-span-5">
           <ProductGallery
-            images={product.images}
-            productName={product.name}
-            initialIndex={selectedImageIndex}
-            selectedIndex={activeImageIndex}
-            onIndexChange={setActiveImageIndex}
-            showThumbnails={true}
-            showMainImage={true}
+            {...galleryProps}
             wishlistButton={
-              <IconButton
-                onClick={() => toggleItem(product, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-                isActive={isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-                isLoading={isItemLoading(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)}
-                className={cn(
-                  "shadow-lg hover:scale-110",
-                  !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/90 backdrop-blur-sm"
-                )}
-                aria-label={
-                  isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null)
-                    ? t('product.removeFromWishlist')
-                    : t('product.addToWishlist')
-                }
-                icon="heart"
-                shape="circle"
-                variant="wishlist"
-              />
+                <WishlistBtn 
+                    {...wishlistBtnProps}
+                    className={cn("shadow-lg hover:scale-110", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/90 backdrop-blur-sm")}
+                />
             }
           />
         </div>
 
-        {/* Info - Column 2 */}
+        {/* Info */}
         <div className="lg:col-span-4 flex flex-col gap-5">
-          {/* Badges */}
           <div className="flex items-center gap-2">
             {product.isNew && <Badge variant="new">{t('product.new')}</Badge>}
             {discount > 0 && <Badge variant="sale">{t('product.off', { percent: discount })}</Badge>}
@@ -386,56 +389,23 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* Title & Brand */}
-          <div>
-            {product.brand && (
-              <div className="flex items-center gap-2 mb-2">
-                <Link
-                  href={`/brands/${product.brand.slug}`}
-                  className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
-                >
-                  {product.brand.name}
-                  <ChevronRight size={16} />
-                </Link>
-              </div>
-            )}
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">
-              {product.name}
-              {selectedOptionsSummary ? (
-                <span className="font-medium text-third text-sm md:text-base">
-                  {" "}({selectedOptionsSummary})
-                </span>
-              ) : null}
-            </h1>
+          <div className="[&_h1]:text-3xl"> {/* Override h1 size for desktop */}
+            <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
           </div>
 
-          {/* Rating */}
-          <div className="flex items-center gap-2">
-            <Star size={20} className="fill-secondary text-secondary mb-1" />
-            <span className="text-base font-bold text-primary">{product.rating || 0}</span>
-            <span className="text-sm text-gray-500">
-              ({product.reviewCount || 0})
-            </span>
-          </div>
+          <ProductPrice 
+            currentPrice={currentPrice} 
+            currentCompareAtPrice={currentCompareAtPrice} 
+            discount={0 /* Badge handled above in desktop layout */} 
+            t={t} 
+            locale={locale} 
+            className="items-baseline"
+          />
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-primary">
-              {formatPrice(currentPrice)}
-            </span>
-            {currentCompareAtPrice && (
-              <span className="text-xl text-third opacity-70 line-through">
-                {formatPrice(currentCompareAtPrice)}
-              </span>
-            )}
-          </div>
-
-          {/* Description */}
           <p className="text-third leading-relaxed">
             {product.description}
           </p>
 
-          {/* Variants */}
           {product.attributes && product.attributes.length > 0 && (
             <ProductOptions
               attributes={product.attributes}

@@ -29,6 +29,13 @@ export const productService = {
   },
 
   /**
+   * Get a single product by Slug with full details
+   */
+  getBySlug: (slug: string) => {
+    return apiClient.get<ProductDetail>(`/products/slug/${slug}`);
+  },
+
+  /**
    * Get a single product by ID with full details
    */
   getById: (id: number) => {

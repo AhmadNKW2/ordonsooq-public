@@ -2,11 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { HeroBanner } from "@/components/home/hero-banner";
-import { ShopBySection } from "@/components/home/shop-by-section";
+import { EntityCarousel, type EntityCarouselItem } from "@/components/home/entity-carousel";
 import { ProductsSection } from "@/components/home/featured-products";
 import { FeaturesSection } from "@/components/home/features-section";
 import { Newsletter } from "@/components/home/newsletter";
-import type { ShopByItem } from "@/components/home/shop-by-section";
 import { useProducts, useHome, useListingVariantProducts } from "@/hooks";
 import { transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
@@ -53,7 +52,7 @@ export default function HomePage() {
     ? transformHomeData(homeData, locale) 
     : { categories: [], vendors: [], banners: [], brands: [] };
 
-  const categoryItems: ShopByItem[] = categories.map((category) => ({
+  const categoryItems: EntityCarouselItem[] = categories.map((category) => ({
     id: category.id,
     href: `/categories/${category.slug}`,
     name: category.name,
@@ -61,7 +60,7 @@ export default function HomePage() {
     isCategory: true,
   }));
 
-  const brandItems: ShopByItem[] = brands.map((brand) => ({
+  const brandItems: EntityCarouselItem[] = brands.map((brand) => ({
     id: brand.id,
     href: `/brands/${brand.slug}`,
     name: brand.name,
@@ -69,7 +68,7 @@ export default function HomePage() {
     isCategory: false,
   }));
 
-  const vendorItems: ShopByItem[] = vendors.map((vendor) => ({
+  const vendorItems: EntityCarouselItem[] = vendors.map((vendor) => ({
     id: vendor.id,
     href: `/vendors/${vendor.slug}`,
     name: vendor.name,
@@ -104,7 +103,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <ShopBySection
+          <EntityCarousel
             title={t('shopByCategory')}
             subtitle={t('exploreCategories')}
               items={categoryItems}
@@ -140,7 +139,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <ShopBySection
+          <EntityCarousel
             title={t('shopByBrand')}
             subtitle={t('trustedBrands')}
               items={brandItems}
@@ -158,7 +157,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : (
-          <ShopBySection
+          <EntityCarousel
             title={t('shopByVendor')}
             subtitle={t('trustedVendors')}
               items={vendorItems}

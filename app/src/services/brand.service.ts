@@ -21,6 +21,13 @@ export const brandService = {
   },
 
   /**
+   * Get a single brand by Slug
+   */
+  getBySlug: (slug: string) => {
+    return apiClient.get<Brand>(`/brands/slug/${slug}`);
+  },
+
+  /**
    * Get a single brand by ID
    */
   getById: (id: number) => {

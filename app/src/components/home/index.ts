@@ -5,4 +5,4 @@ export { FeaturesSection } from "./features-section";
 export { PromoBanner } from "./promo-banner";
 export { Newsletter } from "./newsletter";
 export { ViewAllLink } from "./view-all-link";
-export { ShopBySection } from "./shop-by-section";
+export { EntityCarousel } from "./entity-carousel";
