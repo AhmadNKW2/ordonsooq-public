@@ -4,11 +4,14 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
-import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight } from "lucide-react";
+import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import { Button, Input, Card, Radio } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
+import { useAuth } from "@/hooks/useAuth";
 import { formatPrice, cn } from "@/lib/utils";
 import { SHIPPING_OPTIONS, PAYMENT_METHODS } from "@/lib/constants";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { AnimatePresence, motion } from "framer-motion";
 
 type CheckoutStep = "shipping" | "payment" | "review";
 
@@ -16,12 +19,14 @@ export default function CheckoutPage() {
   const t = useTranslations('checkout');
   const tProfile = useTranslations('profile');
   const locale = useLocale();
-  const { items, totalItems, totalPrice, clearCart } = useCart();
+  const { isLoading: isAuthLoading } = useAuth();
+  const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
   const [shippingMethod, setShippingMethod] = useState(SHIPPING_OPTIONS[0].id);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -58,6 +63,10 @@ export default function CheckoutPage() {
     { id: "payment", label: t('steps.payment'), icon: CreditCard },
     { id: "review", label: t('steps.review'), icon: Check },
   ];
+
+  if (isCartLoading || isAuthLoading) {
+    return <PageSkeleton />;
+  }
 
   if (items.length === 0 && !orderComplete) {
     return (
@@ -108,7 +117,7 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
         {/* Page Header */}
         <h1 className="text-3xl font-bold text-primary">Checkout</h1>
 
@@ -430,6 +439,84 @@ export default function CheckoutPage() {
             </div>
 
           </Card>
+        </div>
+      </div>
+
+       {/* Mobile Sticky Bar */}
+      <div className="fixed bottom-16 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:hidden">
+        <AnimatePresence>
+          {isMobileSummaryOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "tween", duration: 0.2 }}
+              className="border-b border-gray-100 bg-white"
+            >
+              <div className="p-4 space-y-3">
+                 <div className="flex justify-between text-sm text-third">
+                  <span>{t('subtotalWithCount', { count: totalItems })}</span>
+                  <span>{formatPrice(totalPrice)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-third">
+                  <span>{t('shipping')}</span>
+                  <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
+                    {shipping === 0 ? t('free') : formatPrice(shipping)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm text-third">
+                  <span>{t('tax')}</span>
+                  <span>{formatPrice(tax)}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex items-center gap-3 p-4 bg-white">
+           {currentStep !== "shipping" && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-3"
+                  onClick={() => {
+                    if (currentStep === "payment") setCurrentStep("shipping");
+                    if (currentStep === "review") setCurrentStep("payment");
+                  }}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+            )}
+            
+          <div 
+            className="flex-1 flex flex-col justify-center cursor-pointer" 
+            onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}
+          >
+            <div className="flex items-center gap-2 select-none">
+              <span className="font-bold text-primary text-xl tracking-tight">{formatPrice(finalTotal)}</span>
+              {isMobileSummaryOpen ? (
+                <ChevronDown className="w-4 h-4 text-primary" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-primary" />
+              )}
+            </div>
+             <span className="text-[10px] text-third">Total</span>
+          </div>
+          
+          <Button 
+            size="lg" 
+            className="flex-[2] text-sm sm:text-base px-2 sm:px-4" 
+            onClick={() => {
+              if (currentStep === "shipping") setCurrentStep("payment");
+              if (currentStep === "payment") setCurrentStep("review");
+              if (currentStep === "review") handlePlaceOrder();
+            }}
+            isLoading={isProcessing}
+          >
+             {currentStep === "shipping" && t('continueToPayment')}
+            {currentStep === "payment" && t('reviewOrderAction')}
+            {currentStep === "review" && t('placeOrder')}
+          </Button>
         </div>
       </div>
     </>

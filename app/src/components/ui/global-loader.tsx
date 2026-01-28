@@ -92,7 +92,7 @@ function LoaderVisuals({ isLoading }: { isLoading: boolean }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/10 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/35 backdrop-blur-[0.5px]"
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-primary">
                <motion.div

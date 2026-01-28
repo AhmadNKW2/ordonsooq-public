@@ -2,12 +2,13 @@
 
 import { useAuth } from "./useAuth";
 import { useAuthModal } from "@/contexts/auth-modal-context";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
 
 export function useCheckout() {
-  const { data: user } = useAuth();
+  const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleCheckout = (e?: React.MouseEvent) => {
     if (e) {
@@ -17,6 +18,10 @@ export function useCheckout() {
     
     if (!user) {
       openAuthModal("login");
+      return;
+    }
+
+    if (pathname === '/checkout') {
       return;
     }
 

@@ -122,7 +122,7 @@ export default function CartPage() {
 
             return (
               <Card key={item.id} className="group overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="flex gap-4 p-4">
+                <div className="flex gap-4">
                   {/* Product Image - Square */}
                   <Link 
                     href={productHref} 
