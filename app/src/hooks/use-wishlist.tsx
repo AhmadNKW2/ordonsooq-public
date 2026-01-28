@@ -24,15 +24,17 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { openAuthModal } = useAuthModal();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: isWishlistLoading } = useQuery({
     queryKey: ['wishlist'],
     queryFn: wishlistService.getWishlist,
     enabled: isAuthenticated,
   });
+
+  const isLoading = isAuthLoading || (isAuthenticated && isWishlistLoading);
 
   const wishlistItems = data?.data || [];
   const wishlistTotal = data?.total || 0;

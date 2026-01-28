@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Product } from "@/types";
 import { transformProduct } from "@/lib/transformers";
+import { ProductCardSkeleton } from "@/components/ui/skeleton";
 
 function toNumber(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
@@ -21,7 +22,16 @@ export default function WishlistPage() {
   const tCommon = useTranslations('common');
 
   if (isLoading) {
-    return <div className="p-12 text-center text-gray-500">{tCommon('loading')}</div>;
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+             <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
