@@ -132,6 +132,9 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProps) {
       const target = e.target as HTMLElement;
       const anchor = target.closest("a");
       
+      if (anchor?.getAttribute("data-prevent-loader") === "true") return;
+
+      
       if (
         anchor &&
         anchor.href &&

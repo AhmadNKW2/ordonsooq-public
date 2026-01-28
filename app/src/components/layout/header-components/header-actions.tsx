@@ -95,6 +95,7 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
         prefetch={isAuthenticated}
         href="/profile/wishlist" 
         className="flex"
+        data-prevent-loader={!isAuthenticated ? "true" : undefined}
         onClick={(e) => {
           if (!isAuthenticated) {
             e.preventDefault();
