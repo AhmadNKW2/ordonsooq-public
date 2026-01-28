@@ -4,6 +4,7 @@ import { useRouter } from "@/i18n/navigation";
 import { AddToCartButton } from "@/components";
 import { Button } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
+import { useCheckout } from "@/hooks/useCheckout";
 import { Product, ProductVariant } from "@/types";
 
 interface ProductActionsProps {
@@ -14,12 +15,13 @@ interface ProductActionsProps {
 export function ProductActions({ product, selectedVariant }: ProductActionsProps) {
   const { addItem, openCart } = useCart();
   const router = useRouter();
+  const { handleCheckout: proceedToCheckout } = useCheckout();
 
   const handleCheckout = () => {
     addItem(product, 1, selectedVariant?.id, {
       openSidebar: false,
       onSuccess: () => {
-        router.push("/checkout");
+        proceedToCheckout();
       }
     });
   };

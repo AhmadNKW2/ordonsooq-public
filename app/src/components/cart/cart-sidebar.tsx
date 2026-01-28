@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { X, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
+import { useCheckout } from "@/hooks/useCheckout";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
@@ -24,6 +25,7 @@ export function CartSidebar() {
     totalAmount,
     loadingItems
   } = useCart();
+  const { handleCheckout } = useCheckout();
 
   const closeCart = () => setIsOpen(false);
 
@@ -259,11 +261,16 @@ export function CartSidebar() {
                   {tCart("viewCart")}
                 </Button>
               </Link>
-              <Link href="/checkout" onClick={closeCart}>
-                <Button className="w-full gap-2" size="lg">
-                  {tCart("checkout")} <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              <Button 
+                className="w-full gap-2" 
+                size="lg" 
+                onClick={(e) => {
+                  closeCart();
+                  handleCheckout(e);
+                }}
+              >
+                {tCart("checkout")} <ArrowRight className="w-4 h-4" />
+              </Button>
 
             </div>
           </div>

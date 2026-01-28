@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Trash2, ShoppingBag, Truck, ArrowLeft, Tag, ArrowRight, ChevronUp, ChevronDown } from "lucide-react";
 import { Button, Card, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
+import { useCheckout } from "@/hooks/useCheckout";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -15,6 +16,7 @@ export default function CartPage() {
   const t = useTranslations('cart');
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalPrice, loadingItems } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
+  const { handleCheckout } = useCheckout();
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
 
   const toNumber = (value: unknown): number => {
@@ -280,12 +282,10 @@ export default function CartPage() {
               </div>
 
               {/* Checkout Button */}
-              <Link href="/checkout">
-                <Button size="lg" className="w-full">
-                  {t('proceedToCheckout')}
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
+              <Button size="lg" className="w-full" onClick={handleCheckout}>
+                {t('proceedToCheckout')}
+                <ArrowRight className="w-5 h-5" />
+              </Button>
 
               {/* Secure Checkout Notice */}
               <p className="text-center text-sm text-third">
@@ -387,11 +387,13 @@ export default function CartPage() {
             )}
           </div>
           
-          <Link href="/checkout" className="flex-1">
-            <Button size="lg" className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg shadow-lg shadow-secondary/20">
-              {t('checkout').toUpperCase()}
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="flex-1 w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg shadow-lg shadow-secondary/20"
+            onClick={handleCheckout}
+          >
+            {t('checkout').toUpperCase()}
+          </Button>
         </div>
       </div>
     </>

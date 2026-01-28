@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { 
   Heart, 
   Search, 
-  User, 
+  CircleUser, 
   ShoppingCart, 
   Globe, 
   Facebook, 
@@ -20,7 +20,7 @@ import {
 const ICONS = {
   heart: Heart,
   search: Search,
-  user: User,
+  user: CircleUser,
   cart: ShoppingCart,
   globe: Globe,
   facebook: Facebook,
