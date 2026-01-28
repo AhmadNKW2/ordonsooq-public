@@ -168,16 +168,16 @@ export function Footer() {
         {/* Newsletter */}
         <div>
           <div className={containerClass}>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-30">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
               <div className="">
                 <h3 className="text-white font-semibold text-lg mb-1">{t('footer.subscribeTitle')}</h3>
                 <p className="text-third2 text-sm">{t('footer.subscribeDesc')}</p>
               </div>
-              <form className="flex gap-2 w-100">
+              <form className="flex gap-2 w-full md:w-auto">
                 <Input
                   type="email"
                   placeholder={t('footer.emailPlaceholder')}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white flex-1 md:w-80 min-w-0"
                 />
 
                 <Button
