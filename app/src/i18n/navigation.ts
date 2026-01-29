@@ -5,7 +5,7 @@ import { useLoading } from '@/components/ui/global-loader';
 const { Link, redirect, usePathname, useRouter: useBaseRouter, getPathname } =
   createNavigation(routing);
 
-export { Link, redirect, usePathname, getPathname };
+export { Link, redirect, usePathname, getPathname, useBaseRouter };
 
 export function useRouter() {
   const router = useBaseRouter();

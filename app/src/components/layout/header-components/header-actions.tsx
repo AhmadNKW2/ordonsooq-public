@@ -35,7 +35,6 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
   };
 
   const profileOptions: SelectOption[] = [

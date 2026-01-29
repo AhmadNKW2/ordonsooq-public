@@ -349,6 +349,7 @@ export type HomeCategory = {
   image: string | null;
   level: number;
   sortOrder: number;
+  parent_id?: number | null;
   children?: HomeCategory[];
 };
 

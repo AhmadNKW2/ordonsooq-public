@@ -89,18 +89,8 @@ function SearchPageContent() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search.placeholder')}
-              className="pl-12 pr-12 py-4 text-lg"
-              icon={SearchIcon}
+              variant="search"
             />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-third hover:text-primary"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
           </div>
         </form>
 

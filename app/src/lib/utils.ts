@@ -37,10 +37,10 @@ export function formatPrice(
 }
 
 export const INPUT_STYLES = {
-  base: "flex w-full rounded-lg border bg-white text-sm transition-all duration-300 placeholder:text-third focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50",
+  base: "flex w-full rounded-lg border bg-white text-sm md:text-base transition-all duration-300 placeholder:text-third focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50",
   default: "border-gray-200 hover:border-gray-300",
   error: "border-danger focus:ring-danger",
-  padding: "px-2 py-2"
+  padding: "px-2 py-1.5"
 };
 
 export function formatDate(

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { SlidersHorizontal, ArrowUpDown, Filter, Check } from "lucide-react";
-import { ProductGrid, FilterState, ProductFilters } from "@/components/products";
+import { ProductGrid, FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
 import { Button, Badge, Card, Sheet, Select } from "@/components/ui";
 import { useProducts, useCategories, useBrands, useListingVariantProducts } from "@/hooks";
 import { transformCategories, transformBrands, type Locale } from "@/lib/transformers";
@@ -195,30 +195,11 @@ export function ProductListingPage({
       </Sheet>
 
       {/* Floating Filter/Sort Pill (Mobile Only) */}
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 lg:hidden flex gap-2">
-        <div className="bg-secondary/90 backdrop-blur-sm text-white rounded-full shadow-lg flex items-center">
-          <button
-            onClick={() => setShowSort(true)}
-            className="flex items-center gap-1 pr-2 pl-4 py-2 font-medium border-r border-white/20 text-nowrap"
-          >
-            <span>{t('sortBy')}</span>
-            <ArrowUpDown size={16} />
-
-          </button>
-          <button
-            onClick={() => setShowFilters(true)}
-            className="flex items-center gap-1 pl-2 pr-4 py-2 font-medium"
-          >
-            <span>{tCommon('filters')}</span>
-            <Filter size={16} />
-            {activeFiltersCount > 0 && (
-              <span className="bg-white text-primary text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+      <FloatingFilterSort 
+        onSortClick={() => setShowSort(true)}
+        onFilterClick={() => setShowFilters(true)}
+        activeFiltersCount={activeFiltersCount}
+      />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}

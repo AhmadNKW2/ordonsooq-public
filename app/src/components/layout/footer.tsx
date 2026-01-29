@@ -74,7 +74,7 @@ export function Footer() {
                   <div className="p-3 bg-secondary rounded-full">
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <div>
+                  <div className="flex flex-col gap-1">
                     <h4 className="font-semibold text-white">{t(title)}</h4>
                     <p className="text-sm text-white/75">{t(description)}</p>
                   </div>

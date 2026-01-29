@@ -14,7 +14,8 @@ import {
   Youtube,
   Trash2,
   Loader2,
-  X
+  X,
+  Menu
 } from "lucide-react";
 
 const ICONS = {
@@ -29,6 +30,7 @@ const ICONS = {
   youtube: Youtube,
   trash: Trash2,
   x: X,
+  menu: Menu,
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -63,7 +65,7 @@ const iconSizeClasses = {
 
 const variantClasses = {
   default: "bg-white/90 hover:bg-white shadow-s1 text-[var(--color-third)] hover:opacity-80",
-  header: "text-white hover:bg-gray-100 hover:text-primary",
+  header: "text-white hover:text-secondary md:hover:bg-gray-100 md:hover:text-primary w-5 h-5 md:w-auto md:h-auto p-0 md:p-2 [&_svg]:w-full [&_svg]:h-full md:[&_svg]:w-5 md:[&_svg]:h-5",
   social: "bg-gray-800 hover:bg-secondary text-white hover:text-white",
   wishlist: "shadow-s1 transition-all duration-400",
 };
@@ -129,7 +131,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           <IconComponent className={effectiveIconClassName} />
         )}
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -top-1 -right-1 bg-danger text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
+          <span className="absolute -top-3 md:-top-1 -right-3 md:-right-1 bg-danger text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
             {badge > 99 ? "99+" : badge}
           </span>
         )}
