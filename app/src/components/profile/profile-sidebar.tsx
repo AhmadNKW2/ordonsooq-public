@@ -3,12 +3,12 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
-import { 
-  User, 
-  Package, 
-  CreditCard, 
-  MapPin, 
-  LogOut, 
+import {
+  User,
+  Package,
+  CreditCard,
+  MapPin,
+  LogOut,
   LayoutDashboard,
   Heart,
   Globe
@@ -45,19 +45,19 @@ export function ProfileSidebar() {
           </div>
         </div>
       </div>
-      
+
       <nav className="p-2 space-y-1">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
 
           const label =
             item.key === "dashboard" ? tProfile("dashboard") :
-            item.key === "accountDetails" ? tProfile("accountDetails") :
-            item.key === "addresses" ? tProfile("addresses") :
-            item.key === "myOrders" ? tProfile("myOrders") :
-            item.key === "myWallet" ? tProfile("myWallet") :
-            item.key === "wishlist" ? tProfile("wishlist") :
-            item.key;
+              item.key === "accountDetails" ? tProfile("accountDetails") :
+                item.key === "addresses" ? tProfile("addresses") :
+                  item.key === "myOrders" ? tProfile("myOrders") :
+                    item.key === "myWallet" ? tProfile("myWallet") :
+                      item.key === "wishlist" ? tProfile("wishlist") :
+                        item.key;
 
           return (
             <Link
@@ -65,8 +65,8 @@ export function ProfileSidebar() {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-primary text-white shadow-md shadow-primary/20" 
+                isActive
+                  ? "bg-primary text-white shadow-md shadow-primary/20"
                   : "text-gray-600 hover:bg-gray-50 hover:text-primary"
               )}
             >
@@ -75,25 +75,22 @@ export function ProfileSidebar() {
             </Link>
           );
         })}
-        
-        <div className="border"></div>
+
+        <div className="lg:hidden my-4 border-t border-gray-100"></div>
 
         <button
           onClick={() => logout()}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger hover:bg-red-50 transition-colors mt-4"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger hover:bg-red-50 transition-colors"
         >
           <LogOut className="h-5 w-5" />
           {tAuth("logout")}
         </button>
 
         {/* Mobile Language Switcher */}
-        <div className="lg:hidden mt-4 pt-4 border-t border-gray-100">
-           <div className="flex items-center gap-3 px-4 py-2">
-              <Globe className="h-5 w-5 text-gray-400" />
-              <div className="flex-1">
-                 <LanguageSwitcher />
-              </div>
-           </div>
+        <div className="lg:hidden mt-4 border-t border-gray-100">
+          <div className="flex justify-center items-center gap-3 px-4 py-2 pt-4">
+            <LanguageSwitcher />
+          </div>
         </div>
       </nav>
     </div>

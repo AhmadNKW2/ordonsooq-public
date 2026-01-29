@@ -23,8 +23,8 @@ export function LanguageSwitcher() {
       lang={targetLocale}
       className={cn(
         "flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-bold transition-colors",
-        "text-primary lg:text-white hover:bg-secondary hover:text-white active:bg-gray-200",
-        "border border-primary lg:border-secondary/50",
+        "text-white bg-primary lg:text-white hover:bg-secondary md:hover:bg-secondary active:bg-gray-200",
+        "border border-primary hover:border-secondary md:border-secondary/50",
       )}
       aria-label={`Switch to ${label}`}
     >

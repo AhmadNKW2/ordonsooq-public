@@ -1,3 +1,5 @@
+import { getCookie, setCookie, deleteCookie } from "@/lib/utils";
+
 type ApiClientConfig = {
   baseUrl?: string;
   headers?: HeadersInit;
@@ -29,29 +31,32 @@ class ApiClient {
       ...config?.headers,
     };
     
-    // Attempt to hydrate token from localStorage if available
+    // Attempt to hydrate token from cookies if available
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('access_token');
-      if (stored) this.accessToken = stored;
+      const stored = getCookie('access_token');
+      if (stored) {
+        this.accessToken = stored;
+      }
     }
   }
 
   public getAccessToken() {
+    // If not in memory but in cookie (e.g. hard refresh), reload it
+    if (!this.accessToken && typeof window !== 'undefined') {
+        const stored = getCookie('access_token');
+        if (stored) this.accessToken = stored;
+    }
     return this.accessToken;
   }
 
   public setAccessToken(token: string) {
     this.accessToken = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('access_token', token);
-    }
+    setCookie('access_token', token);
   }
 
   public clearAccessToken() {
     this.accessToken = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-    }
+    deleteCookie('access_token');
   }
 
   private async refreshSession(): Promise<boolean> {
