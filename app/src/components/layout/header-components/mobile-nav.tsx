@@ -51,7 +51,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
   // Fetch Categories
   const { data: homeData } = useHome();
-  
+
   const categories = (homeData?.categories || [])
     .filter(c => c.level === 0 || c.parent_id === null)
     .map(c => transformHomeCategory(c, locale));
@@ -61,10 +61,10 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
   const handleCategoryClick = (category: Category) => {
     if (category.children && category.children.length > 0) {
-        setDirection(1);
-        setHistory([...history, category]);
+      setDirection(1);
+      setHistory([...history, category]);
     } else {
-        onClose();
+      onClose();
     }
   };
 
@@ -93,85 +93,82 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
         <nav className="min-h-full">
-            <AnimatePresence initial={false} mode="wait" custom={direction}>
+          <AnimatePresence initial={false} mode="wait" custom={direction}>
             <motion.div
-                key={currentCategory?.id || "root"}
-                custom={direction}
-                variants={variants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                    x: { type: "tween", ease: "easeInOut", duration: 0.3 },
-                    opacity: { duration: 0.2 }
-                }}
-                className="p-4 flex flex-col gap-1"
+              key={currentCategory?.id || "root"}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "tween", ease: "easeInOut", duration: 0.3 },
+                opacity: { duration: 0.2 }
+              }}
+              className="p-4 flex flex-col gap-1"
             >
-                {/* Header / Back Button */}
-                {history.length > 0 && (
-                    <button 
-                        onClick={goBack}
-                        className="flex items-center gap-2 px-4 py-3 text-gray-800 font-semibold mb-2 hover:bg-gray-50 rounded-lg text-start"
+              {/* Header / Back Button */}
+              {history.length > 0 && (
+                <button
+                  onClick={goBack}
+                  className="flex items-center gap-2 px-4 py-3 text-gray-800 font-semibold mb-2 hover:bg-gray-50 rounded-lg text-start"
+                >
+                  {locale === 'en' ? <ArrowLeft size={20} /> : <ChevronRight size={20} />}
+                  <span>{currentCategory?.name}</span>
+                </button>
+              )}
+
+              {/* Category List */}
+              {displayedCategories.map((category) => {
+                const hasChildren = category.children && category.children.length > 0;
+
+                return hasChildren ? (
+                  <div key={category.id} className="flex items-center gap-2 w-full group">
+                    {/* Drill-down button */}
+                    <button
+                      onClick={() => handleCategoryClick(category)}
+                      className="flex-1 flex items-center justify-between px-4 py-3 text-start text-primary group-hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
                     >
-                        {locale === 'en' ? <ArrowLeft size={20} /> : <ChevronRight size={20} />}
-                        <span>{currentCategory?.name}</span>
+                      <span>{category.name}</span>
+                      <ChevronRight size={20} className="text-gray-400 rtl:rotate-180" />
                     </button>
-                )}
 
-                {/* Category List */}
-                {displayedCategories.map((category) => {
-                    const hasChildren = category.children && category.children.length > 0;
-                    
-                    return hasChildren ? (
-                        <div key={category.id} className="flex items-center gap-2 w-full group">
-                            {/* Drill-down button */}
-                            <button
-                                onClick={() => handleCategoryClick(category)}
-                                className="flex-1 flex items-center justify-between px-4 py-3 text-start text-primary group-hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
-                            >
-                                <span>{category.name}</span>
-                                <ChevronRight size={20} className="text-gray-400 rtl:rotate-180" />
-                            </button>
-                            
-                            {/* Direct Link Button */}
-                            <Link
-                                href={`/categories/${category.slug}`}
-                                onClick={onClose}
-                                title={category.name}
-                                className="p-3 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors border border-gray-100"
-                            >
-                                <ExternalLink size={18} />
-                            </Link>
-                        </div>
-                    ) : (
-                        // Leaf Link
-                        <Link
-                            key={category.id}
-                            href={`/categories/${category.slug}`}
-                            className="block px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
-                            onClick={onClose}
-                        >
-                            {category.name}
-                        </Link>
-                    );
-                })}
+                    {/* Direct Link Button */}
+                    <Link
+                      href={`/categories/${category.slug}`}
+                      onClick={onClose}
+                      title={category.name}
+                      className="p-3 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors border border-gray-100"
+                    >
+                      <ExternalLink size={18} />
+                    </Link>
+                  </div>
+                ) : (
+                  // Leaf Link
+                  <Link
+                    key={category.id}
+                    href={`/categories/${category.slug}`}
+                    className="block px-4 py-3 text-primary hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-300 font-medium"
+                    onClick={onClose}
+                  >
+                    {category.name}
+                  </Link>
+                );
+              })}
 
-                {displayedCategories.length === 0 && (
-                    <div className="p-4 text-center text-gray-500">
-                        {t('common.noCategories')}
-                    </div>
-                )}
+              {displayedCategories.length === 0 && (
+                <div className="p-4 text-center text-gray-500">
+                  {t('common.noCategories')}
+                </div>
+              )}
             </motion.div>
-            </AnimatePresence>
+          </AnimatePresence>
         </nav>
       </div>
 
       <div className="mb-16 p-4 border-t border-gray-100 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center gap-3">
-             <Globe size={20} className="text-primary" />
-             <div className="flex-1">
-                 <LanguageSwitcher />
-             </div>
+        <div className="flex justify-center items-center gap-3">
+          <LanguageSwitcher />
         </div>
       </div>
 
