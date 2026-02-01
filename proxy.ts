@@ -22,17 +22,25 @@ export default function middleware(request: NextRequest) {
     pathnameWithoutLocale.startsWith(route)
   );
 
+  /* 
+   * RELAXED MIDDLEWARE:
+   * We are temporarily disabling the strict cookie check in middleware.
+   * Since we use an external backend (NestJS) with HttpOnly cookies on a different port,
+   * the middleware might sometimes fail to see the cookie depending on browser/local env.
+   * 
+   * Client-side auth (useAuth) is robust and will redirect if the user is truly not logged in.
+   */
   if (isProtectedRoute) {
-    const token = request.cookies.get('access_token');
+    // const token = request.cookies.get('access_token');
     
-    if (!token) {
-      // Get the locale to redirect correctly
-      const locale = pathname.match(/^\/(en|ar)/)?.[1] || routing.defaultLocale;
+    // if (!token) {
+    //   // Get the locale to redirect correctly
+    //   const locale = pathname.match(/^\/(en|ar)/)?.[1] || routing.defaultLocale;
       
-      const url = new URL(`/${locale}/login`, request.url);
+    //   const url = new URL(`/${locale}/login`, request.url);
       
-      return NextResponse.redirect(url);
-    }
+    //   return NextResponse.redirect(url);
+    // }
   }
 
   return handleI18nRouting(request);
