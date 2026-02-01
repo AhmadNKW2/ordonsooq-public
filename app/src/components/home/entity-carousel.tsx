@@ -117,7 +117,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
               className="group/item flex flex-col items-center shrink-0"
             >
               <div className={cn(
-                "relative rounded-full overflow-hidden border-4 border-white shadow-s1 group-hover/item:shadow-s1 group-hover/item:border-secondary/50 transition-all duration-300 group-hover/item:scale-103",
+                "relative rounded-full overflow-hidden group-hover/item:shadow-s1 transition-all duration-300 group-hover/item:scale-103",
                 imageSizeClasses
               )}>
                 {item.image ? (
@@ -141,11 +141,10 @@ export function EntityCarousel(props: EntityCarouselProps) {
                     </span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300" />
               </div>
 
               <h3 className={cn(
-                "mt-4 font-medium text-primary group-hover/item:text-secondary transition-colors text-center max-w-35 line-clamp-2",
+                "mt-4 font-medium text-primary group-hover/item:text-secondary transition-all text-center max-w-35 line-clamp-2",
                 isCompact ? "text-xs md:text-sm" : "text-sm md:text-base"
               )}>
                 {item.name}

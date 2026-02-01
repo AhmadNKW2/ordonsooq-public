@@ -32,9 +32,9 @@ export function useAuth() {
   } = useQuery({
     queryKey: AUTH_KEYS.user,
     queryFn: async () => {
-        // Don't fetch profile if we don't have a token (guest user)
-        if (!apiClient.getAccessToken()) return null;
-
+        // We attempt to fetch the profile even without a client-side token
+        // because the user might have HttpOnly cookies from OAuth (Google Login).
+        
         try {
             return await authService.getProfile();
         } catch(e) {

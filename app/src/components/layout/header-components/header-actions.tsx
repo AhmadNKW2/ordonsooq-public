@@ -34,7 +34,11 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
 
   const profileOptions: SelectOption[] = [
