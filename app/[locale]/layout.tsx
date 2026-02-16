@@ -6,6 +6,7 @@ import { Header, Footer, Providers } from "@/components";
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { SITE_CONFIG } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
+import { Analytics } from "@vercel/analytics/next";
 import "./../globals.css";
 
 const figtree = Figtree({
@@ -84,6 +85,7 @@ export default async function RootLayout({ children, params }: Props) {
             <Footer />
           </Providers>
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );
