@@ -28,6 +28,9 @@ export { PageWrapper } from "./page-wrapper";
 export { Radio } from "./radio";
 export type { RadioProps } from "./radio";
 
+export { Textarea } from "./textarea";
+export type { TextareaProps } from "./textarea";
+
 export { Select } from "./select";
 export type { SelectOption, SelectProps } from "./select";
 

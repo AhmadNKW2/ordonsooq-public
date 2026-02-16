@@ -142,6 +142,7 @@
   },
   "profile": {
     "hello": "Hello,",
+    "changePhoto": "Change Photo",
     "dashboard": "Dashboard",
     "addresses": "Addresses",
     "accountDetails": "Account Details",
@@ -336,7 +337,7 @@
     "clearFilters": "Clear Filters",
     "applyFilters": "Apply Filters",
     "resultsFound": "{count} results found",
-    "new": "New Arrival",
+    "new": "New",
     "sale": "Sale",
     "positiveFeedback": "({percent}% positive)",
     "otherSellers": "Check offers from {count} other sellers",
@@ -465,6 +466,8 @@
     "building": "Building Number",
     "floor": "Floor",
     "apartment": "Apartment Number",
+    "notes": "Order Notes",
+    "notesPlaceholder": "Any special instructions (e.g., leave at door)",
     "steps": {
       "shipping": "Shipping",
       "payment": "Payment",
@@ -478,7 +481,9 @@
     "free": "FREE",
     "tax": "Tax (10%)",
     "total": "Total",
-    "orderSummary": "Order Summary"
+    "orderSummary": "Order Summary",
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address"
   },
   "footer": {
     "description": "Your premier destination for online shopping - Quality products, great prices, fast delivery",

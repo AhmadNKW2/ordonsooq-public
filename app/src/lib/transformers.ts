@@ -220,6 +220,95 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
      } as any;
   }) || [];
 
+  // --- MERGE CPU LOGIC START ---
+  // Combine "CPU", "CPU Series", "CPU Model" into a single "CPU" attribute
+  const cpuKeysEn = ['CPU', 'CPU Series', 'CPU Model'];
+  const cpuKeysAr = ['المعالج', 'فئة المعالج', 'اصدار المعالج'];
+  const targetKeys = locale === 'ar' ? cpuKeysAr : cpuKeysEn;
+
+  // Find which of these attributes strictly exist in the current product
+  const existingCpuAttrs = attributes.filter(a => targetKeys.includes(a.name));
+
+  // Only merge if we have at least 2 components found
+  if (existingCpuAttrs.length > 1) {
+      // Sort them according to the standard order: CPU -> Series -> Model
+      const sortedParts = existingCpuAttrs.sort((a, b) => {
+          return targetKeys.indexOf(a.name) - targetKeys.indexOf(b.name);
+      });
+
+      // The name of the combined attribute (e.g., "CPU" or "المعالج")
+      const combinedAttrName = sortedParts[0].name; 
+      
+      // We need to gather all unique combined values from the variants to populate the dropdown
+      const newValuesSet = new Set<string>();
+
+      // Update each variant to have the combined key
+      variants.forEach(v => {
+          const parts: string[] = [];
+          
+          sortedParts.forEach(attr => {
+              // Get value from variant, or fall back to global single-value if missing
+              let val = v.attributes[attr.name];
+              if (!val) {
+                  const globalAttr = attributes.find(a => a.name === attr.name);
+                  if (globalAttr && globalAttr.values.length === 1) {
+                      val = globalAttr.values[0].value;
+                  }
+              }
+              if (val) parts.push(val);
+          });
+
+          if (parts.length > 0) {
+              const combinedValue = parts.join(' ');
+              
+              // Set the new combined attribute on the variant
+              v.attributes[combinedAttrName] = combinedValue;
+              
+              // Remove the individual partial attributes from the variant
+              sortedParts.forEach(attr => {
+                  if (attr.name !== combinedAttrName) {
+                      delete v.attributes[attr.name];
+                  }
+              });
+
+              newValuesSet.add(combinedValue);
+          }
+      });
+
+      // Re-fill attributes list logic:
+      // We process the original list, keeping the combined attribute in place of the first component part,
+      // and removing the others.
+      const originalAttributes = [...attributes];
+      attributes.length = 0;
+      
+      let added = false;
+      for (const attr of originalAttributes) {
+          if (attr.name === combinedAttrName) {
+             // This is the "main" one (e.g. CPU). Replace with combined.
+             attributes.push({
+                  ...attr,
+                  values: Array.from(newValuesSet).map(val => ({ value: val }))
+             });
+             added = true;
+          } else if (targetKeys.includes(attr.name)) {
+              // This is a secondary part (Series, Model). Skip.
+          } else {
+              // Normal attribute
+              attributes.push(attr);
+          }
+      }
+      
+      // Safety check: if for some reason we didn't add the combined one (maybe name mismatch?), append it
+      if (!added && newValuesSet.size > 0) {
+          attributes.push({
+              ...sortedParts[0],
+              name: combinedAttrName,
+              values: Array.from(newValuesSet).map(val => ({ value: val }))
+          });
+      }
+  }
+  // --- MERGE CPU LOGIC END ---
+
   return {
     id: String(product.id),
     name: getLocalizedText(product.name_en, product.name_ar, locale),

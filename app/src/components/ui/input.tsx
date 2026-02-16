@@ -22,7 +22,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             htmlFor={id}
             className="block text-sm font-medium text-primary mb-2"
           >
-            {label}
+            {label} 
+            {props.required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
         <div className="relative">

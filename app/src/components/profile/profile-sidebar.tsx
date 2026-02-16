@@ -3,6 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import {
   User,
   Package,
@@ -36,8 +37,17 @@ export function ProfileSidebar() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-6 border-b border-gray-100 bg-primary/5">
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-            {user?.firstName?.[0] || "U"}
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl overflow-hidden relative">
+            {user?.image ? (
+              <Image 
+                src={user.image} 
+                alt={user.firstName || "User"} 
+                fill 
+                className="object-cover"
+              />
+            ) : (
+              user?.firstName?.[0] || "U"
+            )}
           </div>
           <div>
             <p className="font-medium text-gray-900">{tProfile("hello")}</p>

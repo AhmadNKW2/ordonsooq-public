@@ -5,15 +5,17 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { ArrowLeft, CreditCard, Truck, MapPin, User, Lock, Check, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
-import { Button, Input, Card, Radio } from "@/components/ui";
+import { Button, Input, Card, Radio, Textarea, Select, Checkbox } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/useAuth";
 import { formatPrice, cn } from "@/lib/utils";
-import { SHIPPING_OPTIONS, PAYMENT_METHODS } from "@/lib/constants";
+import { SHIPPING_OPTIONS, PAYMENT_METHODS, JORDAN_CITIES } from "@/lib/constants";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { AnimatePresence, motion } from "framer-motion";
 
 type CheckoutStep = "shipping" | "payment" | "review";
+
+import { orderService } from "@/services/order.service";
 
 export default function CheckoutPage() {
   const t = useTranslations('checkout');
@@ -23,10 +25,14 @@ export default function CheckoutPage() {
   const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
   const [shippingMethod, setShippingMethod] = useState(SHIPPING_OPTIONS[0].id);
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("cod"); // Note: Backend example uses 'wallet', UI has 'cod'. Mapping might be needed.
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | number | undefined>(undefined);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+  const [isDefaultAddress, setIsDefaultAddress] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -38,24 +44,92 @@ export default function CheckoutPage() {
     floor: "",
     apartment: "",
     city: "",
+    notes: ""
   });
 
   const selectedShipping = SHIPPING_OPTIONS.find((s) => s.id === shippingMethod)!;
   const shipping = totalPrice > 50 && selectedShipping.price > 0 ? 0 : selectedShipping.price;
   const tax = totalPrice * 0.1;
   const finalTotal = totalPrice + shipping + tax;
+  
+  const cityOptions = JORDAN_CITIES;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateShipping = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.firstName) newErrors.firstName = t('required');
+    if (!formData.lastName) newErrors.lastName = t('required');
+    if (!formData.email) newErrors.email = t('required');
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('invalidEmail');
+    if (!formData.phone) newErrors.phone = t('required');
+    if (!formData.city) newErrors.city = t('required');
+    if (!formData.address) newErrors.address = t('required');
+    if (!formData.floor) newErrors.floor = t('required');
+    if (!formData.apartment) newErrors.apartment = t('required');
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: "" });
+    }
   };
 
   const handlePlaceOrder = async () => {
-    setIsProcessing(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    setOrderComplete(true);
-    clearCart();
+    try {
+      setIsProcessing(true);
+      setBookingError(null);
+
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      
+      const payload = {
+        items: items.map(item => {
+          // Robustly handle ID parsing, fallback to 0 if NaN (which will likely still fail validation but safely)
+          let pId = typeof item.product_id === 'number' ? item.product_id : parseInt(String(item.product_id));
+          if (Number.isNaN(pId)) pId = 0;
+
+          let vId = item.variant_id ? (typeof item.variant_id === 'number' ? item.variant_id : parseInt(String(item.variant_id))) : undefined;
+          if (vId && Number.isNaN(vId)) vId = undefined;
+
+          return {
+            productId: pId,
+            variantId: vId,
+            quantity: item.quantity
+          };
+        }),
+        shippingAddress: {
+          fullName,
+          phone: formData.phone,
+          country: "Jordan",
+          city: formData.city,
+          street: formData.address,
+          building: formData.building,
+          notes: `Floor: ${formData.floor}, Apt: ${formData.apartment}. ${formData.notes || ''}`.trim()
+        },
+        billingAddress: {
+          fullName,
+          country: "Jordan",
+          city: formData.city,
+          street: formData.address
+        },
+        paymentMethod: paymentMethod === 'cod' ? 'cod' : 'wallet', // Map as needed. 
+        // couponCode: ... // If support added later
+        notes: formData.notes
+      };
+
+      const order = await orderService.create(payload);
+      
+      setCreatedOrderId(order.id);
+      setOrderComplete(true);
+      clearCart();
+    } catch (error) {
+      console.error("Failed to place order:", error);
+      setBookingError("Failed to place order. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const steps = [
@@ -95,7 +169,7 @@ export default function CheckoutPage() {
           <p className="text-third mb-2">
             {t('orderConfirmedDesc')}
           </p>
-          <p className="text-xl font-bold text-primary mb-6">#ORD-{Date.now().toString().slice(-8)}</p>
+          <p className="text-xl font-bold text-primary mb-6">#ORD-{createdOrderId || 'PENDING'}</p>
           <p className="text-third mb-8">
             We&apos;ve sent a confirmation email to {formData.email || "your email"}.
           </p>
@@ -190,10 +264,10 @@ export default function CheckoutPage() {
                 {/* Contact Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {[
-                    { name: "firstName", label: t('firstName'), placeholder: "John" },
-                    { name: "lastName", label: t('lastName'), placeholder: "Doe" },
-                    { name: "email", label: t('email'), type: "email", placeholder: "john@example.com" },
-                    { name: "phone", label: t('phone'), type: "tel", placeholder: "0791234567" },
+                    { name: "firstName", label: t('firstName'), placeholder: "John", required: true },
+                    { name: "lastName", label: t('lastName'), placeholder: "Doe", required: true },
+                    { name: "email", label: t('email'), type: "email", placeholder: "john@example.com", required: true },
+                    { name: "phone", label: t('phone'), type: "tel", placeholder: "0791234567", required: true },
                   ].map((field) => (
                     <Input
                       key={field.name}
@@ -203,36 +277,97 @@ export default function CheckoutPage() {
                       value={formData[field.name as keyof typeof formData]}
                       onChange={handleInputChange}
                       placeholder={field.placeholder}
+                      error={errors[field.name]}
+                      required={field.required}
                     />
                   ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Country - Read Only */}
+                  <Input
+                    label={t('country')}
+                    name="country"
+                    value="Jordan"
+                    readOnly
+                    disabled
+                  />
+                  
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-primary mb-2">
+                      {t('city') || "City"} <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      options={cityOptions}
+                      value={formData.city}
+                      onChange={(value) => {
+                         setFormData({ ...formData, city: value });
+                         if (errors.city) setErrors({ ...errors, city: "" });
+                      }}
+                      placeholder={t('city') || "Select City"}
+                    />
+                    {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
+                  </div>
                 </div>
 
                 {/* Address */}
                 <Input
-                  label={t('address')}
+                  label={tProfile('address1')}
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  placeholder="123 Main St"
+                  placeholder={tProfile('address1')}
+                  error={errors.address}
+                  required
                 />
 
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-5">
-                  {[
-                    { name: "building", label: t('building'), placeholder: "12" },
-                    { name: "floor", label: t('floor'), placeholder: "3" },
-                    { name: "apartment", label: t('apartment'), placeholder: "4B" },
-                    { name: "city", label: t('city'), placeholder: "Amman" },
-                  ].map((field) => (
-                    <Input
-                      key={field.name}
-                      label={field.label}
-                      name={field.name}
-                      value={formData[field.name as keyof typeof formData]}
-                      onChange={handleInputChange}
-                      placeholder={field.placeholder}
-                    />
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                  <Input
+                    label={`${t('building')} (Optional)`}
+                    name="building"
+                    value={formData.building}
+                    onChange={handleInputChange}
+                    placeholder="Building No."
+                  />
+                  <Input
+                    label={t('floor')}
+                    name="floor"
+                    value={formData.floor}
+                    onChange={handleInputChange}
+                    placeholder="Floor No."
+                    error={errors.floor}
+                    required
+                  />
+                  <Input
+                    label={t('apartment')}
+                    name="apartment"
+                    value={formData.apartment}
+                    onChange={handleInputChange}
+                    placeholder="Apt No."
+                    error={errors.apartment}
+                    required
+                  />
                 </div>
+
+                <Textarea
+                  label={`${t('notes')} (Optional)`}
+                  name="notes"
+                  value={formData.notes || ""}
+                  onChange={handleInputChange}
+                  placeholder={t('notesPlaceholder') || "Any special instructions for delivery?"}
+                />
+                
+                <Checkbox
+                  label={tProfile('setDefault')}
+                  checked={isDefaultAddress}
+                  onChange={(e) => setIsDefaultAddress(e.target.checked)}
+                />
+                
+                {bookingError && (
+                    <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm mt-4">
+                        {bookingError}
+                    </div>
+                )}
               </div>
             )}
 
@@ -417,9 +552,11 @@ export default function CheckoutPage() {
                 size="lg" 
                 className="flex-1" 
                 onClick={() => {
-                  if (currentStep === "shipping") setCurrentStep("payment");
-                  if (currentStep === "payment") setCurrentStep("review");
-                  if (currentStep === "review") handlePlaceOrder();
+                  if (currentStep === "shipping") {
+                    if (validateShipping()) setCurrentStep("payment");
+                  }
+                  else if (currentStep === "payment") setCurrentStep("review");
+                  else if (currentStep === "review") handlePlaceOrder();
                 }}
                 isLoading={isProcessing}
               >
@@ -507,9 +644,11 @@ export default function CheckoutPage() {
             size="lg" 
             className="flex-[2] text-sm sm:text-base px-2 sm:px-4" 
             onClick={() => {
-              if (currentStep === "shipping") setCurrentStep("payment");
-              if (currentStep === "payment") setCurrentStep("review");
-              if (currentStep === "review") handlePlaceOrder();
+              if (currentStep === "shipping") {
+                if (validateShipping()) setCurrentStep("payment");
+              }
+              else if (currentStep === "payment") setCurrentStep("review");
+              else if (currentStep === "review") handlePlaceOrder();
             }}
             isLoading={isProcessing}
           >

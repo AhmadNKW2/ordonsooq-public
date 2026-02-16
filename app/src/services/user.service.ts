@@ -1,10 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+import { User } from '@/types';
 
 export type CreateUserDto = {
   name: string;

@@ -25,8 +25,15 @@ function toVariantCardProduct(base: Product, variant: ProductVariant): Product {
     ? [variantImage, ...(base.images || []).filter((u) => u !== variantImage)]
     : base.images;
 
+  // Append attribute values to the name
+  const attributeValues = Object.values(variant.attributes || {}).filter(Boolean);
+  const newName = attributeValues.length > 0 
+    ? `${base.name} - ${attributeValues.join(' - ')}`
+    : base.name;
+
   return {
     ...base,
+    name: newName,
     hasVariants: true,
     defaultVariantId: String(variant.id),
     price: variant.price,

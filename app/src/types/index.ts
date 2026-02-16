@@ -118,7 +118,15 @@ export interface ShippingAddress {
   phone: string;
   street: string;
   city: string;
-  country: string;
+  country?: string; 
+  building?: string;
+  notes?: string;
+}
+
+export interface BillingAddress {
+  fullName: string;
+  city: string;
+  street: string;
 }
 
 export interface ApiOrderItem {
@@ -144,11 +152,14 @@ export interface ApiOrder {
 export interface CreateOrderPayload {
   items: {
     productId: string | number;
-    quantity: number;
     variantId?: string | number;
+    quantity: number;
   }[];
-  paymentMethod: string;
   shippingAddress: ShippingAddress;
+  billingAddress: BillingAddress;
+  paymentMethod: string;
+  couponCode?: string;
+  notes?: string;
 }
 
 export interface OrderResponse {
@@ -284,6 +295,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  image?: string;
   role: 'admin' | 'user' | 'vendor'; // Added from Postman
   phone?: string;
   avatar?: string;

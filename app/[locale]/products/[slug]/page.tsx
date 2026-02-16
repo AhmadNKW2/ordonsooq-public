@@ -135,35 +135,52 @@ export default function ProductPage() {
     if (!product?.variants || product.variants.length === 0) return;
     if (hasInitialized) return;
 
-    // If a variant is specified in the URL (e.g., coming from cart), use it
+    let targetOptions: Record<string, string> = {};
+
+    // 1. If a variant is specified in the URL (e.g., coming from cart), use it
     if (requestedVariantId) {
       const match = product.variants.find(v => String(v.id) === requestedVariantId);
-      if (match && Object.keys(match.attributes).length > 0) {
-        setSelectedOptions(match.attributes);
-        setHasInitialized(true);
-        return;
+      if (match) {
+         targetOptions = { ...match.attributes };
       }
     }
 
-    // 1. Try to find the first variant with stock > 0
-    let defaultVariant = product.variants.find(v => v.stock > 0);
-
-    // 2. If no stock, just take the first variant
-    if (!defaultVariant) {
-      defaultVariant = product.variants[0];
+    // 2. If no valid match from URL, try to find the first variant with stock > 0
+    if (Object.keys(targetOptions).length === 0) {
+        let defaultVariant = product.variants.find(v => v.stock > 0);
+        // If no stock, just take the first variant
+        if (!defaultVariant) {
+            defaultVariant = product.variants[0];
+        }
+        if (defaultVariant) {
+            targetOptions = { ...defaultVariant.attributes };
+        }
     }
 
-    if (defaultVariant && Object.keys(defaultVariant.attributes).length > 0) {
-      setSelectedOptions(defaultVariant.attributes);
+    // 3. Fill in single-value attributes that might be missing from the variant
+    // This handles cases where implied global attributes (like "CPU: Intel") are not explicitly in the variant
+    if (product.attributes) {
+        product.attributes.forEach(attr => {
+            if (!targetOptions[attr.name] && attr.values.length === 1) {
+                targetOptions[attr.name] = attr.values[0].value;
+            }
+        });
+    }
+
+    if (Object.keys(targetOptions).length > 0) {
+      setSelectedOptions(targetOptions);
     }
     setHasInitialized(true);
-  }, [product?.variants, requestedVariantId, hasInitialized]);
+  }, [product?.variants, product?.attributes, requestedVariantId, hasInitialized]);
 
   // Find matching variant
   const selectedVariant = useMemo(() => {
     if (!product?.variants) return undefined;
     return product.variants.find(v => {
-      return Object.entries(selectedOptions).every(([key, value]) => v.attributes[key] === value);
+      return Object.entries(selectedOptions).every(([key, value]) => {
+        const vVal = v.attributes[key];
+        return vVal === value || vVal === undefined;
+      });
     });
   }, [product?.variants, selectedOptions]);
 
@@ -214,7 +231,10 @@ export default function ProductPage() {
 
     // Check if the new combination is valid and in stock
     const exactMatch = product.variants.find(v =>
-      Object.entries(newOptions).every(([key, val]) => v.attributes[key] === val)
+      Object.entries(newOptions).every(([key, val]) => {
+        const vAttr = v.attributes[key];
+        return vAttr === val || vAttr === undefined;
+      })
     );
 
     if (exactMatch && exactMatch.stock > 0) {
@@ -224,9 +244,10 @@ export default function ProductPage() {
 
     // Logic to find the best matching variant when exact match is not available
     // We look for any variant that has the selected attribute value and is in stock
-    const candidates = product.variants.filter(v => 
-      v.attributes[attributeName] === value && v.stock > 0
-    );
+    const candidates = product.variants.filter(v => {
+      const vAttr = v.attributes[attributeName];
+      return (vAttr === value || vAttr === undefined) && v.stock > 0;
+    });
 
     if (candidates.length > 0) {
       // Find the candidate that is "closest" to the current selection
@@ -238,21 +259,46 @@ export default function ProductPage() {
         Object.entries(selectedOptions).forEach(([key, val]) => {
           if (key === attributeName) return; // Skip the attribute we just changed
           
-          if (a.attributes[key] === val) scoreA++;
-          if (b.attributes[key] === val) scoreB++;
+          const aAttr = a.attributes[key];
+          const bAttr = b.attributes[key];
+          
+          if (aAttr === val || aAttr === undefined) scoreA++;
+          if (bAttr === val || bAttr === undefined) scoreB++;
         });
 
         return scoreB - scoreA; // Descending sort (higher score first)
       })[0];
 
-      // Use the attributes of the best matching variant
-      setSelectedOptions(bestMatch.attributes);
+      // Use the attributes of the best matching variant, but preserve options not defined in the variant
+      const mergedOptions = { ...newOptions, ...bestMatch.attributes };
+      
+      // Also ensure any single-value global attributes are preserved if missing
+      if (product.attributes) {
+        product.attributes.forEach(attr => {
+           if (!mergedOptions[attr.name] && attr.values.length === 1) {
+               mergedOptions[attr.name] = attr.values[0].value;
+           }
+        });
+      }
+
+      setSelectedOptions(mergedOptions);
       return;
     }
 
     // Fallback: If no valid variant found even with other attribute changes, 
     // just set the option (user will see it as unavailable)
-    setSelectedOptions(newOptions);
+    
+    // Also fill in single-value attributes for the fallback case
+    const finalOptions = { ...newOptions };
+    if (product?.attributes) {
+        product.attributes.forEach(attr => {
+           if (!finalOptions[attr.name] && attr.values.length === 1) {
+               finalOptions[attr.name] = attr.values[0].value;
+           }
+        });
+    }
+
+    setSelectedOptions(finalOptions);
   };
 
   // Check if an option should be disabled
@@ -260,9 +306,11 @@ export default function ProductPage() {
     if (!product?.variants) return false;
 
     // Check if this option value exists in ANY variant that is in stock
-    const hasAnyInStockVariant = product.variants.some(v =>
-      v.attributes[attributeName] === value && v.stock > 0
-    );
+    // If the attribute is missing in the variant, we assume it's compatible (global attribute)
+    const hasAnyInStockVariant = product.variants.some(v => {
+      const vAttr = v.attributes[attributeName];
+      return (vAttr === value || vAttr === undefined) && v.stock > 0;
+    });
 
     return !hasAnyInStockVariant;
   };
@@ -402,9 +450,10 @@ export default function ProductPage() {
             className="items-baseline"
           />
 
-          <p className="text-third leading-relaxed">
-            {product.description}
-          </p>
+          <div 
+            className="text-third leading-relaxed prose max-w-none [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
 
           {product.attributes && product.attributes.length > 0 && (
             <ProductOptions
@@ -534,17 +583,17 @@ export default function ProductPage() {
 
       {/* Features */}
       <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
-        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg gap-1">
           <Truck className="w-6 h-6 text-primary" />
           <span className="text-sm font-medium">{t('product.features.freeShipping')}</span>
           <span className="text-xs text-third">{t('product.features.freeShippingDesc')}</span>
         </div>
-        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg gap-1">
           <RotateCcw className="w-6 h-6 text-primary" />
           <span className="text-sm font-medium">{t('product.features.returns')}</span>
           <span className="text-xs text-third">{t('product.features.returnsDesc')}</span>
         </div>
-        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg gap-1">
           <Shield className="w-6 h-6 text-primary" />
           <span className="text-sm font-medium">{t('product.features.secure')}</span>
           <span className="text-xs text-third">{t('product.features.secureDesc')}</span>
@@ -556,8 +605,8 @@ export default function ProductPage() {
         <section >
           <h2 className="text-2xl font-bold text-primary mb-1">{t('product.description')}</h2>
           <Card className="p-8">
-            <div
-              className="prose max-w-none prose-headings:text-primary prose-p:text-third prose-a:text-primary"
+            <div 
+              className="prose max-w-none [&_h1]:text-primary [&_h2]:text-primary [&_h3]:text-primary [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
               dangerouslySetInnerHTML={{ __html: product.longDescription }}
             />
             {product.descriptionImages && product.descriptionImages.length > 0 && (
