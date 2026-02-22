@@ -175,6 +175,7 @@ export function Footer() {
               </div>
               <form className="flex gap-2 w-full md:w-auto">
                 <Input
+                  id="footer-newsletter-email-input"
                   type="email"
                   placeholder={t('footer.emailPlaceholder')}
                   className="bg-white/10 border-white/20 text-white placeholder:text-third2 focus:bg-white/20 focus:ring-white flex-1 md:w-80 min-w-0"

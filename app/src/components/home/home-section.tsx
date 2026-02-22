@@ -25,6 +25,9 @@ type ProductsVariantProps = BaseSectionProps & {
   variant?: "products";
   products: Product[];
   showLoadMore?: boolean;
+  /** External control: when provided, overrides internal visible-count logic.
+   *  Set to `true` when there are more API pages to load, `false` when exhausted. */
+  hasMore?: boolean;
   showNavArrows?: boolean;
   onLoadMore?: () => void;
   isLoading?: boolean;
@@ -45,6 +48,7 @@ export function HomeSection(props: HomeSectionProps) {
     products,
     viewAllHref,
     showLoadMore = true,
+    hasMore,
     showNavArrows = false,
     onLoadMore,
     isLoading = false,
@@ -68,14 +72,18 @@ export function HomeSection(props: HomeSectionProps) {
     setVisibleCount(Math.min(products.length, Math.max(0, initialVisibleCount)));
   }, [products.length, initialVisibleCount]);
 
+  // When `hasMore` is provided externally (API pagination mode), show ALL fetched
+  // products without client-side slicing. Otherwise fall back to internal slicing.
   const visibleProducts = useMemo(() => {
-    return showNavArrows
-      ? products
-      : products.slice(0, Math.max(0, visibleCount));
-  }, [products, showNavArrows, visibleCount]);
+    if (showNavArrows) return products;
+    if (hasMore !== undefined) return products;
+    return products.slice(0, Math.max(0, visibleCount));
+  }, [products, showNavArrows, visibleCount, hasMore]);
 
   const canShowLoadMore =
-    showLoadMore && !showNavArrows && visibleCount < products.length;
+    showLoadMore &&
+    !showNavArrows &&
+    (hasMore !== undefined ? hasMore : visibleCount < products.length);
 
   if (products.length === 0) return null;
 
@@ -153,10 +161,16 @@ export function HomeSection(props: HomeSectionProps) {
             variant="pill"
             size="lg"
             onClick={() => {
-              setVisibleCount((current) =>
-                Math.min(products.length, current + Math.max(0, loadMoreCount))
-              );
-              onLoadMore?.();
+              if (hasMore !== undefined) {
+                // API pagination mode: delegate entirely to external handler
+                onLoadMore?.();
+              } else {
+                // Client-side slicing mode
+                setVisibleCount((current) =>
+                  Math.min(products.length, current + Math.max(0, loadMoreCount))
+                );
+                onLoadMore?.();
+              }
             }}
             disabled={isLoading}
             className="min-w-50 bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"

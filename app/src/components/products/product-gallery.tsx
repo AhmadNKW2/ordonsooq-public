@@ -312,7 +312,7 @@ export function ProductGallery({
                   src={image}
                   alt={`${productName} - Image ${index + 1}`}
                   fill
-                  className="object-contain object-top"
+                  className="object-cover object-top"
                   priority={index === 0}
                 />
               </div>

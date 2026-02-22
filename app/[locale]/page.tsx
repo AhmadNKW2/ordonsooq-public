@@ -1,12 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { EntityCarousel, type EntityCarouselItem } from "@/components/home/entity-carousel";
 import { ProductsSection } from "@/components/home/featured-products";
 import { FeaturesSection } from "@/components/home/features-section";
 import { Newsletter } from "@/components/home/newsletter";
-import { useProducts, useHome, useListingVariantProducts } from "@/hooks";
+import { useInfiniteProducts, useHome, useListingVariantProducts } from "@/hooks";
 import { transformHomeData, type Locale } from "@/lib/transformers";
 import { ProductGridSkeleton, CategoryCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 
@@ -21,31 +22,47 @@ export default function HomePage() {
     error: homeError 
   } = useHome();
 
-  // Fetch featured products (visible and in stock)
-  const { 
-    data: featuredData, 
-    isLoading: featuredLoading,
-    error: featuredError 
-  } = useProducts({ 
-    limit: 8, 
+  // Fetch featured products with infinite pagination (25 per page)
+  const {
+    data: featuredInfiniteData,
+    isPending: featuredLoading,
+    isFetchingNextPage: featuredFetchingNext,
+    hasNextPage: featuredHasNextPage,
+    fetchNextPage: featuredFetchNextPage,
+  } = useInfiniteProducts({
+    limit: 25,
     status: 'active',
     visible: true,
     sortBy: 'average_rating',
-    sortOrder: 'DESC'
+    sortOrder: 'DESC',
   });
 
-  // Fetch new products (visible and in stock)
-  const { 
-    data: newData, 
-    isLoading: newLoading,
-    error: newError 
-  } = useProducts({ 
-    limit: 8, 
+  // Flatten all fetched pages into a single array
+  const featuredData = useMemo(
+    () => featuredInfiniteData?.pages.flatMap((p) => p.data) ?? [],
+    [featuredInfiniteData]
+  );
+
+  // Fetch new arrivals with infinite pagination (25 per page)
+  const {
+    data: newInfiniteData,
+    isPending: newLoading,
+    isFetchingNextPage: newFetchingNext,
+    hasNextPage: newHasNextPage,
+    fetchNextPage: newFetchNextPage,
+  } = useInfiniteProducts({
+    limit: 25,
     status: 'active',
     visible: true,
     sortBy: 'created_at',
-    sortOrder: 'DESC'
+    sortOrder: 'DESC',
   });
+
+  // Flatten all fetched pages into a single array
+  const newData = useMemo(
+    () => newInfiniteData?.pages.flatMap((p) => p.data) ?? [],
+    [newInfiniteData]
+  );
 
   // Transform home data (categories, vendors, banners) with locale
   const { categories, vendors, banners, brands } = homeData 
@@ -75,13 +92,8 @@ export default function HomePage() {
     image: vendor.logo,
     isCategory: false,
   }));
-  const { products: featuredProductsRaw, isLoading: featuredVariantsLoading } =
-    useListingVariantProducts(featuredData?.data, locale);
-  const { products: newProductsRaw, isLoading: newVariantsLoading } =
-    useListingVariantProducts(newData?.data, locale);
-
-  const featuredProducts = featuredProductsRaw;
-  const newProducts = newProductsRaw;
+  const { products: featuredProducts } = useListingVariantProducts(featuredData, locale);
+  const { products: newProducts } = useListingVariantProducts(newData, locale);
 
   return (
     <>
@@ -114,13 +126,16 @@ export default function HomePage() {
 
       {/* Featured Products */}
       <section>
-        {featuredLoading || featuredVariantsLoading ? (
+        {featuredLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
           <ProductsSection
             products={featuredProducts}
             title={t('featuredProducts')}
             subtitle={t('featuredSubtitle')}
+            hasMore={featuredHasNextPage ?? false}
+            onLoadMore={() => featuredFetchNextPage()}
+            isLoading={featuredFetchingNext}
           />
         )}
       </section>
@@ -168,7 +183,7 @@ export default function HomePage() {
 
       {/* New Arrivals */}
       <section>
-        {newLoading || newVariantsLoading ? (
+        {newLoading ? (
           <ProductGridSkeleton count={4} />
         ) : (
           <ProductsSection
@@ -176,6 +191,9 @@ export default function HomePage() {
             title={t('newArrivals')}
             subtitle={t('newArrivalsSubtitle')}
             viewAllHref="/products?filter=new"
+            hasMore={newHasNextPage ?? false}
+            onLoadMore={() => newFetchNextPage()}
+            isLoading={newFetchingNext}
           />
         )}
       </section>

@@ -132,7 +132,8 @@ export type ProductWeightGroup = {
 export type ProductVariant = {
   id: number;
   is_active: boolean;
-  quantity: number;
+  is_out_of_stock: boolean;
+  quantity?: number;
   attribute_values: Record<string, number>;
   price_group_id: string;
   media_group_id: string;
@@ -168,6 +169,7 @@ export type Product = {
   weight_groups: Record<string, ProductWeightGroup>;
   
   quantity?: number;
+  is_out_of_stock?: boolean;
   
   variants: ProductVariant[];
 };

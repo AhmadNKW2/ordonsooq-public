@@ -8,5 +8,8 @@ export * from "./home";
 // Product Components
 export * from "./products";
 
+// Search Components
+export * from "./search";
+
 // Providers
 export { Providers } from "./providers";

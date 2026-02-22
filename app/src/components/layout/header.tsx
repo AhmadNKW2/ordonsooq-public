@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { CartSidebar } from "@/components/cart";
-import { Input, IconButton } from "@/components/ui";
+import { IconButton } from "@/components/ui";
+import { SearchBox } from "@/components/search/SearchBox";
 import {
   TopBar,
   Logo,
@@ -17,16 +18,8 @@ export function Header() {
   const t = useTranslations('common');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-s1">
@@ -49,19 +42,10 @@ export function Header() {
             {/* Logo */}
             <Logo />
 
-            {/* Desktop Search - Now visible on mobile too */}
-            <form
-              onSubmit={handleSearch}
-              className="flex items-center flex-1"
-            >
-              <Input
-                type="search"
-                variant="search"
-                placeholder={t('searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
+            {/* Search Box with Autocomplete */}
+            <div className="flex-1 max-w-2xl mx-auto">
+              <SearchBox />
+            </div>
 
             {/* Actions - Wishlist, Profile, Cart */}
             <HeaderActions onSearchToggle={() => setIsSearchOpen(!isSearchOpen)} />

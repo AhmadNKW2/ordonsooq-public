@@ -38,7 +38,7 @@ const sizeClasses = {
 
 const variantClasses: Record<ButtonVariant, string> = {
   solid: "bg-primary text-white hover:bg-primary/90 shadow-primary/25",
-  outline: "bg-transparent border border-primary text-primary hover:bg-secondary/5 shadow-none hover:shadow-none",
+  outline: "bg-transparent border border-secondary text-primary hover:bg-secondary/75 hover:text-white hover:shadow-s1 [&_svg]:transition-colors [&_svg_path]:transition-colors hover:[&_svg]:text-white hover:[&_svg_path]:fill-white",
   pill: "bg-primary text-white hover:bg-primary/90 shadow-primary/25 rounded-full",
   ghost: "bg-transparent text-gray-700 hover:bg-gray-100 shadow-none hover:shadow-none",
 };
@@ -75,7 +75,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "hover:scale-101 inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98] shadow-s1 hover:shadow-s1",
+          "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
           sizeClasses[size],
           variantClasses[resolvedVariant],
           className

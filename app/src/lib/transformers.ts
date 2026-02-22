@@ -151,11 +151,25 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   }
   
   // 4. Stock
+  // The API returns is_out_of_stock boolean instead of a quantity field.
+  // Use quantity when available, otherwise fall back to the is_out_of_stock flag.
   let stock = 0;
   if (product.variants && product.variants.length > 0) {
-      stock = product.variants.reduce((acc, v) => acc + (v.quantity || 0), 0);
+      const totalQuantity = product.variants.reduce((acc, v) => acc + (v.quantity || 0), 0);
+      if (totalQuantity > 0) {
+          stock = totalQuantity;
+      } else {
+          // Fall back to is_out_of_stock flag — any active variant in stock means available.
+          // Use sentinel 999 (not 1) so low-stock badges (threshold ≤5) are not triggered.
+          const anyInStock = product.variants.some(v => !v.is_out_of_stock && v.is_active !== false);
+          stock = anyInStock ? 999 : 0;
+      }
   } else {
-      stock = product.quantity || 0;
+      // quantity=0 with is_out_of_stock=false means available but inventory not tracked.
+      // Use a high sentinel (999) so low-stock UI badges (threshold ≤5) are not triggered.
+      stock = (product.quantity != null && product.quantity > 0)
+        ? product.quantity
+        : (product.is_out_of_stock === false ? 999 : 0);
   }
 
   // 5. Variants
@@ -212,7 +226,12 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
          name: getLocalizedText(product.name_en, product.name_ar, locale),
          price: vPrice,
          compareAtPrice: vComparePrice,
-         stock: v.quantity,
+         // Use quantity when > 0; otherwise fall back to is_out_of_stock flag.
+         // quantity=0 with is_out_of_stock=false means available but inventory not tracked;
+         // use sentinel 999 so low-stock badges (threshold ≤5) are not triggered.
+         stock: (v.quantity != null && v.quantity > 0)
+           ? v.quantity
+           : (v.is_out_of_stock === false ? 999 : 0),
          sku: product.sku + '-' + v.id,
          attributes: variantAttributes,
          image: vImage,

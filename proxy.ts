@@ -6,41 +6,29 @@ const handleI18nRouting = createMiddleware(routing);
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Define protected routes that require authentication
-  // We match against the path without the locale prefix to simplify logic
-  // (e.g. /en/checkout -> /checkout)
-  const pathnameWithoutLocale = pathname.replace(/^\/(?:en|ar)/, '') || '/';
-  
-  const protectedRoutes = [
-    '/checkout',
-    '/profile',
-    '/orders'
-  ];
 
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathnameWithoutLocale.startsWith(route)
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const possibleLocale = pathSegments[0];
+  const hasLocalePrefix = routing.locales.includes(possibleLocale as (typeof routing.locales)[number]);
+  const locale = hasLocalePrefix ? possibleLocale : routing.defaultLocale;
+  const pathnameWithoutLocale = hasLocalePrefix
+    ? `/${pathSegments.slice(1).join('/')}` || '/'
+    : pathname || '/';
+
+  const protectedRoutes = ['/checkout', '/profile'];
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathnameWithoutLocale === route || pathnameWithoutLocale.startsWith(`${route}/`)
   );
 
-  /* 
-   * RELAXED MIDDLEWARE:
-   * We are temporarily disabling the strict cookie check in middleware.
-   * Since we use an external backend (NestJS) with HttpOnly cookies on a different port,
-   * the middleware might sometimes fail to see the cookie depending on browser/local env.
-   * 
-   * Client-side auth (useAuth) is robust and will redirect if the user is truly not logged in.
-   */
   if (isProtectedRoute) {
-    // const token = request.cookies.get('access_token');
-    
-    // if (!token) {
-    //   // Get the locale to redirect correctly
-    //   const locale = pathname.match(/^\/(en|ar)/)?.[1] || routing.defaultLocale;
-      
-    //   const url = new URL(`/${locale}/login`, request.url);
-      
-    //   return NextResponse.redirect(url);
-    // }
+    const token = request.cookies.get('access_token')?.value;
+
+    if (!token) {
+      const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`;
+      const url = new URL(loginPath, request.url);
+      return NextResponse.redirect(url);
+    }
   }
 
   return handleI18nRouting(request);
