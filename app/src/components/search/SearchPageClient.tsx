@@ -1,14 +1,33 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useState, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSearchFilters } from '@/lib/search/use-search-params';
 import { useSearch } from '@/lib/search/use-search';
-import { SearchFilters as FiltersPanel } from './SearchFilters';
+import { ProductFilters, FloatingFilterSort } from '@/components/products';
+import type { FilterState } from '@/components/products/product-filters';
 import { SearchResults } from './SearchResults';
-import { SortSelect } from './SortSelect';
 import { Pagination } from './Pagination';
-import { MobileFilterDrawer } from './MobileFilterDrawer';
-import type { SearchResponse, SearchFilters } from '@/lib/search/types';
+import { Card, Sheet, Select } from '@/components/ui';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useCategories, useBrands } from '@/hooks';
+import { transformCategories, transformBrands, type Locale } from '@/lib/transformers';
+import type { SearchResponse, SearchFilters, SortOption } from '@/lib/search/types';
+
+// Map UI sort keys → Typesense sort_by values (mirrors ProductListingPage mapping)
+const SORT_MAP: Record<string, SortOption> = {
+  'popular':    'popularity_score:desc',
+  'newest':     'created_at:desc',
+  'price-asc':  'price:asc',
+  'price-desc': 'price:desc',
+  'rating':     'rating:desc',
+};
+
+function toSortKey(sortBy?: SortOption): string {
+  const entry = Object.entries(SORT_MAP).find(([, v]) => v === sortBy);
+  return entry ? entry[0] : 'popular';
+}
 
 interface Props {
   initialData: SearchResponse | null;
@@ -16,50 +35,187 @@ interface Props {
 }
 
 export function SearchPageClient({ initialData, initialFilters }: Props) {
-  const t = useTranslations('search');
-  const { filters, setSortBy, setPage } = useSearchFilters();
+  const t = useTranslations('product');
+  const tSearch = useTranslations('search');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as Locale;
 
-  // Client-side updates after first render; uses initialData until filters change
-  const { data, isLoading } = useSearch(filters, initialData);
+  const { filters, setSortBy, setPage, setMinPrice, setMaxPrice, changeFilter } = useSearchFilters();
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
+
+  // Sort key mirrors ProductListingPage (e.g. 'popular', 'price-asc', …)
+  const [sortKey, setSortKey] = useState(() => toSortKey(initialFilters.sort_by));
+
+  const handleSortChange = (key: string) => {
+    setSortKey(key);
+    void setSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
+    setShowSort(false);
+  };
+
+  // Fetch categories & brands — same as ProductListingPage
+  const { data: categoriesData } = useCategories({
+    limit: 50,
+    status: 'active',
+    sortBy: 'sortOrder',
+    sortOrder: 'ASC',
+  });
+  const { data: brandsData } = useBrands({
+    limit: 50,
+    status: 'active',
+    sortBy: 'sort_order',
+    sortOrder: 'ASC',
+  });
+
+  const rawCategories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data ?? []);
+  const rawBrands     = Array.isArray(brandsData)     ? brandsData     : (brandsData?.data     ?? []);
+  const categories    = transformCategories(rawCategories, locale);
+  const brands        = transformBrands ? transformBrands(rawBrands, locale) : [];
+
+  // Local ProductFilters state (synced to URL via useSearchFilters)
+  const [filterState, setFilterState] = useState<FilterState>({
+    categories: initialFilters.category ? [initialFilters.category] : [],
+    brands:     initialFilters.brand    ? [initialFilters.brand]    : [],
+    priceRange:
+      initialFilters.min_price != null || initialFilters.max_price != null
+        ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
+        : null,
+    rating: null,
+  });
+
+  const handleFilterChange = (newState: FilterState) => {
+    setFilterState(newState);
+    void changeFilter('category', newState.categories[0] ?? null);
+    void changeFilter('brand',    newState.brands[0]    ?? null);
+    void setMinPrice(newState.priceRange?.min ?? null);
+    void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
+    void setPage(1);
+  };
+
+  // Merge URL filters with current sort key
+  const searchFilters = useMemo<SearchFilters>(() => ({
+    ...filters,
+    sort_by: SORT_MAP[sortKey] as SortOption,
+  }), [filters, sortKey]);
+
+  const { data, isLoading } = useSearch(searchFilters, initialData);
   const results = data ?? initialData;
+
+  const activeFiltersCount =
+    filterState.categories.length +
+    filterState.brands.length +
+    (filterState.priceRange ? 1 : 0) +
+    (filterState.rating ? 1 : 0);
+
+  const sortOptions = [
+    { value: 'popular',    label: t('sortPopular')   },
+    { value: 'price-asc',  label: t('sortPriceAsc')  },
+    { value: 'price-desc', label: t('sortPriceDesc') },
+    { value: 'newest',     label: t('sortNewest')    },
+    { value: 'rating',     label: t('sortRating')    },
+  ];
+
+  const filtersComponent = (
+    <ProductFilters
+      categories={categories}
+      brands={brands}
+      selectedCategories={filterState.categories}
+      selectedBrands={filterState.brands}
+      priceRange={filterState.priceRange ?? undefined}
+      rating={filterState.rating ?? undefined}
+      onFilterChange={handleFilterChange}
+      className="w-full"
+    />
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Results count + sort */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <p className="text-sm text-third">
-          {results
-            ? t('resultsFound', { count: results.total })
-            : null}
-          {results && filters.q && filters.q !== '*' && (
-            <span>
-              {' '}
-              {t('resultsFor')}{' '}
-              <span className="font-semibold text-primary">&quot;{filters.q}&quot;</span>
+      {/* Mobile — Filter sheet */}
+      <Sheet isOpen={showFilters} onClose={() => setShowFilters(false)} title={tCommon('filters')} side="bottom">
+        <div className="pb-8">
+          {filtersComponent}
+        </div>
+      </Sheet>
+
+      {/* Mobile — Sort sheet */}
+      <Sheet isOpen={showSort} onClose={() => setShowSort(false)} title={t('sortBy')} side="bottom">
+        <div className="flex flex-col gap-2 pb-8">
+          {sortOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handleSortChange(option.value)}
+              className={cn(
+                "flex items-center justify-between p-4 rounded-lg transition-colors text-start",
+                sortKey === option.value
+                  ? "bg-primary/5 text-primary font-medium"
+                  : "hover:bg-gray-50 text-gray-700"
+              )}
+            >
+              {option.label}
+              {sortKey === option.value && <Check className="w-5 h-5" />}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+
+      {/* Floating Filter/Sort Pill (Mobile Only) */}
+      <FloatingFilterSort
+        onSortClick={() => setShowSort(true)}
+        onFilterClick={() => setShowFilters(true)}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Filters — always visible on desktop, same as product listing pages */}
+        <aside className="w-full lg:w-64 shrink-0 hidden lg:block">
+          <div className="sticky top-24">
+            {filtersComponent}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-w-0">
+          {/* Desktop Header Card */}
+          <Card className="hidden lg:flex flex-wrap items-center justify-between gap-5 mb-6 p-4">
+            <div className="flex items-center gap-5">
+              <span className="text-sm text-gray-500 hidden sm:inline-block">
+                {results ? tSearch('resultsFound', { count: results.total }) : null}
+                {results && filters.q && filters.q !== '*' && (
+                  <span>
+                    {' '}
+                    {tSearch('resultsFor')}{' '}
+                    <span className="font-semibold text-primary">&quot;{filters.q}&quot;</span>
+                  </span>
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 w-48">
+              <Select
+                options={sortOptions}
+                value={sortKey}
+                onChange={handleSortChange}
+                variant="default"
+                size="md"
+              />
+            </div>
+          </Card>
+
+          {/* Mobile Header (Total count only) */}
+          <div className="lg:hidden mb-4 flex justify-between items-center px-2">
+            <span className="text-sm text-gray-500">
+              {results ? tSearch('resultsFound', { count: results.total }) : null}
+              {results && filters.q && filters.q !== '*' && (
+                <span>
+                  {' '}
+                  {tSearch('resultsFor')}{' '}
+                  <span className="font-semibold text-primary">&quot;{filters.q}&quot;</span>
+                </span>
+              )}
             </span>
-          )}
-        </p>
-        <SortSelect
-          value={filters.sort_by ?? 'popularity_score:desc'}
-          onChange={setSortBy}
-        />
-      </div>
+          </div>
 
-      <div className="flex gap-8">
-        {/* Sidebar filters — desktop */}
-        {results?.facets && results.facets.length > 0 && (
-          <>
-            <aside className="hidden lg:block w-64 shrink-0">
-              <FiltersPanel facets={results.facets} />
-            </aside>
-
-            {/* Mobile filter drawer */}
-            <MobileFilterDrawer facets={results.facets} />
-          </>
-        )}
-
-        {/* Main results */}
-        <main className="flex-1">
           <SearchResults hits={results?.hits ?? []} isLoading={isLoading} />
           {results && results.total_pages > 1 && (
             <Pagination

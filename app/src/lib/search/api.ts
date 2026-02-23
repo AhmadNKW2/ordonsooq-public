@@ -26,17 +26,29 @@ export async function serverSearch(filters: SearchFilters): Promise<SearchRespon
   const qs = buildSearchParams(filters);
   const res = await fetch(`${API_BASE}/search?${qs}`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  return res.json();
+  const json = await res.json();
+  // API wraps results in a `data` envelope: { data: { hits, total, page, per_page, ... } }
+  const payload = json?.data ?? json;
+  return {
+    ...payload,
+    total_pages: payload.total_pages ?? Math.ceil((payload.total ?? 0) / (payload.per_page || 20)),
+  } as SearchResponse;
 }
 
 // ─── Client-side fetch (uses apiClient for consistency) ─────────────────────
 
 export async function clientSearch(filters: SearchFilters): Promise<SearchResponse> {
   const qs = buildSearchParams(filters);
-  return apiClient.get<SearchResponse>(`/search?${qs}`);
+  // apiClient unwraps the `data` envelope (no `meta` sibling) → gets { hits, total, page, per_page, ... }
+  const payload = await apiClient.get<SearchResponse>(`/search?${qs}`);
+  return {
+    ...payload,
+    total_pages: payload.total_pages ?? Math.ceil((payload.total ?? 0) / (payload.per_page || 20)),
+  };
 }
 
 export async function clientAutocomplete(q: string, perPage = 8): Promise<AutocompleteResponse> {
   const params = new URLSearchParams({ q, per_page: String(perPage) });
+  // apiClient unwraps `data` envelope → gets { suggestions: [...] }
   return apiClient.get<AutocompleteResponse>(`/search/autocomplete?${params}`);
 }

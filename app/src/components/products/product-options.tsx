@@ -34,8 +34,8 @@ export function ProductOptions({ attributes, selectedOptions, onChange, isOption
                     onClick={() => !isDisabled && onChange(attribute.name, item.value)}
                     disabled={isDisabled}
                     className={cn(
-                      "w-8 h-8 rounded-full border-2 ring-2 transition-all relative",
-                      isSelected ? "border-white! ring-secondary scale-101" : "border-transparent ring-transparent hover:border-white/50 hover:ring-secondary/50 hover:scale-101",
+                      "w-8 h-8 rounded-full border  ring-2 transition-all relative",
+                      isSelected ? "border-white! ring-secondary scale-101" : "border-primary/25 ring-transparent hover:border-white/50 hover:ring-secondary/50 hover:scale-101",
                       isDisabled && "opacity-50 cursor-not-allowed hover:scale-100"
                     )}
                     style={{ backgroundColor: item.meta }}

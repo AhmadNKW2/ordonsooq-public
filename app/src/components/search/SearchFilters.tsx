@@ -1,7 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchFilters } from '@/lib/search/use-search-params';
+import { Card, Checkbox } from '@/components/ui';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { FacetCount } from '@/lib/search/types';
 
 interface Props {
@@ -10,45 +14,81 @@ interface Props {
 
 export function SearchFilters({ facets }: Props) {
   const t = useTranslations('search');
+  const tCommon = useTranslations('common');
   const { filters, changeFilter, setMinPrice, setMaxPrice, resetFilters } = useSearchFilters();
+
+  const [expandedSections, setExpandedSections] = useState<string[]>([
+    "brand",
+    "category",
+    "price",
+  ]);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section]
+    );
+  };
 
   const facetMap = Object.fromEntries(facets.map((f) => [f.field_name, f]));
 
+  const activeFiltersCount =
+    (filters.brand ? 1 : 0) +
+    (filters.category ? 1 : 0) +
+    (filters.subcategory ? 1 : 0) +
+    (filters.min_price || filters.max_price ? 1 : 0);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">{t('filters')}</h3>
-        <button
-          onClick={resetFilters}
-          className="text-xs text-blue-600 hover:underline"
-        >
-          {t('clearFilters')}
-        </button>
+    <Card className="p-4 w-full">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-primary">{tCommon('filters')}</h3>
+        {activeFiltersCount > 0 && (
+          <button
+            onClick={resetFilters}
+            className="text-sm text-primary hover:underline"
+          >
+            {tCommon('clearAll', { count: activeFiltersCount })}
+          </button>
+        )}
       </div>
 
       {/* Brand facet */}
       {facetMap.brand && (
-        <FacetGroup
+        <FilterSection
           title={t('brandFilter')}
-          facet={facetMap.brand}
-          selected={filters.brand}
-          onSelect={(v) => changeFilter('brand', v)}
-        />
+          isExpanded={expandedSections.includes("brand")}
+          onToggle={() => toggleSection("brand")}
+        >
+          <FacetGroup
+            facet={facetMap.brand}
+            selected={filters.brand}
+            onSelect={(v) => changeFilter('brand', v)}
+          />
+        </FilterSection>
       )}
 
       {/* Category facet */}
       {facetMap.category && (
-        <FacetGroup
+        <FilterSection
           title={t('categoryFilter')}
-          facet={facetMap.category}
-          selected={filters.category}
-          onSelect={(v) => changeFilter('category', v)}
-        />
+          isExpanded={expandedSections.includes("category")}
+          onToggle={() => toggleSection("category")}
+        >
+          <FacetGroup
+            facet={facetMap.category}
+            selected={filters.category}
+            onSelect={(v) => changeFilter('category', v)}
+          />
+        </FilterSection>
       )}
 
       {/* Price range */}
-      <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('priceFilter')}</h4>
+      <FilterSection
+        title={t('priceFilter')}
+        isExpanded={expandedSections.includes("price")}
+        onToggle={() => toggleSection("price")}
+      >
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -66,42 +106,77 @@ export function SearchFilters({ facets }: Props) {
             className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
-      </div>
-    </div>
+      </FilterSection>
+    </Card>
   );
 }
 
 function FacetGroup({
-  title,
   facet,
   selected,
   onSelect,
 }: {
-  title: string;
   facet: FacetCount;
   selected?: string;
   onSelect: (value: string | null) => void;
 }) {
   return (
-    <div>
-      <h4 className="text-sm font-semibold text-gray-700 mb-2">{title}</h4>
-      <ul className="space-y-1 max-h-48 overflow-y-auto">
-        {facet.counts.slice(0, 15).map((c) => (
-          <li key={c.value}>
-            <button
-              onClick={() => onSelect(selected === c.value ? null : c.value)}
-              className={`flex justify-between w-full text-start text-sm px-2 py-1 rounded hover:bg-gray-100 transition-colors ${
-                selected === c.value
-                  ? 'font-semibold text-blue-700 bg-blue-50'
-                  : 'text-gray-600'
-              }`}
-            >
-              <span className="truncate">{c.value}</span>
-              <span className="text-gray-400 text-xs ms-2">{c.count}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-col gap-3">
+      {facet.counts.slice(0, 15).map((c) => (
+        <div
+          key={c.value}
+          className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+        >
+          <Checkbox
+            checked={selected === c.value}
+            onChange={() => onSelect(selected === c.value ? null : c.value)}
+          />
+          <span
+            className="text-sm text-primary cursor-pointer flex-1 truncate"
+            onClick={() => onSelect(selected === c.value ? null : c.value)}
+          >
+            {c.value}
+          </span>
+          <span className="text-xs text-third">
+            ({c.count})
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface FilterSectionProps {
+  title: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function FilterSection({ title, isExpanded, onToggle, children }: FilterSectionProps) {
+  return (
+    <div className="border-b border-gray-100 py-4 last:border-b-0">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <span className="font-medium text-primary">{title}</span>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-third" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-third" />
+        )}
+      </button>
+      <div
+        className={cn(
+          "transition-all duration-300",
+          isExpanded ? "max-h-96 mt-3 overflow-visible" : "max-h-0 overflow-hidden"
+        )}
+      >
+        <div className="px-1 py-1">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

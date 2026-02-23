@@ -213,12 +213,14 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
      let vDimensions: ProductDimensions | undefined = undefined;
      if (product.weight_groups && v.weight_group_id && product.weight_groups[v.weight_group_id]) {
          const wg = product.weight_groups[v.weight_group_id];
-         vDimensions = {
-             weight: String(wg.weight),
-             length: String(wg.dimensions?.length),
-             width: String(wg.dimensions?.width),
-             height: String(wg.dimensions?.height),
+         const vDims = {
+             weight: wg.weight != null ? String(wg.weight) : undefined,
+             length: wg.dimensions?.length != null ? String(wg.dimensions.length) : undefined,
+             width: wg.dimensions?.width != null ? String(wg.dimensions.width) : undefined,
+             height: wg.dimensions?.height != null ? String(wg.dimensions.height) : undefined,
          };
+         // Only assign if at least one dimension has a real value
+         if (vDims.weight || vDims.length || vDims.width || vDims.height) vDimensions = vDims;
      }
 
      return {
@@ -372,12 +374,14 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
         if (product.weight_groups) {
             const firstWg = Object.values(product.weight_groups)[0];
              if (firstWg) {
-                 return {
-                    weight: String(firstWg.weight),
-                    length: String(firstWg.dimensions?.length),
-                    width: String(firstWg.dimensions?.width),
-                    height: String(firstWg.dimensions?.height),
+                 const dims = {
+                    weight: firstWg.weight != null ? String(firstWg.weight) : undefined,
+                    length: firstWg.dimensions?.length != null ? String(firstWg.dimensions.length) : undefined,
+                    width: firstWg.dimensions?.width != null ? String(firstWg.dimensions.width) : undefined,
+                    height: firstWg.dimensions?.height != null ? String(firstWg.dimensions.height) : undefined,
                  };
+                 // Only return dims object if at least one field has a real value
+                 if (dims.weight || dims.length || dims.width || dims.height) return dims;
              }
         }
         return undefined;

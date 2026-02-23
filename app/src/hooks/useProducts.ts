@@ -111,12 +111,16 @@ export function useProductSearch(
 /**
  * Hook for infinite scrolling products
  */
-export function useInfiniteProducts(filters: Omit<ProductFilters, 'page'> = {}) {
+export function useInfiniteProducts(
+  filters: Omit<ProductFilters, 'page'> = {},
+  options?: { enabled?: boolean },
+) {
   return useInfiniteQuery({
     queryKey: [...PRODUCT_QUERY_KEYS.lists(), 'infinite', filters],
     queryFn: ({ pageParam = 1 }) =>
       productService.getAll({ ...filters, page: pageParam }),
     initialPageParam: 1,
+    enabled: options?.enabled,
     getNextPageParam: (lastPage) => {
       const { page, totalPages } = lastPage.meta;
       return page < totalPages ? page + 1 : undefined;

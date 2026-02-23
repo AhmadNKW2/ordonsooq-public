@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { SlidersHorizontal, ArrowUpDown, Filter, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { ProductGrid, FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
-import { Button, Badge, Card, Sheet, Select } from "@/components/ui";
-import { useProducts, useCategories, useBrands, useListingVariantProducts } from "@/hooks";
+import { Button, Card, Sheet, Select } from "@/components/ui";
+import { useInfiniteProducts, useCategories, useBrands, useListingVariantProducts } from "@/hooks";
 import { transformCategories, transformBrands, type Locale } from "@/lib/transformers";
 import { cn } from "@/lib/utils";
 import type { ProductFilters as ApiProductFilters, Product as ApiProduct, Brand as ApiBrand } from "@/types/api.types";
@@ -43,11 +43,9 @@ export function ProductListingPage({
   const locale = useLocale() as Locale;
   const t = useTranslations('product');
   const tCommon = useTranslations('common');
-  const [viewMode, setViewMode] = useState<"grid-4" | "grid-3" | "list">("grid-4");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
-  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<FilterState>({
     categories: initialFilters.categoryId ? [String(initialFilters.categoryId)] : [],
     brands: initialFilters.brandId ? [String(initialFilters.brandId)] : [],
@@ -55,56 +53,49 @@ export function ProductListingPage({
     rating: null,
   });
 
-  // Build API filters
-  const apiFilters: ApiProductFilters = useMemo(() => {
+  // Build API filters (no page — handled by infinite query internally)
+  const apiFilters: Omit<ApiProductFilters, 'page'> = useMemo(() => {
     const sort = SORT_MAP[sortBy] || SORT_MAP['popular'];
 
-    // Determine category ID: Sidebar selection > Initial Prop > undefined
     let categoryId = initialFilters.categoryId;
-    if (filters.categories.length > 0) {
-      // Assuming single selection for API for now, although UI allows multiple
-      categoryId = Number(filters.categories[0]);
-    }
-
-    // Determine brand ID: Sidebar selection > Initial Prop > undefined
-    let brandId = initialFilters.brandId;
-    if (filters.brands.length > 0) {
-      brandId = Number(filters.brands[0]);
-    }
+    if (filters.categories.length > 0) categoryId = Number(filters.categories[0]);
 
     return {
-      page,
-      limit: 12,
+      limit: 25,
       status: 'active',
       visible: true,
       sortBy: sort.sortBy,
       sortOrder: sort.sortOrder,
-      ...initialFilters, // Default overrides
-
-      // Override with user selection
+      ...initialFilters,
       categoryId,
-      brandId: filters.brands.length > 0 ? Number(filters.brands[0]) : (initialFilters.brandId || undefined), // Prioritize sidebar
-      // Wait, if initialFilters has brandId (Brand Page), should sidebar allow changing it?
-      // Usually yes, but maybe filter out *other* brands? 
-      // User requirement: "Make reference in the header when... open any brand... I must see all products with this brand"
-      // If I am on Brand X page, filtering by Brand Y is weird.
-      // But maybe sub-brand?
-      // For now, let's assume Sidebar Brand filter is "Enabled" on general Shop, but maybe hidden or pre-selected on Brand Page?
-      // If `initialFilters.brandId` is set, we might want to HIDE brand filter in sidebar?
-      // Or simply let `filters.brands` sync with it.
-
+      brandId: filters.brands.length > 0 ? Number(filters.brands[0]) : (initialFilters.brandId || undefined),
       minPrice: filters.priceRange?.min,
       maxPrice: filters.priceRange?.max,
       minRating: filters.rating || undefined,
     };
-  }, [page, sortBy, filters, initialFilters]);
+  }, [sortBy, filters, initialFilters]);
 
-  // Fetch products
-  const { data, isLoading, error } = useProducts(apiFilters, { enabled: !preloadedProducts });
+  // Infinite query — resets automatically when apiFilters (query key) changes
+  const {
+    data: infiniteData,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteProducts(apiFilters, { enabled: !preloadedProducts });
 
-  // Safe unwrap for products
-  const productList = preloadedProducts || (Array.isArray(data) ? data : (data?.data || []));
-  const meta = preloadedProducts ? undefined : (Array.isArray(data) ? undefined : data?.meta);
+  // Flatten all fetched pages into a single list
+  const productList = useMemo(() => {
+    if (preloadedProducts) return preloadedProducts;
+    return infiniteData?.pages.flatMap((p) => p.data) ?? [];
+  }, [preloadedProducts, infiniteData]);
+
+  const totalProducts = useMemo(() => {
+    if (preloadedProducts) return preloadedProducts.length;
+    // Use meta from the last page for the real total count
+    const lastPage = infiniteData?.pages.at(-1);
+    return lastPage?.meta?.total ?? productList.length;
+  }, [preloadedProducts, infiniteData, productList.length]);
 
   // Fetch categories (only if not provided)
   const { data: categoriesData } = useCategories({
@@ -135,8 +126,6 @@ export function ProductListingPage({
     : transformCategories(fetchedCategoryList, locale);
 
   const brands = transformBrands ? transformBrands(brandList, locale) : []; // Safely call if exists
-
-  const totalProducts = meta?.total || productList.length;
 
   const activeFiltersCount =
     filters.categories.length +
@@ -256,9 +245,24 @@ export function ProductListingPage({
                 ))}
               </div>
             ) : productList.length > 0 ? (
-              <ProductGrid
-                products={products}
-              />
+              <>
+                <ProductGrid products={products} />
+
+                {/* Show More button — only when there are more API pages */}
+                {hasNextPage && (
+                  <div className="flex justify-center pt-10 pb-5">
+                    <Button
+                      variant="pill"
+                      size="lg"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="min-w-50 bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
+                    >
+                      {isFetchingNextPage ? tCommon('loading') : tCommon('loadMoreProducts')}
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center bg-gray-50 rounded-lg">
                 <p className="text-lg font-medium text-gray-900 mb-2">

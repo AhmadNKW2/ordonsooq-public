@@ -4,7 +4,6 @@ import { useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAutocomplete } from '@/lib/search/use-autocomplete';
-import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui';
@@ -65,10 +64,10 @@ export function SearchBox() {
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-start transition-colors"
             >
               {/* Thumbnail */}
-              {s.images?.[0] && (
-                <div className="relative w-10 h-10 flex-shrink-0">
+              {s.image && (
+                <div className="relative w-10 h-10 shrink-0">
                   <Image
-                    src={s.images[0]}
+                    src={s.image}
                     alt={getName(s)}
                     fill
                     className="object-cover rounded"
@@ -76,16 +75,8 @@ export function SearchBox() {
                   />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {getName(s)}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {s.brand} · {s.category}
-                </p>
-              </div>
-              <p className="text-sm font-semibold text-primary flex-shrink-0">
-                {formatPrice(s.price, undefined, locale)}
+              <p className="flex-1 min-w-0 text-sm font-medium text-gray-900 truncate">
+                {getName(s)}
               </p>
             </button>
           ))}

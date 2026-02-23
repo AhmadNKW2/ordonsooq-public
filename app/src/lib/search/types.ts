@@ -2,23 +2,14 @@ export interface SearchHit {
   id: string;
   name_en: string;
   name_ar: string;
-  description_en?: string;
-  description_ar?: string;
   brand: string;
   category: string;
-  subcategory?: string;
-  tags?: string[];
   price: number;
   sale_price?: number;
-  rating?: number;
-  rating_count?: number;
-  stock_quantity: number;
   is_available: boolean;
   images?: string[];
-  created_at: number;
+  rating?: number;
   popularity_score: number;
-  seller_id?: string;
-  sales_count?: number;
 }
 
 export interface FacetCount {
@@ -43,10 +34,7 @@ export interface AutocompleteSuggestion {
   id: string;
   name_en: string;
   name_ar: string;
-  brand: string;
-  category: string;
-  price: number;
-  images?: string[];
+  image?: string;
 }
 
 export interface AutocompleteResponse {

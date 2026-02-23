@@ -628,7 +628,10 @@ export default function ProductPage() {
       )}
 
       {/* Specifications Section */}
-      {(product.attributes || currentDimensions) && (
+      {(() => {
+        const hasDims = currentDimensions && (currentDimensions.weight || currentDimensions.length || currentDimensions.width || currentDimensions.height);
+        return ((product.attributes && product.attributes.length > 0) || hasDims);
+      })() && (
         <section >
           <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
           <Card className="p-6">

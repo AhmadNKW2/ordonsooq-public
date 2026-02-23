@@ -58,7 +58,7 @@ export function SearchProductCard({ hit }: Props) {
             <div className="flex items-center gap-1 mb-2">
               <span className="text-yellow-400 text-xs">★</span>
               <span className="text-xs text-gray-600">
-                {hit.rating.toFixed(1)} ({hit.rating_count})
+                {hit.rating.toFixed(1)}
               </span>
             </div>
           )}
