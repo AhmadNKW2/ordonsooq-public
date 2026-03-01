@@ -22,9 +22,14 @@ export default function middleware(request: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    const token = request.cookies.get('access_token')?.value;
+    // Check for access_token OR refresh_token.
+    // The access_token is short-lived (~15 min); after it expires the backend uses
+    // the refresh_token to silently issue a new one. We must not block the user
+    // here just because the access_token expired — the client will refresh it.
+    const accessToken = request.cookies.get('access_token')?.value;
+    const refreshToken = request.cookies.get('refresh_token')?.value;
 
-    if (!token) {
+    if (!accessToken && !refreshToken) {
       const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`;
       const url = new URL(loginPath, request.url);
       return NextResponse.redirect(url);
