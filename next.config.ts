@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin('./app/src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
+    // optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
   },
   images: {
     remotePatterns: [
