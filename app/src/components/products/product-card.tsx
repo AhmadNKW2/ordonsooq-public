@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import Image from "next/image";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star, ShoppingCart, Check, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Product } from "@/types";
 import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
 import { Badge, IconButton } from "@/components/ui";
@@ -11,6 +12,244 @@ import { useWishlist } from "@/hooks/use-wishlist";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
+
+// ─── Mobile Particles (same as desktop) ──────────────────────────────────────
+
+function mobileMulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function MobileParticle({ index }: { index: number }) {
+  const rand = mobileMulberry32(index + 1);
+  const angle    = rand() * 360;
+  const distance = rand() * 80 + 40;
+  const rotate   = rand() * 360;
+  const duration = 0.55 + rand() * 0.35;
+  return (
+    <motion.div
+      initial={{ x: 0, y: 0, scale: 0 }}
+      animate={{
+        x: Math.cos((angle * Math.PI) / 180) * distance,
+        y: Math.sin((angle * Math.PI) / 180) * distance,
+        scale: [0, 1, 0],
+        opacity: [1, 1, 0],
+        rotate,
+      }}
+      transition={{ duration, ease: 'easeOut' }}
+      className={cn(
+        'absolute h-2 w-2 rounded-full pointer-events-none',
+        index % 3 === 0 ? 'bg-yellow-400' :
+        index % 3 === 1 ? 'bg-indigo-500' : 'bg-pink-500',
+      )}
+    />
+  );
+}
+
+function MobileParticles() {
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <MobileParticle key={i} index={i} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Mobile Cart Button ──────────────────────────────────────────────────────
+
+interface MobileCartButtonProps {
+  product: Product;
+  cartItem: ReturnType<typeof useCart>['items'][number] | undefined;
+}
+
+function MobileCartButton({ product, cartItem }: MobileCartButtonProps) {
+  const t = useTranslations('product');
+  const { addItem, updateQuantity, loadingItems } = useCart();
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const MIN_MS = 650;
+  const SUCCESS_HOLD = 750;
+
+  const quantity  = cartItem ? cartItem.quantity : 0;
+  const isItemLoading = cartItem ? loadingItems.has(cartItem.id) : false;
+  const maxStock  = product.stock;
+  const isAtMax   = maxStock > 0 && quantity >= maxStock;
+
+  // Show quantity pill when item is in cart and no animation is running
+  const showQty = quantity > 0 && status === 'idle';
+
+  const handleAdd = () => {
+    if (status !== 'idle' || product.stock === 0) return;
+    const startedAt = Date.now();
+    setStatus('loading');
+    addItem(product as any, 1, undefined, {
+      openSidebar: false,
+      onSuccess: () => {
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, MIN_MS - elapsed);
+        window.setTimeout(() => {
+          setStatus('success');
+          window.setTimeout(() => setStatus('idle'), SUCCESS_HOLD);
+        }, wait);
+      },
+      onError: () => setStatus('idle'),
+    });
+  };
+
+  const handleChange = (val: number) => {
+    setIsUpdating(true);
+    updateQuantity(cartItem!.id, val, {
+      onSuccess: () => setIsUpdating(false),
+      onError:   () => setIsUpdating(false),
+    });
+  };
+
+  return (
+    <div className="relative flex items-center justify-end">
+      {/* Particles burst on success */}
+      <AnimatePresence>
+        {status === 'success' && <MobileParticles />}
+      </AnimatePresence>
+
+      {/* Single morphing pill/circle — `layout` smoothly animates size changes */}
+      <motion.div
+        layout
+        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          'relative flex items-center justify-center overflow-hidden rounded-full shadow-lg text-white',
+          'h-9',
+          showQty
+            ? 'bg-secondary'
+            : status === 'success'
+            ? 'bg-green-500'
+            : 'bg-secondary',
+          !showQty && 'w-9 cursor-pointer',
+        )}
+      >
+        <AnimatePresence mode="popLayout" initial={false}>
+
+          {/* ── Quantity pill content ── */}
+          {showQty && (
+            <motion.div
+              key="qty-row"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+              className="flex items-center"
+            >
+              <button
+                type="button"
+                disabled={isItemLoading || isUpdating}
+                onClick={() => handleChange(quantity - 1)}
+                className="h-9 w-9 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-50"
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={quantity === 1 ? 'trash' : 'minus'}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1,   opacity: 1 }}
+                    exit={{   scale: 0.5, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                  >
+                    {quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
+                  </motion.span>
+                </AnimatePresence>
+              </button>
+
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={quantity}
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0,  opacity: 1 }}
+                  exit={{   y: -10, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="w-6 text-center text-xs font-bold tabular-nums"
+                >
+                  {(isItemLoading || isUpdating)
+                    ? <Loader2 size={11} className="animate-spin mx-auto" />
+                    : quantity}
+                </motion.span>
+              </AnimatePresence>
+
+              <button
+                type="button"
+                disabled={isAtMax || isItemLoading || isUpdating}
+                onClick={() => handleChange(quantity + 1)}
+                className="h-9 w-9 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-50"
+              >
+                <Plus size={13} />
+              </button>
+            </motion.div>
+          )}
+
+          {/* ── Circle icon states ── */}
+          {!showQty && status === 'idle' && (
+            <motion.button
+              key="idle"
+              type="button"
+              aria-label={t('addToCart')}
+              disabled={product.stock === 0}
+              onClick={handleAdd}
+              whileTap={{ scale: 0.82 }}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1,   opacity: 1 }}
+              exit={{   scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              className="absolute inset-0 flex items-center justify-center disabled:opacity-50"
+            >
+              <ShoppingCart size={16} />
+            </motion.button>
+          )}
+
+          {!showQty && status === 'loading' && (
+            <motion.div
+              key="loading"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1,   opacity: 1 }}
+              exit={{   scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <Loader2 size={16} className="animate-spin" />
+              {/* progress bar fill */}
+              <motion.div
+                className="absolute bottom-0 left-0 top-0 bg-white/20 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: MIN_MS / 1000, ease: 'linear' }}
+              />
+            </motion.div>
+          )}
+
+          {!showQty && status === 'success' && (
+            <motion.div
+              key="success"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1,   opacity: 1 }}
+              exit={{   scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="rounded-full bg-white/20 p-0.5">
+                <Check size={15} strokeWidth={4} />
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Product Card ─────────────────────────────────────────────────────────────
 
 interface ProductCardProps {
   product: Product;
@@ -29,6 +268,13 @@ export function ProductCard({
   const { addItem, items, openCart } = useCart();
   const { toggleItem, isInWishlist, isItemLoading } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
+
+  const isRecent = useMemo(() => {
+    if (!product.createdAt) return false;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return new Date(product.createdAt) >= sevenDaysAgo;
+  }, [product.createdAt]);
 
   const hasVariants =
     !!product.hasVariants ||
@@ -86,7 +332,10 @@ export function ProductCard({
   };
 
   const handleAnimationEnd = () => {
-    openCart();
+    // Only open cart sidebar on desktop — mobile doesn't use the sidebar
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      openCart();
+    }
   };
 
   const handleCartButtonStatusChange = (status: "idle" | "loading" | "success") => {
@@ -189,7 +438,7 @@ export function ProductCard({
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.isNew && (
+          {isRecent && (
             <Badge variant="new">{t('product.new')}</Badge>
           )}
           {discount > 0 && (
@@ -202,7 +451,8 @@ export function ProductCard({
           <div
             className={cn(
               "absolute top-3 right-3 transition-opacity duration-300",
-              inWishlist ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              // Mobile: always visible. Desktop: hidden until hover (unless already in wishlist)
+              inWishlist ? "opacity-100" : "lg:opacity-0 lg:group-hover:opacity-100"
             )}
           >
             <IconButton
@@ -218,9 +468,9 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Cart Badge (Unhovered) */}
+        {/* Cart Badge (Unhovered) — desktop only */}
         {showActions && quantity > 0 && (
-          <div className="absolute bottom-3 right-3 z-10 transition-opacity duration-300 opacity-100 group-hover:opacity-0 pointer-events-none">
+          <div className="hidden lg:block absolute bottom-3 right-3 z-10 transition-opacity duration-300 opacity-100 group-hover:opacity-0 pointer-events-none">
             <div className="flex items-center gap-1 bg-secondary/90 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-lg text-xs font-bold">
               <ShoppingCart size={14} />
               <span>{quantity}</span>
@@ -228,11 +478,32 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Add to Cart Button */}
+        {/* Mobile: always-visible animated cart button — hidden on desktop */}
+        {showActions && (
+          <div
+            className="lg:hidden absolute bottom-3 right-3 z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {hasVariants ? (
+              <button
+                type="button"
+                aria-label={t('product.chooseOptions')}
+                onClick={() => router.push(productHref)}
+                className="h-9 w-9 rounded-full bg-secondary text-white shadow-lg flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <ShoppingCart size={16} />
+              </button>
+            ) : (
+              <MobileCartButton product={product} cartItem={cartItem} />
+            )}
+          </div>
+        )}
+
+        {/* Add to Cart Button — desktop hover panel only */}
         {showActions && (
           <div
             className={cn(
-              "absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/40 to-transparent transition-all duration-500 ease-out z-20",
+              "hidden lg:block absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-black/40 to-transparent transition-all duration-500 ease-out z-20",
               cartButtonStatus === "idle"
                 ? "opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0"
                 : "opacity-100 translate-y-0"
