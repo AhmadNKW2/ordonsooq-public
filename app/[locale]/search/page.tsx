@@ -20,7 +20,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     page:        params.page        ? Number(params.page)       : 1,
     per_page:    20,
   };
-
+ 
   // Initial data fetched on the server — no loading spinner on first render
   const initialData = await serverSearch(filters).catch(() => null);
 
