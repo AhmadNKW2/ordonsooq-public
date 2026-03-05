@@ -75,7 +75,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
     enabled: isAuthenticated,
   });
 
-  const cartItems = isAuthenticated ? (cart?.items || []) : guestItems;
+  /**
+   * The cart API returns product images under various field names
+   * (primary_image, image_url, images[], etc.) instead of the `image`
+   * field expected by CartProduct. This normalizes any item from the API
+   * so that `item.product.image` is always a usable URL string.
+   */
+  const normalizeCartItem = (item: any): CartItem => {
+    const p = item.product || {};
+    let image: string = p.image || '';
+    if (!image) {
+      if (typeof p.primary_image === 'string') {
+        image = p.primary_image;
+      } else if (p.primary_image?.url) {
+        image = p.primary_image.url;
+      } else if (Array.isArray(p.images) && p.images[0]) {
+        image = typeof p.images[0] === 'string' ? p.images[0] : p.images[0]?.url || '';
+      } else if (typeof p.image_url === 'string') {
+        image = p.image_url;
+      }
+    }
+    return {
+      ...item,
+      product: { ...p, image },
+    };
+  };
+
+  const cartItems = isAuthenticated
+    ? (cart?.items || []).map(normalizeCartItem)
+    : guestItems;
 
   const getVariantPrimaryImage = (product: Product, variant: ProductVariant): string | undefined => {
     const mainImage = product.images?.[0];

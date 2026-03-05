@@ -269,7 +269,7 @@ export default function CartPage() {
                   <p className="text-sm font-medium text-primary flex-1">
                     {totalPrice >= 50
                       ? t('freeShippingUnlocked')
-                      : t('addMoreForFreeShipping', { amount: formatPrice(50 - totalPrice) })}
+                      : t('addAmountForFreeShipping', { amount: formatPrice(50 - totalPrice) })}
                   </p>
                   <span className="text-xs font-bold text-secondary">{Math.min(Math.round((totalPrice / 50) * 100), 100)}%</span>
                 </div>
@@ -349,7 +349,7 @@ export default function CartPage() {
                     <p className="text-xs font-medium text-primary flex-1">
                       {totalPrice >= 50
                         ? t('freeShippingUnlocked')
-                        : t('addMoreForFreeShipping', { amount: formatPrice(50 - totalPrice) })}
+                        : t('addAmountForFreeShipping', { amount: formatPrice(50 - totalPrice) })}
                     </p>
                   </div>
                   <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
