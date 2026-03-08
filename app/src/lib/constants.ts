@@ -11,7 +11,7 @@ export const SITE_CONFIG = {
   },
   contact: {
     email: "support@ordonsooq.com",
-    phone: "+1 (555) 123-4567",
+    phone: "+962 797675310",
     address: "123 Commerce Street, Shopping City, SC 12345",
   },
 };
