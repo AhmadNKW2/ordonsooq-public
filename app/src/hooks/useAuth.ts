@@ -6,6 +6,7 @@ import { authService } from "@/services/auth.service";
 import { useBaseRouter } from "@/i18n/navigation";
 import { useEffect } from "react";
 import { apiClient, ApiError } from "@/lib/api-client";
+import { setCookie, deleteCookie } from "@/lib/utils";
 
 const AUTH_KEYS = {
   user: ["auth", "user"],
@@ -36,11 +37,15 @@ export function useAuth() {
         // because the user might have HttpOnly cookies from OAuth (Google Login).
         
         try {
-            return await authService.getProfile();
+            const profile = await authService.getProfile();
+            // Sync an indicator cookie so middleware can quickly verify auth without calling backend
+            setCookie('is_logged_in', '1', 7);
+            return profile;
         } catch(e) {
             // Cookie-based auth: 401/403 simply means "not logged in".
             // Don't treat it as a hard error and don't clear anything client-side.
             if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+              deleteCookie('is_logged_in');
               return null;
             }
 
@@ -63,6 +68,7 @@ export function useAuth() {
       // Store token if available
       const token = anyResponse?.data?.access_token || anyResponse?.access_token;
       if (token) apiClient.setAccessToken(token);
+      setCookie('is_logged_in', '1', 7);
 
       if (nextUser) {
         queryClient.setQueryData(AUTH_KEYS.user, nextUser);
@@ -82,6 +88,7 @@ export function useAuth() {
       // Store token if available
       const token = anyResponse?.data?.access_token || anyResponse?.access_token;
       if (token) apiClient.setAccessToken(token);
+      setCookie('is_logged_in', '1', 7);
 
       if (nextUser) {
         queryClient.setQueryData(AUTH_KEYS.user, nextUser);
@@ -95,6 +102,7 @@ export function useAuth() {
     mutationFn: authService.logout,
     onSettled: () => {
       apiClient.clearAccessToken();
+      deleteCookie('is_logged_in');
       queryClient.setQueryData(AUTH_KEYS.user, null);
       queryClient.invalidateQueries(); // Invalidate all queries on logout to clear sensitive data
       router.push("/");

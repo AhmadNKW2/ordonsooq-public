@@ -22,14 +22,14 @@ export default function middleware(request: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    // Check for access_token OR refresh_token.
-    // The access_token is short-lived (~15 min); after it expires the backend uses
-    // the refresh_token to silently issue a new one. We must not block the user
-    // here just because the access_token expired — the client will refresh it.
+    // Check for standard server-side tokens and the frontend 'is_logged_in' indicator.
+    // OAuth Google login sets HttpOnly cookies that the middleware might miss on first navigation,
+    // so we sync an 'is_logged_in' cookie on the client when the profile successfully loads.
     const accessToken = request.cookies.get('access_token')?.value;
     const refreshToken = request.cookies.get('refresh_token')?.value;
+    const isLoggedIn = request.cookies.get('is_logged_in')?.value;
 
-    if (!accessToken && !refreshToken) {
+    if (!accessToken && !refreshToken && !isLoggedIn) {
       const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`;
       const url = new URL(loginPath, request.url);
       return NextResponse.redirect(url);
