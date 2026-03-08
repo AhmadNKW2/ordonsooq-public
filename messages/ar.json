@@ -284,6 +284,8 @@
     "subscribe": "اشترك"
   },
   "product": {
+    "inquiries": "هل لديك استفسارات حول هذا المنتج؟",
+    "whatsappUs": "راسلنا على واتساب",
     "addToCart": "أضف إلى السلة",
     "chooseOptions": "اختر الخيارات",
     "buyNow": "اشترِ الآن",

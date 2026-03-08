@@ -28,7 +28,7 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
   const router = useRouter();
   const { totalItems, toggleCart } = useCart();
   const { items: wishlistItems } = useWishlist();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
   const { data: wallet } = useWallet({ enabled: isAuthenticated });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -100,6 +100,10 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
         className="flex"
         data-prevent-loader={!isAuthenticated ? "true" : undefined}
         onClick={(e) => {
+          if (isAuthLoading) {
+            e.preventDefault();
+            return;
+          }
           if (!isAuthenticated) {
             e.preventDefault();
             setIsAuthModalOpen(true);

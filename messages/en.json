@@ -302,6 +302,8 @@
     "subscribe": "Subscribe"
   },
   "product": {
+    "inquiries": "Do you have inquiries about this product?",
+    "whatsappUs": "WhatsApp Us",
     "addToCart": "Add to Cart",
     "chooseOptions": "Choose Options",
     "buyNow": "Buy Now",

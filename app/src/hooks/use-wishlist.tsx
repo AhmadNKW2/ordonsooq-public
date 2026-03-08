@@ -36,8 +36,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const isLoading = isAuthLoading || (isAuthenticated && isWishlistLoading);
 
-  const wishlistItems = data?.data || [];
-  const wishlistTotal = data?.total || 0;
+  const wishlistItems = isAuthenticated ? (data?.data || []) : [];
+  const wishlistTotal = isAuthenticated ? (data?.total || 0) : 0;
 
   const addItemMutation = useMutation({
     mutationFn: (vars: { productId: number; variantId?: number | null }) => 
@@ -169,6 +169,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [wishlistItems]);
 
   const addItem = useCallback((product: WishlistInputProduct, variantId?: number | null) => {
+    if (isAuthLoading) return;
     if (!isAuthenticated) {
         openAuthModal();
         return;
@@ -178,7 +179,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     if (isInWishlist(productId, variantId)) return;
 
     addItemMutation.mutate({ productId, variantId });
-  }, [isAuthenticated, openAuthModal, isInWishlist, addItemMutation]);
+  }, [isAuthLoading, isAuthenticated, openAuthModal, isInWishlist, addItemMutation]);
 
     const removeItem = useCallback((productId: number, variantId?: number | null) => {
      if (!isAuthenticated) return;
@@ -191,6 +192,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [clearMutation, isAuthenticated]);
 
   const toggleItem = useCallback((product: WishlistInputProduct, variantId?: number | null) => {
+    if (isAuthLoading) return; // Prevent spurious clicks while hydrating auth
     if (!isAuthenticated) {
       openAuthModal();
       return;
@@ -202,7 +204,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     } else {
       addItem(product, variantId);
     }
-  }, [isInWishlist, removeItem, addItem, isAuthenticated, openAuthModal]);
+  }, [isAuthLoading, isInWishlist, removeItem, addItem, isAuthenticated, openAuthModal]);
 
   const isItemLoading = useCallback((productId: string | number, variantId?: string | number | null) => {
     const pId = typeof productId === 'string' ? parseInt(productId, 10) : productId;

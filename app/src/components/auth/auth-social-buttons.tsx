@@ -281,8 +281,8 @@ function AppleIcon() {
 }
 
 const socialProviders = [
-    { key: "google", label: "Google", path: "/auth/google", icon: <GoogleIcon /> },
-    { key: "facebook", label: "Facebook", path: "/auth/facebook", icon: <FacebookIcon /> },
+    { key: "google", label: "Google", path: "/auth/google?prompt=select_account", icon: <GoogleIcon /> },
+    { key: "facebook", label: "Facebook", path: "/auth/facebook?auth_type=reauthenticate", icon: <FacebookIcon /> },
     { key: "apple", label: "Apple", path: "/auth/apple", icon: <AppleIcon /> },
 ] as const;
 
