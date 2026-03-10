@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { clientSearch } from './api';
 import type { SearchFilters, SearchResponse } from './types';
 
@@ -14,8 +14,26 @@ export function useSearch(filters: SearchFilters, initialData?: SearchResponse |
   return useQuery({
     queryKey: SEARCH_QUERY_KEYS.results(filters),
     queryFn: () => clientSearch(filters),
-    enabled: !!filters.q.trim(),
     initialData: initialData ?? undefined,
-    staleTime: 30_000, // 30s — search results stay fresh briefly
+    staleTime: 30_000, // 30s
   });
 }
+
+export function useInfiniteSearchProducts(filters: Omit<SearchFilters, 'page'>, options?: { enabled?: boolean }) {
+  return useInfiniteQuery({
+    queryKey: [...SEARCH_QUERY_KEYS.all, 'infinite', filters],
+    queryFn: ({ pageParam = 1 }) => clientSearch({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    enabled: options?.enabled,
+    getNextPageParam: (lastPage) => {
+      const page = lastPage.page || 1;
+      const totalPages = lastPage.total_pages || 1;
+      return page < totalPages ? page + 1 : undefined;
+    },
+    getPreviousPageParam: (firstPage) => {
+      const page = firstPage.page || 1;
+      return page > 1 ? page - 1 : undefined;
+    },
+  });
+}
+

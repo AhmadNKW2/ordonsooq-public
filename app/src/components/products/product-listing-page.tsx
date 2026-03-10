@@ -3,31 +3,41 @@
 import { useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Check } from "lucide-react";
-import { ProductGrid, FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
+import { FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
+import { ProductGrid } from "@/components/products/product-grid";
 import { Button, Card, Sheet, Select } from "@/components/ui";
-import { useInfiniteProducts, useCategories, useBrands, useListingVariantProducts } from "@/hooks";
-import { transformCategories, transformBrands, type Locale } from "@/lib/transformers";
+import { useListingVariantProducts } from "@/hooks";
+import { useInfiniteSearchProducts } from "@/lib/search/use-search";
+import { useSearchFilters } from "@/lib/search/use-search-params";
+import type { SearchFilters, FacetCount, SortOption } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
-import type { ProductFilters as ApiProductFilters, Product as ApiProduct, Brand as ApiBrand } from "@/types/api.types";
+import type { Brand as ApiBrand } from "@/types/api.types";
 import { Category } from "@/types";
+import type { Locale } from "@/lib/transformers";
 
 // Map frontend sort options to API sort options
-const SORT_MAP: Record<string, { sortBy: ApiProductFilters['sortBy']; sortOrder: ApiProductFilters['sortOrder'] }> = {
-  'popular': { sortBy: 'total_ratings', sortOrder: 'DESC' },
-  'price-asc': { sortBy: 'name_en', sortOrder: 'ASC' },
-  'price-desc': { sortBy: 'name_en', sortOrder: 'DESC' },
-  'newest': { sortBy: 'created_at', sortOrder: 'DESC' },
-  'rating': { sortBy: 'average_rating', sortOrder: 'DESC' },
+const SORT_MAP: Record<string, SortOption> = {
+  'popular':    'popularity_score:desc',
+  'newest':     'created_at:desc',
+  'price-asc':  'price:asc',
+  'price-desc': 'price:desc',
+  'rating':     'rating:desc',
 };
 
+function toSortKey(sortBy?: string | SortOption): string {
+  if (!sortBy) return 'popular';
+  const entry = Object.entries(SORT_MAP).find(([, v]) => v === sortBy);
+  return entry ? entry[0] : 'popular';
+}
+
 interface ProductListingPageProps {
-  initialFilters?: Partial<ApiProductFilters>;
+  initialFilters?: Partial<SearchFilters>;
   title?: string;
   subtitle?: string;
   headerContent?: React.ReactNode;
   showBreadcrumb?: boolean;
-  availableCategories?: Category[]; // Optional Categories to show in filters
-  preloadedProducts?: ApiProduct[];
+  availableCategories?: Category[];
+  preloadedProducts?: any[];
   preloadedBrands?: ApiBrand[];
 }
 
@@ -40,108 +50,109 @@ export function ProductListingPage({
   preloadedProducts,
   preloadedBrands
 }: ProductListingPageProps) {
-  const locale = useLocale() as Locale;
+  const locale = useLocale() as string;
   const t = useTranslations('product');
   const tCommon = useTranslations('common');
-  const [sortBy, setSortBy] = useState("popular");
+  
+  const { filters: urlFilters, setSortBy: setUrlSortBy, setPage, setMinPrice, setMaxPrice, changeFilter } = useSearchFilters();
+
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+
+  const [sortKey, setSortKey] = useState(() => toSortKey(initialFilters.sort_by || urlFilters.sort_by));
+
+  const handleSortChange = (key: string) => {
+    setSortKey(key);
+    void setUrlSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
+    setShowSort(false);
+  };
+
   const [filters, setFilters] = useState<FilterState>({
-    categories: initialFilters.categoryId ? [String(initialFilters.categoryId)] : [],
-    brands: initialFilters.brandId ? [String(initialFilters.brandId)] : [],
-    priceRange: null,
+    categories: initialFilters.category_ids ? initialFilters.category_ids.split(',') : [],
+    brands:     initialFilters.brand_id ? [initialFilters.brand_id] : (initialFilters.brand ? [initialFilters.brand] : []),
+    vendors:    initialFilters.vendor_id ? [initialFilters.vendor_id] : [],
+    attrs:      initialFilters.attrs    || [],
+    priceRange:
+      initialFilters.min_price != null || initialFilters.max_price != null
+        ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
+        : null,
     rating: null,
   });
 
-  // Build API filters (no page — handled by infinite query internally)
-  const apiFilters: Omit<ApiProductFilters, 'page'> = useMemo(() => {
-    const sort = SORT_MAP[sortBy] || SORT_MAP['popular'];
+  const handleFilterChange = (newState: FilterState) => {
+    setFilters(newState);
+    void changeFilter('category_ids', newState.categories.length > 0 ? newState.categories.join(',') : null);
+    void changeFilter('brand',    newState.brands[0]    ?? null);
+    void changeFilter('vendor_id',newState.vendors[0]   ?? null);
+    void changeFilter('attrs',    newState.attrs.length > 0 ? newState.attrs : null);
+    void setMinPrice(newState.priceRange?.min ?? null);
+    void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
+    void setPage(1);
+  };
 
-    let categoryId = initialFilters.categoryId;
-    if (filters.categories.length > 0) categoryId = Number(filters.categories[0]);
-
+  // Build API filters
+  const searchFilters: Omit<SearchFilters, 'page'> = useMemo(() => {
     return {
-      limit: 25,
-      status: 'active',
-      visible: true,
-      sortBy: sort.sortBy,
-      sortOrder: sort.sortOrder,
+      per_page: 25,
       ...initialFilters,
-      categoryId,
-      brandId: filters.brands.length > 0 ? Number(filters.brands[0]) : (initialFilters.brandId || undefined),
-      minPrice: filters.priceRange?.min,
-      maxPrice: filters.priceRange?.max,
-      minRating: filters.rating || undefined,
+      ...urlFilters,
+      sort_by: SORT_MAP[sortKey] as SortOption,
+      // URL filters overwrite initial if present, but for base pages like Brand -> we want both or override
+      category_ids: urlFilters.category_ids || initialFilters.category_ids,
+      brand_id: urlFilters.brand_id || initialFilters.brand_id,
+      vendor_id: urlFilters.vendor_id || initialFilters.vendor_id,
+      brand: urlFilters.brand || initialFilters.brand,
+      attrs: urlFilters.attrs || initialFilters.attrs,
     };
-  }, [sortBy, filters, initialFilters]);
+  }, [sortKey, urlFilters, initialFilters]);
 
-  // Infinite query — resets automatically when apiFilters (query key) changes
+  // Infinite query — resets automatically when searchFilters changes
   const {
     data: infiniteData,
     isLoading,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
-  } = useInfiniteProducts(apiFilters, { enabled: !preloadedProducts });
+  } = useInfiniteSearchProducts(searchFilters, { enabled: true });
 
   // Flatten all fetched pages into a single list
   const productList = useMemo(() => {
-    if (preloadedProducts) return preloadedProducts;
-    return infiniteData?.pages.flatMap((p) => p.data) ?? [];
-  }, [preloadedProducts, infiniteData]);
+    return infiniteData?.pages.flatMap((p) => p.hits || []) ?? [];
+  }, [infiniteData]);
 
   const totalProducts = useMemo(() => {
-    if (preloadedProducts) return preloadedProducts.length;
     // Use meta from the last page for the real total count
     const lastPage = infiniteData?.pages.at(-1);
-    return lastPage?.meta?.total ?? productList.length;
-  }, [preloadedProducts, infiniteData, productList.length]);
+    return lastPage?.total ?? productList.length;
+  }, [infiniteData, productList.length]);
 
-  // Fetch categories (only if not provided)
-  const { data: categoriesData } = useCategories({
-    limit: 50,
-    status: 'active',
-    sortBy: 'sortOrder',
-    sortOrder: 'ASC'
-  }, { enabled: !availableCategories });
-
-  const fetchedCategoryList = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
-
-  // Fetch brands
-  const { data: brandsData } = useBrands({
-    limit: 50,
-    status: 'active',
-    sortBy: 'sort_order',
-    sortOrder: 'ASC'
-  }, { enabled: !preloadedBrands });
-  const brandList = preloadedBrands || (Array.isArray(brandsData) ? brandsData : (brandsData?.data || []));
-
+  // Extract facets from the first page
+  const facets = useMemo(() => {
+    const firstPage = infiniteData?.pages.at(0);
+    return firstPage?.facets || [];
+  }, [infiniteData]);
 
   // Transform data
-  const { products: products, isLoading: variantsLoading } = useListingVariantProducts(productList, locale);
-  // If availableCategories are passed, they are assumed to be already transformed UI Category objects
-  // If not, we fetched Raw categories and need to transform them
-  const categories = availableCategories
-    ? availableCategories
-    : transformCategories(fetchedCategoryList, locale);
-
-  const brands = transformBrands ? transformBrands(brandList, locale) : []; // Safely call if exists
+  const { products: products, isLoading: variantsLoading } = useListingVariantProducts(productList as unknown as any[], locale as Locale);
 
   const activeFiltersCount =
     filters.categories.length +
     filters.brands.length +
+    filters.vendors.length +
+    filters.attrs.length +
     (filters.priceRange ? 1 : 0) +
     (filters.rating ? 1 : 0);
 
   const filtersComponent = (
     <ProductFilters
-      categories={categories}
-      brands={brands}
+      facets={facets}
       selectedCategories={filters.categories}
       selectedBrands={filters.brands}
+      selectedVendors={filters.vendors}
+      selectedAttrs={filters.attrs}
       priceRange={filters.priceRange || undefined}
       rating={filters.rating || undefined}
-      onFilterChange={setFilters}
+      onFilterChange={handleFilterChange}
       className="w-full"
     />
   );
@@ -167,17 +178,14 @@ export function ProductListingPage({
           {sortOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => {
-                setSortBy(option.value);
-                setShowSort(false);
-              }}
+              onClick={() => handleSortChange(option.value)}
               className={cn(
                 "flex items-center justify-between p-4 rounded-lg transition-colors text-start",
-                sortBy === option.value ? "bg-primary/5 text-primary font-medium" : "hover:bg-gray-50 text-gray-700"
+                sortKey === option.value ? "bg-primary/5 text-primary font-medium" : "hover:bg-gray-50 text-gray-700"
               )}
             >
               {option.label}
-              {sortBy === option.value && <Check className="w-5 h-5" />}
+              {sortKey === option.value && <Check className="w-5 h-5" />}
             </button>
           ))}
         </div>
@@ -222,8 +230,8 @@ export function ProductListingPage({
             <div className="flex items-center gap-4 w-48">
               <Select
                 options={sortOptions}
-                value={sortBy}
-                onChange={setSortBy}
+                value={sortKey}
+                onChange={handleSortChange}
                 variant="default"
                 size="md"
               />
@@ -269,9 +277,11 @@ export function ProductListingPage({
                   {tCommon('noProductsFound')}
                 </p>
                 <Button
-                  onClick={() => setFilters({
+                  onClick={() => handleFilterChange({
                     categories: [],
                     brands: [],
+                    vendors: [],
+                    attrs: [],
                     priceRange: null,
                     rating: null,
                   })}

@@ -1,5 +1,12 @@
 {
   "options": {
+    "sort": {
+      "mostPopular": "Most Popular",
+      "newest": "Newest",
+      "priceLowHigh": "Price: Low to High",
+      "priceHighLow": "Price: High to Low",
+      "topRated": "Top Rated"
+    },
     "price": {
       "under25": "Under $25",
       "25to50": "$25 to $50",
@@ -12,9 +19,37 @@
       "3stars": "3 Stars & Up",
       "2stars": "2 Stars & Up",
       "1star": "1 Star & Up"
+    },
+    "orderStatus": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "payment": {
+      "card": "Credit/Debit Card",
+      "paypal": "PayPal",
+      "applePay": "Apple Pay",
+      "googlePay": "Google Pay",
+      "cod": "Cash on Delivery"
+    },
+    "shipping": {
+      "standard": "Standard Shipping",
+      "standardDesc": "5-7 business days",
+      "express": "Express Shipping",
+      "expressDesc": "2-3 business days",
+      "overnight": "Overnight Shipping",
+      "overnightDesc": "Next business day",
+      "free": "Free Shipping",
+      "freeDesc": "7-10 business days (Orders over $50)"
     }
   },
   "common": {
+    "attributes": "Attributes",
+    "store": "Store",
     "viewAll": "View All",
     "loading": "Loading...",
     "error": "Something went wrong",
@@ -52,10 +87,28 @@
     "free": "Free",
     "shipping": "Shipping",
     "proceedToCheckout": "Proceed to Checkout",
-    "secureCheckout": "Secure Checkout"
+    "secureCheckout": "Secure Checkout",
+    "min": "Min",
+    "max": "Max",
+    "apply": "Apply"
   },
   "nav": {
+    "categories": "Categories",
+    "products": "Products",
+    "deals": "Deals",
+    "newArrivals": "New Arrivals",
+    "brands": "Brands",
+    "stores": "Stores",
     "wishlist": "Wishlist",
+    "cart": "Cart",
+    "account": "Account",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "home": "Home",
+    "shop": "Shop",
+    "about": "About",
+    "contact": "Contact",
     "myAccount": "My Account"
   },
   "navigation": {
@@ -121,24 +174,6 @@
     "premiumPicks": "Premium picks",
     "over100": "Over $100",
     "luxuryItems": "Luxury items"
-  },
-  "nav": {
-    "home": "Home",
-    "shop": "Shop",
-    "stores": "Stores",
-    "categories": "Categories",
-    "deals": "Deals",
-    "newArrivals": "New Arrivals",
-    "about": "About Us",
-    "contact": "Contact Us",
-    "cart": "Cart",
-    "wishlist": "Wishlist",
-    "account": "Account",
-    "login": "Login",
-    "register": "Register",
-    "logout": "Logout",
-    "myAccount": "My Account",
-    "brands": "Brands"
   },
   "profile": {
     "hello": "Hello,",
@@ -238,25 +273,6 @@
     "updateProfile": "Update Profile",
     "currentPassword": "Current Password",
     "newPassword": "New Password"
-  },
-  "nav": {
-    "categories": "Categories",
-    "products": "Products",
-    "deals": "Deals",
-    "newArrivals": "New Arrivals",
-    "brands": "Brands",
-    "stores": "Stores",
-    "wishlist": "Wishlist",
-    "cart": "Cart",
-    "account": "Account",
-    "login": "Login",
-    "register": "Register",
-    "logout": "Logout",
-    "home": "Home",
-    "shop": "Shop",
-    "about": "About",
-    "contact": "Contact",
-    "myAccount": "My Account"
   },
   "features": {
     "freeShipping": "Free Shipping",
@@ -428,10 +444,13 @@
   },
   "wishlist": {
     "title": "My Wishlist",
-    "empty": "Your Wishlist is Empty",
-    "emptyDesc": "Save items you love by clicking the heart icon on any product. Your wishlist will be waiting for you!",
-    "browseProducts": "Browse Products",
+    "itemsSaved": "{count} items saved",
     "clearWishlist": "Clear Wishlist",
+    "empty": {
+      "title": "Your Wishlist is Empty",
+      "description": "Save items you love by clicking the heart icon on any product. Your wishlist will be waiting for you!",
+      "browseProducts": "Browse Products"
+    },
     "addedOn": "Added on",
     "moveToCart": "Move to Cart"
   },
@@ -536,54 +555,6 @@
     "ar": "العربية",
     "switchLanguage": "Switch Language"
   },
-  "options": {
-    "sort": {
-      "mostPopular": "Most Popular",
-      "newest": "Newest",
-      "priceLowHigh": "Price: Low to High",
-      "priceHighLow": "Price: High to Low",
-      "topRated": "Top Rated"
-    },
-    "price": {
-      "under25": "Under $25",
-      "25to50": "$25 to $50",
-      "50to100": "$50 to $100",
-      "100to200": "$100 to $200",
-      "200plus": "$200 & Above"
-    },
-    "rating": {
-      "4stars": "4 Stars & Up",
-      "3stars": "3 Stars & Up",
-      "2stars": "2 Stars & Up",
-      "1star": "1 Star & Up"
-    },
-    "orderStatus": {
-      "pending": "Pending",
-      "confirmed": "Confirmed",
-      "processing": "Processing",
-      "shipped": "Shipped",
-      "delivered": "Delivered",
-      "cancelled": "Cancelled",
-      "refunded": "Refunded"
-    },
-    "payment": {
-      "card": "Credit/Debit Card",
-      "paypal": "PayPal",
-      "applePay": "Apple Pay",
-      "googlePay": "Google Pay",
-      "cod": "Cash on Delivery"
-    },
-    "shipping": {
-      "standard": "Standard Shipping",
-      "standardDesc": "5-7 business days",
-      "express": "Express Shipping",
-      "expressDesc": "2-3 business days",
-      "overnight": "Overnight Shipping",
-      "overnightDesc": "Next business day",
-      "free": "Free Shipping",
-      "freeDesc": "7-10 business days (Orders over $50)"
-    }
-  },
   "promo": {
     "limitedTime": "Limited Time Offer",
     "summerCollection": "Summer Collection",
@@ -640,18 +611,6 @@
     "sortTopRated": "Top Rated",
     "prevPage": "← Prev",
     "nextPage": "Next →"
-  },
-  "wishlist": {
-    "title": "My Wishlist",
-    "itemsSaved": "{count} items saved",
-    "clearWishlist": "Clear Wishlist",
-    "empty": {
-      "title": "Your Wishlist is Empty",
-      "description": "Save items you love by clicking the heart icon on any product. Your wishlist will be waiting for you!",
-      "browseProducts": "Browse Products"
-    },
-    "addedOn": "Added on",
-    "moveToCart": "Move to Cart"
   },
   "notFound": {
     "title": "Page Not Found",

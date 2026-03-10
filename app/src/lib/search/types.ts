@@ -49,10 +49,14 @@ export type SortOption =
   | 'created_at:desc';
 
 export interface SearchFilters {
-  q: string;
-  brand?: string;
+  q?: string;
+  category_ids?: string;
   category?: string;
   subcategory?: string;
+  brand_id?: string;
+  brand?: string;
+  vendor_id?: string;
+  attrs?: string[]; // allows multiple attrs=key:value
   min_price?: number;
   max_price?: number;
   sort_by?: SortOption;

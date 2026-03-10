@@ -6,11 +6,19 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 function buildSearchParams(filters: SearchFilters): string {
   const params = new URLSearchParams();
 
-  params.set('q', filters.q || '*');
+  if (filters.q) params.set('q', filters.q);
 
-  if (filters.brand)                params.set('brand', filters.brand);
+  if (filters.category_ids)         params.set('category_ids', filters.category_ids);
   if (filters.category)             params.set('category', filters.category);
   if (filters.subcategory)          params.set('subcategory', filters.subcategory);
+  if (filters.brand_id)             params.set('brand_id', filters.brand_id);
+  if (filters.brand)                params.set('brand', filters.brand);
+  if (filters.vendor_id)            params.set('vendor_id', filters.vendor_id);
+  
+  if (filters.attrs && Array.isArray(filters.attrs)) {
+    filters.attrs.forEach(attr => params.append('attrs', attr));
+  }
+
   if (filters.min_price != null)    params.set('min_price', String(filters.min_price));
   if (filters.max_price != null)    params.set('max_price', String(filters.max_price));
   if (filters.sort_by)              params.set('sort_by', filters.sort_by);

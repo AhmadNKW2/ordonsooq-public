@@ -11,8 +11,6 @@ import { Pagination } from './Pagination';
 import { Card, Sheet, Select } from '@/components/ui';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCategories, useBrands } from '@/hooks';
-import { transformCategories, transformBrands, type Locale } from '@/lib/transformers';
 import type { SearchResponse, SearchFilters, SortOption } from '@/lib/search/types';
 
 // Map UI sort keys → Typesense sort_by values (mirrors ProductListingPage mapping)
@@ -38,8 +36,7 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   const t = useTranslations('product');
   const tSearch = useTranslations('search');
   const tCommon = useTranslations('common');
-  const locale = useLocale() as Locale;
-
+  
   const { filters, setSortBy, setPage, setMinPrice, setMaxPrice, changeFilter } = useSearchFilters();
 
   const [showFilters, setShowFilters] = useState(false);
@@ -54,29 +51,12 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     setShowSort(false);
   };
 
-  // Fetch categories & brands — same as ProductListingPage
-  const { data: categoriesData } = useCategories({
-    limit: 50,
-    status: 'active',
-    sortBy: 'sortOrder',
-    sortOrder: 'ASC',
-  });
-  const { data: brandsData } = useBrands({
-    limit: 50,
-    status: 'active',
-    sortBy: 'sort_order',
-    sortOrder: 'ASC',
-  });
-
-  const rawCategories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data ?? []);
-  const rawBrands     = Array.isArray(brandsData)     ? brandsData     : (brandsData?.data     ?? []);
-  const categories    = transformCategories(rawCategories, locale);
-  const brands        = transformBrands ? transformBrands(rawBrands, locale) : [];
-
   // Local ProductFilters state (synced to URL via useSearchFilters)
   const [filterState, setFilterState] = useState<FilterState>({
-    categories: initialFilters.category ? [initialFilters.category] : [],
-    brands:     initialFilters.brand    ? [initialFilters.brand]    : [],
+    categories: initialFilters.category ? [initialFilters.category] : (initialFilters.category_ids ? initialFilters.category_ids.split(',') : []),
+    brands:     initialFilters.brand    ? [initialFilters.brand]    : (initialFilters.brand_id ? [initialFilters.brand_id] : []),
+    vendors:    initialFilters.vendor_id ? [initialFilters.vendor_id] : [],
+    attrs:      initialFilters.attrs    || [],
     priceRange:
       initialFilters.min_price != null || initialFilters.max_price != null
         ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
@@ -86,8 +66,10 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
 
   const handleFilterChange = (newState: FilterState) => {
     setFilterState(newState);
-    void changeFilter('category', newState.categories[0] ?? null);
+    void changeFilter('category', newState.categories.length > 0 ? newState.categories.join(',') : null);
     void changeFilter('brand',    newState.brands[0]    ?? null);
+    void changeFilter('vendor_id',newState.vendors[0]   ?? null);
+    void changeFilter('attrs',    newState.attrs.length > 0 ? newState.attrs : null);
     void setMinPrice(newState.priceRange?.min ?? null);
     void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
     void setPage(1);
@@ -105,6 +87,8 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   const activeFiltersCount =
     filterState.categories.length +
     filterState.brands.length +
+    filterState.vendors.length +
+    filterState.attrs.length +
     (filterState.priceRange ? 1 : 0) +
     (filterState.rating ? 1 : 0);
 
@@ -118,10 +102,11 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
 
   const filtersComponent = (
     <ProductFilters
-      categories={categories}
-      brands={brands}
+      facets={results?.facets ?? []}
       selectedCategories={filterState.categories}
       selectedBrands={filterState.brands}
+      selectedVendors={filterState.vendors}
+      selectedAttrs={filterState.attrs}
       priceRange={filterState.priceRange ?? undefined}
       rating={filterState.rating ?? undefined}
       onFilterChange={handleFilterChange}

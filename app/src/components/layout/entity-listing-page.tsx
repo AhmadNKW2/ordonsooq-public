@@ -191,11 +191,11 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   ) : undefined;
 
   const initialFilters = isBrand 
-    ? { brandId: id } 
+    ? { brand_id: String(id) } 
     : isCategory 
-      ? { categoryId: id } 
+      ? { category_ids: String(id) } 
       : isVendor
-        ? { vendorId: id }
+        ? { vendor_id: String(id) }
         : {};
 
   const breadcrumbs = [
@@ -230,8 +230,6 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
         initialFilters={initialFilters}
         title={isShop ? undefined : t("common.products")}
         availableCategories={isCategory ? subcategories : undefined}
-        preloadedProducts={isCategory ? preloadedProducts : undefined}
-        preloadedBrands={isCategory ? preloadedBrands : undefined}
       />
       
       {isVendor && (
