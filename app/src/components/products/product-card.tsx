@@ -65,9 +65,10 @@ function MobileParticles() {
 interface MobileCartButtonProps {
   product: Product;
   cartItem: ReturnType<typeof useCart>['items'][number] | undefined;
+  variantId?: string | number;
 }
 
-function MobileCartButton({ product, cartItem }: MobileCartButtonProps) {
+function MobileCartButton({ product, cartItem, variantId }: MobileCartButtonProps) {
   const t = useTranslations('product');
   const { addItem, updateQuantity, loadingItems } = useCart();
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -87,7 +88,7 @@ function MobileCartButton({ product, cartItem }: MobileCartButtonProps) {
     if (status !== 'idle' || product.stock === 0) return;
     const startedAt = Date.now();
     setStatus('loading');
-    addItem(product as any, 1, undefined, {
+    addItem(product as any, 1, variantId, {
       openSidebar: false,
       onSuccess: () => {
         const elapsed = Date.now() - startedAt;
@@ -276,11 +277,26 @@ export function ProductCard({
     return new Date(product.createdAt) >= sevenDaysAgo;
   }, [product.createdAt]);
 
-  const hasVariants =
-    !!product.hasVariants ||
-    (product.variants?.length ?? 0) > 0 ||
-    (((product as any).variantIds?.length ?? 0) > 0) ||
-    (((product as any).variants_ids?.length ?? 0) > 0);
+  // Determine if there are actual choices for the user to make
+  const hasMultipleVariants = (() => {
+    // If we have full variant objects
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.length > 1;
+    }
+    // If we have variant IDs from the API
+    const vIds = (product as any).variantIds || (product as any).variants_ids;
+    if (vIds && vIds.length > 0) {
+      return vIds.length > 1;
+    }
+    // Fallback to the boolean flag
+    return !!product.hasVariants;
+  })();
+
+  const singleVariant = (!hasMultipleVariants && product.variants?.length === 1) 
+    ? product.variants[0] 
+    : undefined;
+
+  const hasVariants = hasMultipleVariants;
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.compareAtPrice, product.price)
@@ -319,7 +335,13 @@ export function ProductCard({
 
   // Check if item is in cart
   const cartItem = items.find(
-    (item) => String(item.product_id) === String(product.id) && item.variant_id == null
+    (item) => {
+      const matchProductId = String(item.product_id) === String(product.id);
+      if (singleVariant) {
+        return matchProductId && String(item.variant_id) === String(singleVariant.id);
+      }
+      return matchProductId && item.variant_id == null;
+    }
   );
   const quantity = cartItem ? cartItem.quantity : 0;
 
@@ -494,7 +516,7 @@ export function ProductCard({
                 <ShoppingCart size={16} />
               </button>
             ) : (
-              <MobileCartButton product={product} cartItem={cartItem} />
+              <MobileCartButton product={product} cartItem={cartItem} variantId={singleVariant?.id} />
             )}
           </div>
         )}
@@ -529,6 +551,7 @@ export function ProductCard({
                   stock: product.stock,
                   image: product.images?.[0] || (product as any).image,
                 } as any}
+                variant={singleVariant}
                 onStatusChange={handleCartButtonStatusChange}
                 onAnimationEnd={handleAnimationEnd}
               />
