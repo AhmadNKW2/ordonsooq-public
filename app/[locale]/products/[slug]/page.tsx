@@ -641,7 +641,9 @@ export default function ProductPage() {
                 <div key={attr.name} className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                   <span className="text-third font-medium">{attr.name}</span>
                   <span className="text-primary font-semibold">
-                    {selectedOptions[attr.name] || attr.values.map(v => v.value).join(', ')}
+                      {attr.attributeType === 'spec_attribute' 
+                        ? attr.values.map(v => v.value).join(', ')
+                        : (selectedOptions[attr.name] || attr.values.map(v => v.value).join(', '))}
                   </span>
                 </div>
               ))}

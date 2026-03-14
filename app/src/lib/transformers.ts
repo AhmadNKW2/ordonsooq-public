@@ -175,7 +175,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   }
 
   // 5. Variants
-  const variants = product.variants?.map(v => {
+  const variants = product.variants?.filter(v => v.is_active !== false).map(v => {
      // Resolve attributes
      const variantAttributes: Record<string, string> = {};
      if (v.attribute_values) {
