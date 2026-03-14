@@ -14,6 +14,11 @@ export type PaginatedResponse<T> = {
 export type SortOrder = 'ASC' | 'DESC';
 export type Status = 'active' | 'archived';
 
+export type EntityWithProducts<T> = T & {
+  products: Product[];
+  productsMeta: PaginationMeta;
+};
+
 // ===== Product Types =====
 export type ProductSortBy =
   | 'created_at'
@@ -235,8 +240,8 @@ export type Category = {
   children?: CategoryChild[];
 };
 
-export type CategoryDetail = Category & {
-  products: Product[];
+export type CategoryDetail = EntityWithProducts<Category> & {
+  children?: CategoryChild[];
 };
 
 // ===== Vendor Types =====
@@ -276,6 +281,8 @@ export type Vendor = {
   updated_at: string;
 };
 
+export type VendorDetail = EntityWithProducts<Vendor>;
+
 // ===== Brand Types =====
 export type BrandSortBy =
   | 'created_at'
@@ -307,6 +314,8 @@ export type Brand = {
   created_at: string;
   updated_at: string;
 };
+
+export type BrandDetail = EntityWithProducts<Brand>;
 
 // ===== Banner Types =====
 export type BannerSortBy =

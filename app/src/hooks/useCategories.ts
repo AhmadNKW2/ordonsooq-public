@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { categoryService } from '@/services/category.service';
-import type { CategoryFilters } from '@/types/api.types';
+import type { CategoryFilters, ProductFilters } from '@/types/api.types';
 
 export const CATEGORY_QUERY_KEYS = {
   all: ['categories'] as const,
@@ -8,7 +8,8 @@ export const CATEGORY_QUERY_KEYS = {
   list: (filters: CategoryFilters) => [...CATEGORY_QUERY_KEYS.lists(), filters] as const,
   details: () => [...CATEGORY_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...CATEGORY_QUERY_KEYS.details(), id] as const,
-  detailBySlug: (slug: string) => [...CATEGORY_QUERY_KEYS.details(), 'slug', slug] as const,
+  detailBySlug: (slug: string, filters?: ProductFilters) => [...CATEGORY_QUERY_KEYS.details(), 'slug', slug, filters] as const,
+  detailBySlugInfinite: (slug: string, filters?: Omit<ProductFilters, 'page'>) => [...CATEGORY_QUERY_KEYS.details(), 'slug', 'infinite', slug, filters] as const,
   root: (filters?: Omit<CategoryFilters, 'level' | 'parent_id'>) =>
     [...CATEGORY_QUERY_KEYS.lists(), 'root', filters] as const,
   subcategories: (parentId: number, filters?: Omit<CategoryFilters, 'parent_id'>) =>
@@ -44,11 +45,32 @@ export function useCategory(id: number) {
 /**
  * Hook to fetch a single category by Slug
  */
-export function useCategoryBySlug(slug: string) {
+export function useCategoryBySlug(slug: string, filters: ProductFilters = {}) {
   return useQuery({
-    queryKey: CATEGORY_QUERY_KEYS.detailBySlug(slug),
-    queryFn: () => categoryService.getBySlug(slug),
+    queryKey: CATEGORY_QUERY_KEYS.detailBySlug(slug, filters),
+    queryFn: () => categoryService.getBySlug(slug, filters),
     enabled: !!slug,
+  });
+}
+
+/**
+ * Hook to fetch a single category by Slug with infinite pagination for its products
+ */
+export function useInfiniteCategoryBySlug(slug: string, filters: Omit<ProductFilters, 'page'> = {}) {
+  return useInfiniteQuery({
+    queryKey: CATEGORY_QUERY_KEYS.detailBySlugInfinite(slug, filters),
+    queryFn: ({ pageParam = 1 }) => categoryService.getBySlug(slug, { ...filters, page: pageParam }),
+    initialPageParam: 1,
+    enabled: !!slug,
+    getNextPageParam: (lastPage) => {
+      const page = lastPage.productsMeta?.page || 1;
+      const totalPages = lastPage.productsMeta?.totalPages || 1;
+      return page < totalPages ? page + 1 : undefined;
+    },
+    getPreviousPageParam: (firstPage) => {
+      const page = firstPage.productsMeta?.page || 1;
+      return page > 1 ? page - 1 : undefined;
+    },
   });
 }
 

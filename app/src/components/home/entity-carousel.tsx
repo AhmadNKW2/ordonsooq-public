@@ -59,7 +59,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
     scrollRight,
   } = useHorizontalScroll(scrollAmount);
 
-  const resolvedArrowBackgroundColor = arrowBackgroundColor ?? "black/20";
+  const resolvedArrowBackgroundColor = arrowBackgroundColor ?? "white/75";
   const resolvedFadeClassName =
     fadeClassName ?? "bg-linear-to-r from-white to-transparent";
   const resolvedFadePositionClassName = fadePositionClassName ?? "top-0 bottom-4";
@@ -88,7 +88,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
           showOnHover
           backgroundColor={resolvedArrowBackgroundColor}
           arrowColor={arrowColor}
-          className="absolute -left-1 top-1/2 -translate-y-1/2 z-20"
+          className="absolute -left-1 top-1/2 -translate-y-1/2 z-20 shadow-lg border border-black/5"
         />
 
         <ArrowButton
@@ -99,7 +99,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
           showOnHover
           backgroundColor={resolvedArrowBackgroundColor}
           arrowColor={arrowColor}
-          className="absolute -right-1 top-1/2 -translate-y-1/2 z-20"
+          className="absolute -right-1 top-1/2 -translate-y-1/2 z-20 shadow-lg border border-black/5"
         />
 
         <div
@@ -125,11 +125,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
                     src={item.image}
                     alt={item.name}
                     fill
-                    className={
-                      item.isCategory
-                        ? "object-cover"
-                        : "object-contain p-1"
-                    }
+                    className="object-cover bg-white"
                   />
                 ) : (
                   <div className="w-full h-full bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
@@ -156,7 +152,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
         {canScrollLeft && (
           <div
             className={cn(
-              "absolute left-0 w-16 pointer-events-none",
+              "absolute -left-4 w-20 pointer-events-none",
               resolvedFadePositionClassName,
               resolvedFadeClassName
             )}
@@ -165,7 +161,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
         {canScrollRight && (
           <div
             className={cn(
-              "absolute right-0 w-16 pointer-events-none",
+              "absolute -right-4 w-20 pointer-events-none",
               resolvedFadePositionClassName,
               resolvedFadeClassName.replace(
                 "bg-linear-to-r from-",

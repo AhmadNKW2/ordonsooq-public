@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { vendorService } from '@/services/vendor.service';
-import type { VendorFilters } from '@/types/api.types';
+import type { VendorFilters, ProductFilters } from '@/types/api.types';
 
 export const VENDOR_QUERY_KEYS = {
   all: ['vendors'] as const,
@@ -8,7 +8,8 @@ export const VENDOR_QUERY_KEYS = {
   list: (filters: VendorFilters) => [...VENDOR_QUERY_KEYS.lists(), filters] as const,
   details: () => [...VENDOR_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...VENDOR_QUERY_KEYS.details(), id] as const,
-  detailBySlug: (slug: string) => [...VENDOR_QUERY_KEYS.details(), 'slug', slug] as const,
+  detailBySlug: (slug: string, filters?: ProductFilters) => [...VENDOR_QUERY_KEYS.details(), 'slug', slug, filters] as const,
+  detailBySlugInfinite: (slug: string, filters?: Omit<ProductFilters, 'page'>) => [...VENDOR_QUERY_KEYS.details(), 'slug', 'infinite', slug, filters] as const,
 };
 
 /**
@@ -35,10 +36,31 @@ export function useVendor(id: number) {
 /**
  * Hook to fetch a single vendor by Slug
  */
-export function useVendorBySlug(slug: string) {
+export function useVendorBySlug(slug: string, filters: ProductFilters = {}) {
   return useQuery({
-    queryKey: VENDOR_QUERY_KEYS.detailBySlug(slug),
-    queryFn: () => vendorService.getBySlug(slug),
+    queryKey: VENDOR_QUERY_KEYS.detailBySlug(slug, filters),
+    queryFn: () => vendorService.getBySlug(slug, filters),
     enabled: !!slug,
+  });
+}
+
+/**
+ * Hook to fetch a single vendor by Slug with infinite pagination for its products
+ */
+export function useInfiniteVendorBySlug(slug: string, filters: Omit<ProductFilters, 'page'> = {}) {
+  return useInfiniteQuery({
+    queryKey: VENDOR_QUERY_KEYS.detailBySlugInfinite(slug, filters),
+    queryFn: ({ pageParam = 1 }) => vendorService.getBySlug(slug, { ...filters, page: pageParam }),
+    initialPageParam: 1,
+    enabled: !!slug,
+    getNextPageParam: (lastPage) => {
+      const page = lastPage.productsMeta?.page || 1;
+      const totalPages = lastPage.productsMeta?.totalPages || 1;
+      return page < totalPages ? page + 1 : undefined;
+    },
+    getPreviousPageParam: (firstPage) => {
+      const page = firstPage.productsMeta?.page || 1;
+      return page > 1 ? page - 1 : undefined;
+    },
   });
 }

@@ -4,9 +4,10 @@ import type {
   CategoryDetail,
   CategoryFilters,
   PaginatedResponse,
+  ProductFilters,
 } from '@/types/api.types';
 
-function buildQueryString(filters: CategoryFilters): string {
+function buildQueryString(filters: CategoryFilters | ProductFilters): string {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
@@ -31,8 +32,9 @@ export const categoryService = {
   /**
    * Get a single category by Slug with full details
    */
-  getBySlug: (slug: string) => {
-    return apiClient.get<CategoryDetail>(`/categories/slug/${slug}`);
+  getBySlug: (slug: string, filters: ProductFilters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get<CategoryDetail>(`/categories/slug/${slug}${queryString}`);
   },
 
   /**

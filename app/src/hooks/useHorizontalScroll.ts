@@ -9,10 +9,23 @@ export function useHorizontalScroll(scrollAmount = 300) {
     const container = scrollerRef.current;
     if (!container) return;
 
-    setCanScrollLeft(container.scrollLeft > 0);
-    setCanScrollRight(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - 10
-    );
+    const isRtl = window.getComputedStyle(container).direction === "rtl";
+
+    if (isRtl) {
+      // In RTL, scrollLeft is 0 at the start (right edge) and becomes negative as you scroll left.
+      // So we can scroll right (towards the start) if scrollLeft is negative.
+      setCanScrollRight(Math.round(container.scrollLeft) < 0);
+      
+      // We can scroll left (towards the end) if the absolute scrollLeft is less than the max.
+      setCanScrollLeft(
+        Math.abs(container.scrollLeft) < container.scrollWidth - container.clientWidth - 10
+      );
+    } else {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 10
+      );
+    }
   }, []);
 
   useEffect(() => {

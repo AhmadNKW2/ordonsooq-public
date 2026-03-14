@@ -19,11 +19,12 @@ export function useSearch(filters: SearchFilters, initialData?: SearchResponse |
   });
 }
 
-export function useInfiniteSearchProducts(filters: Omit<SearchFilters, 'page'>, options?: { enabled?: boolean }) {
+export function useInfiniteSearchProducts(filters: Omit<SearchFilters, 'page'>, options?: { enabled?: boolean, initialData?: { pages: SearchResponse[]; pageParams: number[] } }) {
   return useInfiniteQuery({
     queryKey: [...SEARCH_QUERY_KEYS.all, 'infinite', filters],
     queryFn: ({ pageParam = 1 }) => clientSearch({ ...filters, page: pageParam }),
     initialPageParam: 1,
+    initialData: options?.initialData as any, // bypassing strict generic typing for brevity
     enabled: options?.enabled,
     getNextPageParam: (lastPage) => {
       const page = lastPage.page || 1;

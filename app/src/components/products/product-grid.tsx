@@ -34,7 +34,7 @@ export function ProductGrid({
 
   return (
     <div className={`grid ${gridCols[columns]} gap-5`}>
-      {products.map((product) => (
+      {products.filter((product, index, self) => index === self.findIndex(p => p.id === product.id && p.defaultVariantId === product.defaultVariantId)).map((product) => (
         <ProductCard 
           key={`${product.id}-${product.defaultVariantId ?? "base"}`} 
           product={product} 

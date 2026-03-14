@@ -18,9 +18,12 @@ interface EntityListingPageProps {
   data?: any;
   isLoading?: boolean;
   error?: any;
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
-export function EntityListingPage({ type, slug = "", data, isLoading = false, error }: EntityListingPageProps) {
+export function EntityListingPage({ type, slug = "", data, isLoading = false, error, fetchNextPage, hasNextPage, isFetchingNextPage }: EntityListingPageProps) {
   const locale = useLocale() as Locale;
   const isAr = locale === 'ar';
   const t = useTranslations();
@@ -230,14 +233,18 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
         initialFilters={initialFilters}
         title={isShop ? undefined : t("common.products")}
         availableCategories={isCategory ? subcategories : undefined}
+        preloadedProducts={data?.products}
+        productsMeta={data?.productsMeta}
+        onLoadMore={fetchNextPage}
+        hasMore={hasNextPage}
+        isLoadingMore={isFetchingNextPage}
       />
-      
       {isVendor && (
-         <ProductReviews
-            rating={rating}
-            reviewCount={reviewCount}
-            reviews={[]} // Empty array as in original
-         />
+        <ProductReviews
+          rating={rating}
+          reviewCount={reviewCount}
+          reviews={[]} // Empty array as in original
+        />
       )}
     </ListingLayout>
   );

@@ -1,36 +1,40 @@
 import { apiClient } from '@/lib/api-client';
-import type { Vendor, VendorFilters, PaginatedResponse } from '@/types/api.types';
+import type { Vendor, VendorDetail, VendorFilters, PaginatedResponse, ProductFilters } from '@/types/api.types';
+
+function buildQueryString(filters: VendorFilters | ProductFilters): string {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, String(value));
+    }
+  });
+
+  const queryString = params.toString();
+  return queryString ? `?${queryString}` : '';
+}
 
 export const vendorService = {
   /**
    * Get all vendors with optional filters
    */
   getAll: (filters: VendorFilters = {}) => {
-    const params = new URLSearchParams();
-    
-    if (filters.page) params.append('page', String(filters.page));
-    if (filters.limit) params.append('limit', String(filters.limit));
-    if (filters.sortBy) params.append('sortBy', filters.sortBy);
-    if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-    if (filters.status) params.append('status', filters.status);
-    if (filters.visible !== undefined) params.append('visible', String(filters.visible));
-    if (filters.search) params.append('search', filters.search);
-
-    const queryString = params.toString();
-    return apiClient.get<PaginatedResponse<Vendor>>(`/vendors${queryString ? `?${queryString}` : ''}`);
+    const queryString = buildQueryString(filters);
+    return apiClient.get<PaginatedResponse<Vendor>>(`/vendors${queryString}`);
   },
 
   /**
    * Get a single vendor by Slug
    */
-  getBySlug: (slug: string) => {
-    return apiClient.get<Vendor>(`/vendors/slug/${slug}`);
+  getBySlug: (slug: string, filters: ProductFilters = {}) => {
+    const queryString = buildQueryString(filters);
+    return apiClient.get<VendorDetail>(`/vendors/slug/${slug}${queryString}`);
   },
 
   /**
    * Get a single vendor by ID
    */
   getById: (id: number) => {
-    return apiClient.get<Vendor>(`/vendors/${id}`);
+    return apiClient.get<VendorDetail>(`/vendors/${id}`);
   },
 };

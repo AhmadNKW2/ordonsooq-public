@@ -82,3 +82,19 @@ export function useSearchFilters() {
     changeFilter,
   };
 }
+
+export function searchFiltersToApiFilters(filters: ReturnType<typeof useSearchFilters>["filters"]) {
+  const sortParts = filters.sort_by ? filters.sort_by.split(':') : ['average_rating', 'desc'];
+  let sortBy = sortParts[0];
+  if (sortBy === 'popularity_score') sortBy = 'average_rating';
+  if (sortBy === 'rating') sortBy = 'average_rating';
+
+  return {
+    page: filters.page,
+    limit: 24, // good for grid layout
+    sortBy: sortBy as any,
+    sortOrder: (sortParts[1] || 'DESC').toUpperCase() as any,
+    minPrice: filters.min_price,
+    maxPrice: filters.max_price,
+  };
+}

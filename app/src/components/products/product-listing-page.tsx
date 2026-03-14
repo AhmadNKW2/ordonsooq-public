@@ -11,7 +11,7 @@ import { useInfiniteSearchProducts } from "@/lib/search/use-search";
 import { useSearchFilters } from "@/lib/search/use-search-params";
 import type { SearchFilters, FacetCount, SortOption } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
-import type { Brand as ApiBrand } from "@/types/api.types";
+import type { Brand as ApiBrand, PaginationMeta } from "@/types/api.types";
 import { Category } from "@/types";
 import type { Locale } from "@/lib/transformers";
 
@@ -39,6 +39,10 @@ interface ProductListingPageProps {
   availableCategories?: Category[];
   preloadedProducts?: any[];
   preloadedBrands?: ApiBrand[];
+  productsMeta?: PaginationMeta;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export function ProductListingPage({
@@ -48,7 +52,11 @@ export function ProductListingPage({
   headerContent,
   availableCategories,
   preloadedProducts,
-  preloadedBrands
+  preloadedBrands,
+  productsMeta,
+  onLoadMore,
+  hasMore,
+  isLoadingMore
 }: ProductListingPageProps) {
   const locale = useLocale() as string;
   const t = useTranslations('product');
@@ -107,26 +115,49 @@ export function ProductListingPage({
   }, [sortKey, urlFilters, initialFilters]);
 
   // Infinite query — resets automatically when searchFilters changes
-  const {
-    data: infiniteData,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useInfiniteSearchProducts(searchFilters, { enabled: true });
+    const useSearch = !onLoadMore; // Only use search API if we don't have custom load handlers
+    const {
+      data: infiniteData,
+      isLoading: isSearchLoading,
+      isFetchingNextPage: searchIsFetchingNextPage,
+      hasNextPage: searchHasNextPage,
+      fetchNextPage: searchFetchNextPage,
+    } = useInfiniteSearchProducts(searchFilters, { 
+      enabled: useSearch,
+      initialData: preloadedProducts && productsMeta && useSearch ? {
+        pages: [{
+          hits: preloadedProducts,
+          total: productsMeta.total,
+          total_pages: productsMeta.totalPages,
+          page: productsMeta.page,
+          per_page: productsMeta.limit || 25,
+          facets: [] // Or map facets if we pass them
+        }],
+        pageParams: [1]
+      } : undefined
+    });
+
+    const isLoading = (isSearchLoading && useSearch && !preloadedProducts) || (!useSearch && !preloadedProducts);
+
+    const actualFetchNextPage = onLoadMore || searchFetchNextPage;
+    const actualHasNextPage = hasMore !== undefined ? hasMore : searchHasNextPage;
+    const actualIsFetchingNextPage = isLoadingMore !== undefined ? isLoadingMore : searchIsFetchingNextPage;
 
   // Flatten all fetched pages into a single list
   const productList = useMemo(() => {
-    return infiniteData?.pages.flatMap((p) => p.hits || []) ?? [];
-  }, [infiniteData]);
+      if (!useSearch && preloadedProducts) return preloadedProducts;
+      return infiniteData?.pages.flatMap((p) => p.hits || []) ?? [];
+    }, [infiniteData, useSearch, preloadedProducts]);
 
-  const totalProducts = useMemo(() => {
-    // Use meta from the last page for the real total count
-    const lastPage = infiniteData?.pages.at(-1);
-    return lastPage?.total ?? productList.length;
-  }, [infiniteData, productList.length]);
-
-  // Extract facets from the first page
+    const totalProducts = useMemo(() => {
+      if (!useSearch) return productsMeta?.total || productList.length;
+      if (infiniteData?.pages) {
+        // Use meta from the last page for the real total count
+        const lastPage = infiniteData?.pages.at(-1);
+        return lastPage?.total ?? productList.length;
+      }
+      return productsMeta?.total || productList.length;
+    }, [infiniteData, productList.length, productsMeta, useSearch]);
   const facets = useMemo(() => {
     const firstPage = infiniteData?.pages.at(0);
     return firstPage?.facets || [];
@@ -256,17 +287,17 @@ export function ProductListingPage({
               <>
                 <ProductGrid products={products} />
 
-                {/* Show More button — only when there are more API pages */}
-                {hasNextPage && (
+                  {/* Show More button — only when there are more API pages from Search/Entities */}
+                  {actualHasNextPage && (
                   <div className="flex justify-center pt-10 pb-5">
                     <Button
                       variant="pill"
                       size="lg"
-                      onClick={() => fetchNextPage()}
-                      disabled={isFetchingNextPage}
+                      onClick={() => actualFetchNextPage()}
+                      disabled={actualIsFetchingNextPage}
                       className="min-w-50 bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
                     >
-                      {isFetchingNextPage ? tCommon('loading') : tCommon('loadMoreProducts')}
+                      {actualIsFetchingNextPage ? tCommon('loading') : tCommon('loadMoreProducts')}
                     </Button>
                   </div>
                 )}
