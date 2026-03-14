@@ -145,7 +145,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
          isColor: attrName.toLowerCase().includes('color') || attrName.includes('اللون') || Object.values(attrGroup.values || {}).some(v => !!v.color_code),
          controlsPricing: false, 
          controlsMedia: false, 
-         controlsWeight: false
+         controlsWeight: false,
+         attributeType: attrGroup.attribute_type,
+         listSeparately: attrGroup.list_separately
        });
     });
   }

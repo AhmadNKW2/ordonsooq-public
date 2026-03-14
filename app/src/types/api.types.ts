@@ -99,6 +99,8 @@ export type ProductAttributeValue = {
 export type ProductAttributeGroup = {
   name_en: string;
   name_ar: string;
+  attribute_type: 'variant_attribute' | 'spec_attribute';
+  list_separately: boolean;
   values: Record<string, ProductAttributeValue>;
 };
 

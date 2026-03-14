@@ -188,6 +188,7 @@ export default function ProductPage() {
     if (!product?.attributes || product.attributes.length === 0) return "";
 
     const parts = product.attributes
+      .filter(attr => attr.attributeType !== 'spec_attribute')
       .map((attr) => {
         const value = selectedOptions[attr.name];
         return value ? `${attr.name}: ${value}` : null;
@@ -402,7 +403,7 @@ export default function ProductPage() {
           />
 
           <ProductOptions
-            attributes={product.attributes || []}
+            attributes={(product.attributes || []).filter(a => a.attributeType !== 'spec_attribute')}
             selectedOptions={selectedOptions}
             onChange={handleOptionChange}
             isOptionDisabled={isOptionDisabled}
@@ -455,9 +456,9 @@ export default function ProductPage() {
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
 
-          {product.attributes && product.attributes.length > 0 && (
+          {product.attributes && product.attributes.filter(a => a.attributeType !== 'spec_attribute').length > 0 && (
             <ProductOptions
-              attributes={product.attributes}
+              attributes={product.attributes.filter(a => a.attributeType !== 'spec_attribute')}
               selectedOptions={selectedOptions}
               onChange={handleOptionChange}
               isOptionDisabled={isOptionDisabled}
