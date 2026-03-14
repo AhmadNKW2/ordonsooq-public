@@ -33,7 +33,7 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
       <h1 className="text-2xl md:text-3xl font-bold text-primary">
         {product.name}
         {selectedOptionsSummary ? (
-          <span className="font-medium text-third text-sm md:text-base">
+          <span className="mt-2 block font-medium text-third text-sm md:text-base">
             {" "}({selectedOptionsSummary})
           </span>
         ) : null}
