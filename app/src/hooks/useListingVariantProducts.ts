@@ -80,6 +80,12 @@ export function useListingVariantProducts(apiProducts: ApiProduct[] | undefined,
         
         // If there are variants but no listSeparately attributes, return just the base product
         return [p];
+      }
+
+      return [p];
+    });
+  }, [baseProducts]);
+
   return {
     products: expandedProducts,
     isLoading: false,
