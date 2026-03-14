@@ -19,15 +19,17 @@ function getVariantPrimaryImage(product: Product, variant: ProductVariant): stri
   return attributeValue?.image || mainImage;
 }
 
-function toVariantCardProduct(base: Product, variant: ProductVariant): Product {
+function toVariantCardProduct(base: Product, variant: ProductVariant, listSeparatelyAttrs: string[] = []): Product {
   const variantImage = getVariantPrimaryImage(base, variant);
   const images = variantImage
     ? [variantImage, ...(base.images || []).filter((u) => u !== variantImage)]
     : base.images;
 
   // Append attribute values to the name
-  const attributeValues = Object.values(variant.attributes || {}).filter(Boolean);
-  const newName = attributeValues.length > 0 
+  const attributeValues = listSeparatelyAttrs.length > 0 
+    ? listSeparatelyAttrs.map((attr) => variant.attributes?.[attr]).filter(Boolean)
+    : Object.values(variant.attributes || {}).filter(Boolean);
+  const newName = attributeValues.length > 0
     ? `${base.name} - ${attributeValues.join(' - ')}`
     : base.name;
 
@@ -54,9 +56,30 @@ export function useListingVariantProducts(apiProducts: ApiProduct[] | undefined,
       const hasVariants = variants.length > 0;
       
       if (hasVariants) {
-        const inStockVariants = variants.filter((v) => (v.stock ?? 0) > 0);
-        if (inStockVariants.length === 0) return [p];
-        return inStockVariants.map((v) => toVariantCardProduct(p, v));
+        const listSeparatelyAttrs = p.attributes?.filter(a => a.listSeparately).map(a => a.name) || [];
+        
+        if (listSeparatelyAttrs.length > 0) {
+          const inStockVariants = variants.filter((v) => (v.stock ?? 0) > 0);
+          if (inStockVariants.length === 0) return [p];
+
+          // Group variants by the values of the listSeparately attributes
+          const groupedVariants = new Map<string, ProductVariant>();
+          
+          for (const variant of inStockVariants) {
+            // Create a unique key for the variant based on the listSeparately attributes
+            const keyParts = listSeparatelyAttrs.map(attrName => variant.attributes[attrName] || '');
+            const key = keyParts.join('||');
+            
+            if (!groupedVariants.has(key)) {
+              groupedVariants.set(key, variant);
+            }
+          }
+          
+          return Array.from(groupedVariants.values()).map((v) => toVariantCardProduct(p, v, listSeparatelyAttrs));
+        }
+        
+        // If there are variants but no listSeparately attributes, return just the base product
+        return [p];
       }
 
       return [p];

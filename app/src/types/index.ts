@@ -20,6 +20,8 @@ export interface ProductAttribute {
   controlsPricing: boolean;
   controlsMedia: boolean;
   controlsWeight: boolean;
+  attributeType?: 'variant_attribute' | 'spec_attribute';
+  listSeparately?: boolean;
 }
 
 export interface Product {

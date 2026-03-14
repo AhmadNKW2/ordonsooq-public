@@ -145,7 +145,9 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
          isColor: attrName.toLowerCase().includes('color') || attrName.includes('اللون') || Object.values(attrGroup.values || {}).some(v => !!v.color_code),
          controlsPricing: false, 
          controlsMedia: false, 
-         controlsWeight: false
+         controlsWeight: false,
+         attributeType: attrGroup.attribute_type,
+         listSeparately: attrGroup.list_separately
        });
     });
   }
@@ -173,7 +175,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   }
 
   // 5. Variants
-  const variants = product.variants?.map(v => {
+  const variants = product.variants?.filter(v => v.is_active !== false).map(v => {
      // Resolve attributes
      const variantAttributes: Record<string, string> = {};
      if (v.attribute_values) {
