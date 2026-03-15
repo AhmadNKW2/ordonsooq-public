@@ -136,7 +136,11 @@ export function HomeSection(props: HomeSectionProps) {
         >
           {visibleProducts.map((product) => (
             <div key={`${product.id}-${product.defaultVariantId ?? "base"}`} className="w-70 shrink-0">
-              <ProductCard product={product} />
+              <ProductCard product={product}
+                cartButtonVariant="floating"
+                cartButtonColor="white"
+                cartButtonIcon="add-to-cart"
+              />
             </div>
           ))}
         </div>
@@ -149,7 +153,12 @@ export function HomeSection(props: HomeSectionProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
-              <ProductCard product={product} />
+              <ProductCard 
+                product={product} 
+                cartButtonVariant="floating"
+                cartButtonColor="white"
+                cartButtonIcon="add-to-cart"
+              />
             </motion.div>
           ))}
         </div>

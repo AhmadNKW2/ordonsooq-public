@@ -10,10 +10,10 @@ interface ProductGridProps {
   showActions?: boolean;
 }
 
-export function ProductGrid({ 
-  products, 
+export function ProductGrid({
+  products,
   columns = 4,
-  showActions = true 
+  showActions = true
 }: ProductGridProps) {
   const t = useTranslations("productGrid");
   const gridCols = {
@@ -35,10 +35,13 @@ export function ProductGrid({
   return (
     <div className={`grid ${gridCols[columns]} gap-5`}>
       {products.filter((product, index, self) => index === self.findIndex(p => p.id === product.id && p.defaultVariantId === product.defaultVariantId)).map((product) => (
-        <ProductCard 
-          key={`${product.id}-${product.defaultVariantId ?? "base"}`} 
-          product={product} 
+        <ProductCard
+          key={`${product.id}-${product.defaultVariantId ?? "base"}`}
+          product={product}
           showActions={showActions}
+          cartButtonVariant="floating"
+          cartButtonColor="white"
+          cartButtonIcon="add-to-cart"
         />
       ))}
     </div>
