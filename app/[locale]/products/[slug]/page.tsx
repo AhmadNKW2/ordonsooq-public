@@ -5,7 +5,7 @@ import { notFound, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Star, Truck, Shield, RotateCcw, Store, ChevronRight } from "lucide-react";
+import { Star, Truck, Shield, RotateCcw, Store, ChevronRight, MessageSquareText, Send } from "lucide-react";
 import { useProductBySlug, useProductsByCategory, useListingVariantProducts } from "@/hooks";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, type Locale } from "@/lib/transformers";
@@ -23,14 +23,14 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
         <div className="flex items-center gap-2 mb-2">
           <Link
             href={`/brands/${product.brand.slug}`}
-            className="flex items-center gap-1 text-sm text-secondary font-medium hover:translate-x-1.5 transition-all"
+            className="flex items-center gap-1 text-sm text-secondary font-medium ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all"
           >
             {product.brand.name}
-            <ChevronRight size={16} />
+            <ChevronRight size={16} className="rtl:rotate-180" />
           </Link>
         </div>
       )}
-      <h1 className="text-2xl md:text-3xl font-bold text-primary">
+      <h1 className="text-2xl md:text-3xl font-bold text-primary leading-11">
         {product.name}
         {selectedOptionsSummary ? (
           <span className="mt-2 block font-medium text-third text-sm md:text-base">
@@ -46,6 +46,32 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
         )}
       </div>
     </>
+  );
+}
+
+function ProductNotes({ t }: { t: any }) {
+  return (
+    <div className="mt-4 mb-2 p-4 bg-gray-50/80 border border-gray-200 rounded-2xl transition-all focus-within:bg-white focus-within:border-primary/30 focus-within:ring-4 focus-within:ring-primary/5 focus-within:shadow-sm">
+      <h3 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+        <MessageSquareText className="w-4 h-4 text-secondary" />
+        {t('product.doYouHaveNotes')}
+      </h3>
+      <textarea
+        className="w-full text-sm p-3 border border-gray-100 bg-white rounded-xl focus:ring-0 outline-none resize-none text-primary placeholder:text-gray-400 shadow-sm"
+        placeholder={t('product.addNotesHere')}
+        rows={2}
+      ></textarea>
+      <div className="flex justify-end mt-3">
+        <button
+          type="button"
+          className="bg-secondary text-white text-xs px-5 py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-all shadow-sm hover:shadow active:scale-95 flex items-center gap-2"
+          onClick={() => {/* Implement submission logic later */}}
+        >
+          {t('product.submitNotes')}
+          <Send className="w-3 h-3 ltr:rotate-0 rtl:rotate-180" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -409,7 +435,6 @@ export default function ProductPage() {
             isOptionDisabled={isOptionDisabled}
           />
 
-          <ProductActions product={product} selectedVariant={selectedVariant} />
         </div>
       </div>
 
@@ -451,11 +476,13 @@ export default function ProductPage() {
             className="items-baseline"
           />
 
-          <div 
+          <div
             className="text-third leading-relaxed prose max-w-none [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
 
+          <ProductNotes t={t} />
+          
           {product.attributes && product.attributes.filter(a => a.attributeType !== 'spec_attribute').length > 0 && (
             <ProductOptions
               attributes={product.attributes.filter(a => a.attributeType !== 'spec_attribute')}
@@ -490,10 +517,10 @@ export default function ProductPage() {
                   <p className="text-xs text-third">{t('product.soldBy')}</p>
                   <a
                     href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
-                    className="font-semibold text-primary hover:text-secondary hover:translate-x-1.5 transition-all flex items-center gap-1"
+                    className="font-semibold text-primary hover:text-secondary ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all flex items-center gap-1"
                   >
                     {product.vendor?.name || "OrdonSooq"}
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4 rtl:rotate-180" />
                   </a>
                   {product.vendor && (
                     <div className="flex items-center gap-1 mt-1">
@@ -573,6 +600,7 @@ export default function ProductPage() {
           </Card>
 
           {/* Actions */}
+          <ProductNotes t={t} />
           <ProductActions product={product} selectedVariant={selectedVariant} />
 
 

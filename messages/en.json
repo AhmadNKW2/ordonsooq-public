@@ -318,6 +318,9 @@
     "subscribe": "Subscribe"
   },
   "product": {
+    "doYouHaveNotes": "Do you have notes for this product or price?",
+    "addNotesHere": "Add your notes here...",
+    "submitNotes": "Submit Notes",
     "inquiries": "Do you have inquiries about this product?",
     "whatsappUs": "WhatsApp Us",
     "addToCart": "Add to Cart",

@@ -44,10 +44,38 @@ export function ProductGallery({
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [thumbnailSize, setThumbnailSize] = useState<number | null>(null);
   const [showScrollUp, setShowScrollUp] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const container = thumbnailContainerRef.current;
+    if (!container || !showMainImage) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const isMobile = window.innerWidth < 768;
+        
+        let availableSpace = isMobile ? entry.contentRect.width : entry.contentRect.height;
+        if (availableSpace <= 0) continue;
+
+        const idealSize = 64; 
+        const gap = isMobile ? 12 : 16;
+        
+        let count = Math.round((availableSpace + gap) / (idealSize + gap));
+        if (count < 1) count = 1;
+
+        availableSpace = availableSpace - (isMobile ? 16 : 16); // padding p-2 is 8px each side
+        const exactSize = (availableSpace - (count - 1) * gap) / count;
+        setThumbnailSize(exactSize);
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [showMainImage]);
 
   const handlePrevious = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -143,11 +171,17 @@ export function ProductGallery({
     const container = thumbnailContainerRef.current;
     if (!container) return;
 
-    const scrollAmount = 88;
-    const newScrollTop = scrollDirection === 'up'
-      ? container.scrollTop - scrollAmount
-      : container.scrollTop + scrollAmount;
-
+    // Dynamically calculate the scroll amount based on single thumbnail size + gap
+    const firstChild = container.children[0] as HTMLElement;
+    const itemHeight = firstChild ? firstChild.getBoundingClientRect().height : 64;
+    const gap = 16;
+    const scrollAmount = itemHeight + gap;
+    
+    // Snap to nearest item
+    let currentItemIndex = Math.round(container.scrollTop / scrollAmount);
+    let newIndex = scrollDirection === 'up' ? currentItemIndex - 1 : currentItemIndex + 1;
+    let newScrollTop = newIndex * scrollAmount;
+    newScrollTop = Math.max(0, Math.min(newScrollTop, container.scrollHeight - container.clientHeight));
     container.scrollTo({ top: newScrollTop, behavior: 'smooth' });
   }, []);
 
@@ -183,91 +217,94 @@ export function ProductGallery({
   return (
     <>
       <div className={cn(
-        "relative", 
-        // Mobile: Flex column-reverse (Thumbnails below image) OR Grid.
-        // Requested: Main Image THEN Thumbnails.
-        // Current: grid-cols-1 (which order?)
-        // Default Grid: Child 1, Child 2.
-        // Child 1 is Thumbnails Div. Child 2 is Main Image.
-        // So on Mobile (grid-cols-1), Thumbnails appear ABOVE Main Image.
-        // FIX: We need specific order classes or Flex col-reverse structure for mobile.
-        // Using flex for mobile to control order easily.
-        showThumbnails && showMainImage ? "flex flex-col md:flex-row gap-6 h-auto" : "block"
-      )}>
+        "relative",
+        // Mobile: Flex to control order easily. Desktop: Grid to strongly constrain heights
+        showThumbnails && showMainImage ? "flex flex-col md:grid md:grid-cols-[4.5rem_1fr] lg:grid-cols-[5rem_1fr] gap-4 md:gap-6" : "block"
+      )}
+      >
         {/* Thumbnails (Left side on Desktop, Bottom on Mobile) */}
         {showThumbnails && images.length > 1 && (
           <div className={cn(
             "relative group shrink-0",
-            // Desktop: Side bar
-            showMainImage && "md:w-20 md:h-full",
+            // Desktop: Side bar strict height constraint (h-0 min-h-full forces it to match sibling height)
+            showMainImage && "md:h-0 md:min-h-full md:w-full",
             // Mobile: Row below image
-            showMainImage && "w-full h-20 order-2 md:order-1" 
+            showMainImage && "w-full h-20 order-2 md:order-none"
           )}>
-            {/* Scroll Up Arrow */}
-            {showScrollUp && showMainImage && (
-              <button
-                onClick={() => scrollThumbnails('up')}
-                className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
-                aria-label="Scroll up"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Thumbnail Container */}
-            <div
-              ref={thumbnailContainerRef}
-              onScroll={handleScroll}
-              className={cn(
-                "overflow-y-auto scrollbar-hide px-2 py-2",
-                // Desktop: Vertical column
-                showMainImage ? "md:flex md:flex-col md:gap-4 md:h-full" : "",
-                // Mobile: Horizontal row
-                showMainImage ? "flex flex-row gap-3 overflow-x-auto w-full h-full" : "",
-                // Standalone thumbnails
-                !showMainImage && "flex flex-row gap-2 overflow-x-auto w-full",
-              )}
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {images.map((image, index) => (
+            {/* Desktop Inner Wrapper for position absolute to strictly contain overflow within the grid row */}
+            <div className={cn(
+              "w-full h-full",
+              showMainImage && "md:absolute md:inset-0"
+            )}>
+              {/* Scroll Up Arrow */}
+              {showScrollUp && showMainImage && (
                 <button
-                  key={index}
-                  onClick={() => handleThumbnailClick(index)}
-                  className={cn(
-                    "relative rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
-                    // Desktop size
-                    showMainImage ? "md:w-15 md:h-15" : "w-16 h-16",
-                    // Mobile size
-                    showMainImage ? "w-16 h-16" : "",
-                    selectedIndex === index
-                      ? "ring-blue-500 ring-offset-2 opacity-100 scale-105"
-                      : "opacity-60 ring-gray-300 hover:opacity-100 hover:ring-blue-300 hover:scale-105"
-                  )}
+                  onClick={() => scrollThumbnails('up')}
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 w-8 h-8 bg-white border border-gray-200 rounded-full shadow-md transition-all duration-300 flex items-center justify-center hover:bg-gray-50 text-gray-600 hover:text-primary md:flex hidden"
+                  aria-label="Scroll up"
                 >
-                  <Image
-                    src={image}
-                    alt={`${productName} - Thumbnail ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
                 </button>
-              ))}
-            </div>
+              )}
 
-            {/* Scroll Down Arrow */}
-            {showScrollDown && showMainImage && (
-              <button
-                onClick={() => scrollThumbnails('down')}
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center hover:bg-gray-50"
-                aria-label="Scroll down"
+              {/* Thumbnail Container */}
+              <div
+                ref={thumbnailContainerRef}
+                onScroll={handleScroll}
+                className={cn(
+                  "overflow-y-auto scrollbar-hide flex",
+                  // padding is vital to give the focus rings room so they aren't masked by flex container bounds
+                  showMainImage && "p-2 mx-1",
+                  // Desktop: Vertical column
+                  showMainImage ? "md:flex-col md:gap-4 md:h-full md:items-center" : "",
+                  // Mobile: Horizontal row
+                  showMainImage ? "flex-row gap-3 overflow-x-auto w-full h-full" : "",
+                  // Standalone thumbnails
+                  !showMainImage && "flex-row gap-2 overflow-x-auto w-full",
+                )}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            )}
+                {images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleThumbnailClick(index)}
+                    style={thumbnailSize && showMainImage ? { width: thumbnailSize, height: thumbnailSize } : undefined}
+                    className={cn(
+                      "relative rounded-lg overflow-hidden shrink-0 ring-2 transition-all duration-300",
+                      // Desktop size
+                      showMainImage ? "md:w-16 md:h-16 lg:w-16 lg:h-16" : "w-16 h-16",
+                      // Mobile size
+                      showMainImage ? "w-16 h-16" : "",
+                      selectedIndex === index
+                        ? "ring-primary ring-offset-2 opacity-100 scale-105"
+                        : "opacity-60 ring-gray-200 hover:opacity-100 hover:ring-primary/50 hover:scale-105"
+                    )}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${productName} - Thumbnail ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Scroll Down Arrow */}
+              {showScrollDown && showMainImage && (
+                <button
+                  onClick={() => scrollThumbnails('down')}
+                  className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 w-8 h-8 bg-white border border-gray-200 rounded-full shadow-md transition-all duration-300 flex items-center justify-center hover:bg-gray-50 text-gray-600 hover:text-primary md:flex hidden"
+                  aria-label="Scroll down"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -275,12 +312,9 @@ export function ProductGallery({
         {showMainImage && (
         <div
           className={cn(
-            "relative flex-1 aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in",
-            // Desktop order
-            "md:order-2 border border-secondary/20",
+            "relative w-full aspect-square rounded-3xl bg-gray-50 overflow-hidden group cursor-zoom-in border border-secondary/20",
             // Mobile: Main Image FIRST (order-1)
-            "order-1",
-            "w-full h-full"
+            "order-1 md:order-none"
           )}
           onClick={handleImageClick}
           onTouchStart={onTouchStart}

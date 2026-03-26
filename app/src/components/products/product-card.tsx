@@ -360,13 +360,6 @@ export function ProductCard({
           ) : null}
         </h3>
 
-        {/* Brand/Vendor - if available */}
-        {(product.vendor?.name || product.brand?.name) && (
-          <p className="text-xs text-third text-center line-clamp-1">
-            {product.vendor?.name || product.brand?.name}
-          </p>
-        )}
-
         {/* Rating */}
         {product.rating > 0 && (
           <div className="flex items-center justify-center gap-1 mt-1">
