@@ -22,7 +22,11 @@ export default function HomePage() {
     error: homeError 
   } = useHome();
 
-  // Fetch featured products with infinite pagination (25 per page)
+  // Centralized configuration for number of products to fetch per page
+  // Change this number to easily adjust how many products are loaded initially and when clicking "Show More"
+  const PRODUCTS_PER_PAGE = 40;
+
+  // Fetch featured products with infinite pagination
   const {
     data: featuredInfiniteData,
     isPending: featuredLoading,
@@ -30,7 +34,7 @@ export default function HomePage() {
     hasNextPage: featuredHasNextPage,
     fetchNextPage: featuredFetchNextPage,
   } = useInfiniteProducts({
-    limit: 25,
+    limit: PRODUCTS_PER_PAGE,
     status: 'active',
     visible: true,
     sortBy: 'average_rating',
@@ -43,7 +47,7 @@ export default function HomePage() {
     [featuredInfiniteData]
   );
 
-  // Fetch new arrivals with infinite pagination (25 per page)
+  // Fetch new arrivals with infinite pagination
   const {
     data: newInfiniteData,
     isPending: newLoading,
@@ -51,7 +55,7 @@ export default function HomePage() {
     hasNextPage: newHasNextPage,
     fetchNextPage: newFetchNextPage,
   } = useInfiniteProducts({
-    limit: 25,
+    limit: PRODUCTS_PER_PAGE,
     status: 'active',
     visible: true,
     sortBy: 'created_at',
@@ -146,7 +150,7 @@ export default function HomePage() {
       </section>
 
       {/* Brands Section */}
-      <section>
+      {/* <section>
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -161,10 +165,10 @@ export default function HomePage() {
               viewAllHref="/brands"
           />
         )}
-      </section>
+      </section> */}
 
       {/* Vendors Section */}
-      <section>
+      {/* <section>
         {homeLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -179,7 +183,7 @@ export default function HomePage() {
               viewAllHref="/vendors"
           />
         )}
-      </section>
+      </section> */}
 
       {/* New Arrivals */}
       <section>

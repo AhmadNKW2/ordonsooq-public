@@ -12,7 +12,7 @@ import { transformProduct, type Locale } from "@/lib/transformers";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { CURRENCY_CONFIG } from "@/lib/constants";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
-import { Badge, Card, IconButton, Breadcrumb } from "@/components/ui";
+import { Badge, Card, IconButton, Breadcrumb, Modal, Button } from "@/components/ui";
 import { ProductActions } from "./product-actions";
 
 // Helper Components to reduce duplication
@@ -50,28 +50,67 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
 }
 
 function ProductNotes({ t }: { t: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="mt-4 mb-2 p-4 bg-gray-50/80 border border-gray-200 rounded-2xl transition-all focus-within:bg-white focus-within:border-primary/30 focus-within:ring-4 focus-within:ring-primary/5 focus-within:shadow-sm">
-      <h3 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
-        <MessageSquareText className="w-4 h-4 text-secondary" />
-        {t('product.doYouHaveNotes')}
-      </h3>
-      <textarea
-        className="w-full text-sm p-3 border border-gray-100 bg-white rounded-xl focus:ring-0 outline-none resize-none text-primary placeholder:text-gray-400 shadow-sm"
-        placeholder={t('product.addNotesHere')}
-        rows={2}
-      ></textarea>
-      <div className="flex justify-end mt-3">
-        <button
-          type="button"
-          className="bg-secondary text-white text-xs px-5 py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-all shadow-sm hover:shadow active:scale-95 flex items-center gap-2"
-          onClick={() => {/* Implement submission logic later */}}
-        >
-          {t('product.submitNotes')}
-          <Send className="w-3 h-3 ltr:rotate-0 rtl:rotate-180" />
-        </button>
-      </div>
-    </div>
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="w-full group relative overflow-hidden bg-secondary/7 hover:bg-secondary/10 border border-secondary/50 hover:border-secondary/30 hover:shadow-sm rounded-2xl p-4 transition-all duration-300 flex items-center justify-between outline-none"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-secondary/20 transition-all duration-300">
+            <MessageSquareText className="w-5 h-5 text-secondary" />
+          </div>
+          <div className="text-left rtl:text-right">
+            <h3 className="text-sm font-bold text-primary transition-colors">
+              {t('product.doYouHaveNotes')}
+            </h3>
+            <p className="text-xs text-third mt-0.5 line-clamp-1">
+              {t('product.addNotesHere')}
+            </p>
+          </div>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-white group-hover:bg-white flex items-center justify-center transition-colors border border-secondary/50 group-hover:border-secondary/75">
+          <ChevronRight className="w-4 h-4 text-third group-hover:text-secondary transition-colors rtl:rotate-180" />
+        </div>
+      </button>
+
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} animation="zoom" className="max-w-md w-full p-0 overflow-hidden">
+        <div className="p-5 ltr:pr-12 rtl:pl-12 bg-gradient-to-br from-secondary/5 to-white border-b border-gray-100 relative">
+          <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+              <MessageSquareText className="w-4 h-4 text-secondary" />
+            </div>
+            <span>{t('product.doYouHaveNotes')}</span>
+          </h3>
+        </div>
+        <div className="p-5">
+          <textarea
+            className="w-full text-sm p-4 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-4 focus:ring-secondary/10 focus:border-secondary/50 outline-none resize-none text-primary placeholder:text-gray-400 transition-all min-h-[120px] shadow-inner"
+            placeholder={t('product.addNotesHere')}
+            autoFocus
+          ></textarea>
+          <div className="flex justify-end mt-5 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              className="rounded-xl px-5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              onClick={() => setIsOpen(false)}
+              className="rounded-xl px-6 flex items-center gap-2 shadow-md hover:-translate-y-0.5"
+            >
+              {t('product.submitNotes')}
+              <Send className="w-4 h-4 ltr:rotate-0 rtl:rotate-180" />
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
 
@@ -404,7 +443,7 @@ export default function ProductPage() {
       />
 
       {/* Product Details - Mobile Layout */}
-      <div className="lg:hidden flex flex-col gap-4 mb-8">
+      <div className="lg:hidden flex flex-col gap-4">
         <div className="flex flex-col gap-2">
            <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
         </div>
@@ -427,6 +466,8 @@ export default function ProductPage() {
             t={t} 
             locale={locale} 
           />
+
+          <ProductNotes t={t} />
 
           <ProductOptions
             attributes={(product.attributes || []).filter(a => a.attributeType !== 'spec_attribute')}
@@ -476,12 +517,12 @@ export default function ProductPage() {
             className="items-baseline"
           />
 
+          <ProductNotes t={t} />
+
           <div
             className="text-third leading-relaxed prose max-w-none [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
-
-          <ProductNotes t={t} />
           
           {product.attributes && product.attributes.filter(a => a.attributeType !== 'spec_attribute').length > 0 && (
             <ProductOptions
@@ -600,7 +641,6 @@ export default function ProductPage() {
           </Card>
 
           {/* Actions */}
-          <ProductNotes t={t} />
           <ProductActions product={product} selectedVariant={selectedVariant} />
 
 

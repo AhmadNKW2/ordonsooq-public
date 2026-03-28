@@ -32,7 +32,8 @@ type ProductsVariantProps = BaseSectionProps & {
   onLoadMore?: () => void;
   isLoading?: boolean;
   initialVisibleCount?: number;
-  loadMoreCount?: number;
+  /** Configuration for how many rows to add at once in client-side loading mode */
+  loadMoreRows?: number;
 };
 
 export type HomeSectionProps = ProductsVariantProps;
@@ -53,7 +54,7 @@ export function HomeSection(props: HomeSectionProps) {
     onLoadMore,
     isLoading = false,
     initialVisibleCount = 5,
-    loadMoreCount = 5,
+    loadMoreRows = 2, // Easily edit the number of extra rows to load here
   } = props;
 
   const {
@@ -63,6 +64,24 @@ export function HomeSection(props: HomeSectionProps) {
     scrollLeft,
     scrollRight,
   } = useHorizontalScroll(320);
+
+  // Track responsive columns for rounding product counts
+  const [cols, setCols] = useState(5);
+
+  useEffect(() => {
+    const updateCols = () => {
+      const width = document.documentElement.clientWidth;
+      if (width < 768) setCols(2); // md
+      else if (width < 1024) setCols(3); // lg
+      else if (width < 1280) setCols(4); // xl
+      else setCols(5);
+    };
+    if (typeof window !== "undefined") {
+      updateCols();
+      window.addEventListener("resize", updateCols);
+      return () => window.removeEventListener("resize", updateCols);
+    }
+  }, []);
 
   const [visibleCount, setVisibleCount] = useState(
     Math.min(products.length, Math.max(0, initialVisibleCount))
@@ -76,9 +95,17 @@ export function HomeSection(props: HomeSectionProps) {
   // products without client-side slicing. Otherwise fall back to internal slicing.
   const visibleProducts = useMemo(() => {
     if (showNavArrows) return products;
-    if (hasMore !== undefined) return products;
-    return products.slice(0, Math.max(0, visibleCount));
-  }, [products, showNavArrows, visibleCount, hasMore]);
+
+    let rawProducts = products;
+    if (hasMore === undefined) {
+      rawProducts = products.slice(0, Math.max(0, visibleCount));
+    }
+
+    // Ensures the number of displayed products is always a multiple of the current columns
+    // "so if its 5 so if the number of showed products is 26 it must be 25 because 25 is the nearest number %5 ==0"
+    const maxVisible = Math.floor(rawProducts.length / cols) * cols;
+    return rawProducts.slice(0, Math.max(cols, maxVisible));
+  }, [products, showNavArrows, visibleCount, hasMore, cols]);
 
   const canShowLoadMore =
     showLoadMore &&
@@ -176,7 +203,7 @@ export function HomeSection(props: HomeSectionProps) {
               } else {
                 // Client-side slicing mode
                 setVisibleCount((current) =>
-                  Math.min(products.length, current + Math.max(0, loadMoreCount))
+                  Math.min(products.length, current + Math.max(0, loadMoreRows * cols))
                 );
                 onLoadMore?.();
               }
