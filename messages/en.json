@@ -90,7 +90,8 @@
     "secureCheckout": "Secure Checkout",
     "min": "Min",
     "max": "Max",
-    "apply": "Apply"
+    "apply": "Apply",
+    "success": "Success"
   },
   "nav": {
     "categories": "Categories",
@@ -410,7 +411,13 @@
     "sortPriceAsc": "Price: Low to High",
     "sortPriceDesc": "Price: High to Low",
     "sortNewest": "Newest Arrivals",
-    "sortRating": "Best Rating"
+    "sortRating": "Best Rating",
+    "notesSubmittedSuccessMessage": "Your notes have been successfully submitted. We will review them shortly.",
+    "guestDetails": "Please provide your details so we can assist you.",
+    "fullName": "Full Name",
+    "phoneNumber": "Phone Number",
+    "emailOptional": "Email (Optional)",
+    "invalidEmail": "Please enter a valid email address."
   },
   "cart": {
     "title": "Shopping Cart",

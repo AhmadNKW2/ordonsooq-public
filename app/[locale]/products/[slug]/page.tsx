@@ -5,15 +5,18 @@ import { notFound, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Star, Truck, Shield, RotateCcw, Store, ChevronRight, MessageSquareText, Send } from "lucide-react";
+import { Star, Truck, Shield, RotateCcw, Store, ChevronRight, MessageSquareText, Send, Check } from "lucide-react";
 import { useProductBySlug, useProductsByCategory, useListingVariantProducts } from "@/hooks";
+import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { transformProduct, type Locale } from "@/lib/transformers";
+import { apiClient } from "@/lib/api-client";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
 import { CURRENCY_CONFIG } from "@/lib/constants";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
 import { Badge, Card, IconButton, Breadcrumb, Modal, Button } from "@/components/ui";
 import { ProductActions } from "./product-actions";
+import { toast } from "sonner";
 
 // Helper Components to reduce duplication
 function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, selectedOptionsSummary: string, t: any }) {
@@ -49,13 +52,83 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
   );
 }
 
-function ProductNotes({ t }: { t: any }) {
+function ProductNotes({ t, productId }: { t: any, productId: string | number }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const { user } = useAuth();
+  const translations = t || ((key: string) => key);
+
+  const handleSubmit = async () => {
+    if (!notes.trim()) {
+      toast.error(translations('product.addNotesHere'));
+      return;
+    }
+
+    if (!user) {
+      if (!guestName.trim() || !guestPhone.trim()) {
+        toast.error('Please fill in your name and phone number to submit a note.');
+        return;
+      }
+
+      if (guestEmail.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(guestEmail.trim())) {
+          toast.error(translations('product.invalidEmail') || 'Please enter a valid email address.');
+          return;
+        }
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload: any = {
+        product_id: productId,
+        notes: notes.trim(),
+      };
+
+      let requestOptions: RequestInit | undefined = undefined;
+
+      if (!user) {
+        payload.guest_name = guestName.trim();
+        payload.guest_phone = guestPhone.trim();
+        if (guestEmail.trim()) {
+          payload.guest_email = guestEmail.trim();
+        }
+        // Force Authorization header to be empty since user is not authenticated
+        requestOptions = {
+          headers: {
+            'Authorization': ''
+          }
+        };
+      }
+
+      await apiClient.post('/notes', payload, requestOptions);
+      setIsSuccess(true);
+    } catch (e) {
+      toast.error(translations('common.error') || 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          setIsSuccess(false);
+          setNotes('');
+          setGuestName('');
+          setGuestPhone('');
+          setGuestEmail('');
+        }}
         className="w-full group relative overflow-hidden bg-secondary/7 hover:bg-secondary/10 border border-secondary/50 hover:border-secondary/30 hover:shadow-sm rounded-2xl p-4 transition-all duration-300 flex items-center justify-between outline-none"
       >
         <div className="flex items-center gap-3">
@@ -77,44 +150,105 @@ function ProductNotes({ t }: { t: any }) {
       </button>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} animation="zoom" className="max-w-md w-full p-0 overflow-hidden">
-        <div className="p-5 ltr:pr-12 rtl:pl-12 bg-gradient-to-br from-secondary/5 to-white border-b border-gray-100 relative">
-          <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-              <MessageSquareText className="w-4 h-4 text-secondary" />
-            </div>
-            <span>{t('product.doYouHaveNotes')}</span>
-          </h3>
-        </div>
-        <div className="p-5">
-          <textarea
-            className="w-full text-sm p-4 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-4 focus:ring-secondary/10 focus:border-secondary/50 outline-none resize-none text-primary placeholder:text-gray-400 transition-all min-h-[120px] shadow-inner"
-            placeholder={t('product.addNotesHere')}
-            autoFocus
-          ></textarea>
-          <div className="flex justify-end mt-5 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-              className="rounded-xl px-5"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="solid"
-              onClick={() => setIsOpen(false)}
-              className="rounded-xl px-6 flex items-center gap-2 shadow-md hover:-translate-y-0.5"
-            >
-              {t('product.submitNotes')}
-              <Send className="w-4 h-4 ltr:rotate-0 rtl:rotate-180" />
-            </Button>
+        {!isSuccess && (
+          <div className="p-5 ltr:pr-12 rtl:pl-12 bg-gradient-to-br from-secondary/5 to-white border-b border-gray-100 relative">
+            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                <MessageSquareText className="w-4 h-4 text-secondary" />
+              </div>
+              <span>{t('product.doYouHaveNotes')}</span>
+            </h3>
           </div>
+        )}
+        <div className="p-5">
+          {isSuccess ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-primary mb-2">
+                  {translations('common.success') || 'Thank You!'}
+                </h4>
+                <p className="text-third text-sm">
+                  {translations('product.notesSubmittedSuccessMessage') || 'Your notes have been successfully submitted. We will review them shortly.'}
+                </p>
+              </div>
+              <Button variant="solid" onClick={() => setIsOpen(false)} className="rounded-xl px-8 mt-4">
+                {translations('common.close') || 'Close'}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {!user && (
+                <div className="flex flex-col gap-3 mb-4">
+                  <p className="text-xs text-third">{translations('product.guestDetails') || 'Please provide your details so we can assist you.'}</p>
+                  <input
+                    type="text"
+                    placeholder={(translations('product.fullName') || 'Full Name') + " *"}
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full text-sm p-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-secondary/20 outline-none text-primary"
+                  />
+                  <input
+                    type="tel"
+                    placeholder={(translations('product.phoneNumber') || 'Phone Number') + " *"}
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full text-sm p-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-secondary/20 outline-none text-primary"
+                  />
+                  <input
+                    type="email"
+                    placeholder={translations('product.emailOptional') || 'Email (Optional)'}
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full text-sm p-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-secondary/20 outline-none text-primary"
+                  />
+                </div>
+              )}
+
+              <textarea
+                className="w-full text-sm p-4 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-4 focus:ring-secondary/10 focus:border-secondary/50 outline-none resize-none text-primary placeholder:text-gray-400 transition-all min-h-[100px] shadow-inner"
+                placeholder={translations('product.addNotesHere')}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={isSubmitting}
+                autoFocus
+              ></textarea>
+
+
+              <div className="flex ltr:justify-end rtl:justify-start mt-2 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-xl px-5"
+                  disabled={isSubmitting}
+                >
+                  {translations('common.cancel')}
+                </Button>
+                <Button
+                  variant="solid"
+                  onClick={handleSubmit}
+                  isLoading={isSubmitting}
+                  className="rounded-xl px-6 flex items-center gap-2 shadow-md hover:-translate-y-0.5"
+                >
+                  {translations('product.submitNotes')}
+                  <Send className="w-4 h-4 rtl:rotate-y-180" />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </>
   );
 }
 
-function ProductPrice({ currentPrice, currentCompareAtPrice, discount, t, locale, className = "" }: any) {
+function ProductPrice(props: any) {
+  const { currentPrice, currentCompareAtPrice, discount, t, locale, className = '' } = props;
   return (
     <div className={cn("flex items-center gap-3 flex-wrap", className)}>
       <p className="text-2xl md:text-3xl font-bold text-primary">
@@ -126,9 +260,9 @@ function ProductPrice({ currentPrice, currentCompareAtPrice, discount, t, locale
             {formatPrice(currentCompareAtPrice, CURRENCY_CONFIG.code, locale)}
           </p>
           {discount > 0 && (
-             <Badge variant="sale">
-               {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, CURRENCY_CONFIG.code, locale) })}
-             </Badge>
+            <Badge variant="sale">
+              {t('product.save', { amount: formatPrice(currentCompareAtPrice - currentPrice, CURRENCY_CONFIG.code, locale) })}
+            </Badge>
           )}
         </>
       )}
@@ -206,30 +340,30 @@ export default function ProductPage() {
     if (requestedVariantId) {
       const match = product.variants.find(v => String(v.id) === requestedVariantId);
       if (match) {
-         targetOptions = { ...match.attributes };
+        targetOptions = { ...match.attributes };
       }
     }
 
     // 2. If no valid match from URL, try to find the first variant with stock > 0
     if (Object.keys(targetOptions).length === 0) {
-        let defaultVariant = product.variants.find(v => v.stock > 0);
-        // If no stock, just take the first variant
-        if (!defaultVariant) {
-            defaultVariant = product.variants[0];
-        }
-        if (defaultVariant) {
-            targetOptions = { ...defaultVariant.attributes };
-        }
+      let defaultVariant = product.variants.find(v => v.stock > 0);
+      // If no stock, just take the first variant
+      if (!defaultVariant) {
+        defaultVariant = product.variants[0];
+      }
+      if (defaultVariant) {
+        targetOptions = { ...defaultVariant.attributes };
+      }
     }
 
     // 3. Fill in single-value attributes that might be missing from the variant
     // This handles cases where implied global attributes (like "CPU: Intel") are not explicitly in the variant
     if (product.attributes) {
-        product.attributes.forEach(attr => {
-            if (!targetOptions[attr.name] && attr.values.length === 1) {
-                targetOptions[attr.name] = attr.values[0].value;
-            }
-        });
+      product.attributes.forEach(attr => {
+        if (!targetOptions[attr.name] && attr.values.length === 1) {
+          targetOptions[attr.name] = attr.values[0].value;
+        }
+      });
     }
 
     if (Object.keys(targetOptions).length > 0) {
@@ -269,14 +403,14 @@ export default function ProductPage() {
 
     // 1. If we have a selected variant with an image, try to find it
     if (selectedVariant?.image) {
-       const index = product.images.indexOf(selectedVariant.image);
-       if (index >= 0) return index;
+      const index = product.images.indexOf(selectedVariant.image);
+      if (index >= 0) return index;
     }
 
     // 2. Fallback: Find attribute that controls media (legacy behavior support if needed, but variant image is preferred)
     // Using variant image is safer as per new requirement "selected variant must appear its primary media group".
     // If no variant selected or it has no image, default to 0 (which is the global primary image due to sorting order).
-    
+
     return 0;
   }, [product, selectedVariant]);
 
@@ -324,10 +458,10 @@ export default function ProductPage() {
 
         Object.entries(selectedOptions).forEach(([key, val]) => {
           if (key === attributeName) return; // Skip the attribute we just changed
-          
+
           const aAttr = a.attributes[key];
           const bAttr = b.attributes[key];
-          
+
           if (aAttr === val || aAttr === undefined) scoreA++;
           if (bAttr === val || bAttr === undefined) scoreB++;
         });
@@ -337,13 +471,13 @@ export default function ProductPage() {
 
       // Use the attributes of the best matching variant, but preserve options not defined in the variant
       const mergedOptions = { ...newOptions, ...bestMatch.attributes };
-      
+
       // Also ensure any single-value global attributes are preserved if missing
       if (product.attributes) {
         product.attributes.forEach(attr => {
-           if (!mergedOptions[attr.name] && attr.values.length === 1) {
-               mergedOptions[attr.name] = attr.values[0].value;
-           }
+          if (!mergedOptions[attr.name] && attr.values.length === 1) {
+            mergedOptions[attr.name] = attr.values[0].value;
+          }
         });
       }
 
@@ -353,15 +487,15 @@ export default function ProductPage() {
 
     // Fallback: If no valid variant found even with other attribute changes, 
     // just set the option (user will see it as unavailable)
-    
+
     // Also fill in single-value attributes for the fallback case
     const finalOptions = { ...newOptions };
     if (product?.attributes) {
-        product.attributes.forEach(attr => {
-           if (!finalOptions[attr.name] && attr.values.length === 1) {
-               finalOptions[attr.name] = attr.values[0].value;
-           }
-        });
+      product.attributes.forEach(attr => {
+        if (!finalOptions[attr.name] && attr.values.length === 1) {
+          finalOptions[attr.name] = attr.values[0].value;
+        }
+      });
     }
 
     setSelectedOptions(finalOptions);
@@ -416,7 +550,7 @@ export default function ProductPage() {
   const discount = currentCompareAtPrice
     ? calculateDiscount(currentCompareAtPrice, currentPrice)
     : 0;
-  
+
   const galleryProps = {
     images: product.images,
     productName: product.name,
@@ -428,7 +562,7 @@ export default function ProductPage() {
   };
 
   const wishlistBtnProps = {
-      product, selectedVariant, toggleItem, isInWishlist, isItemLoading, t
+    product, selectedVariant, toggleItem, isInWishlist, isItemLoading, t
   };
 
   return (
@@ -445,29 +579,29 @@ export default function ProductPage() {
       {/* Product Details - Mobile Layout */}
       <div className="lg:hidden flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-           <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
+          <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
         </div>
 
         <ProductGallery
           {...galleryProps}
           wishlistButton={
-            <WishlistBtn 
-                {...wishlistBtnProps}
-                className={cn("shadow-sm shrink-0", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/80 backdrop-blur-sm")}
+            <WishlistBtn
+              {...wishlistBtnProps}
+              className={cn("shadow-sm shrink-0", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/80 backdrop-blur-sm")}
             />
           }
         />
 
         <div className="flex flex-col gap-5 mt-2">
-          <ProductPrice 
-            currentPrice={currentPrice} 
-            currentCompareAtPrice={currentCompareAtPrice} 
-            discount={discount} 
-            t={t} 
-            locale={locale} 
+          <ProductPrice
+            currentPrice={currentPrice}
+            currentCompareAtPrice={currentCompareAtPrice}
+            discount={discount}
+            t={t}
+            locale={locale}
           />
 
-          <ProductNotes t={t} />
+          <ProductNotes t={t} productId={product.id} />
 
           <ProductOptions
             attributes={(product.attributes || []).filter(a => a.attributeType !== 'spec_attribute')}
@@ -486,10 +620,10 @@ export default function ProductPage() {
           <ProductGallery
             {...galleryProps}
             wishlistButton={
-                <WishlistBtn 
-                    {...wishlistBtnProps}
-                    className={cn("shadow-lg hover:scale-110", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/90 backdrop-blur-sm")}
-                />
+              <WishlistBtn
+                {...wishlistBtnProps}
+                className={cn("shadow-lg hover:scale-110", !isInWishlist(product.id, selectedVariant ? parseInt(selectedVariant.id, 10) : null) && "bg-white/90 backdrop-blur-sm")}
+              />
             }
           />
         </div>
@@ -508,22 +642,22 @@ export default function ProductPage() {
             <ProductHeader product={product} selectedOptionsSummary={selectedOptionsSummary} t={t} />
           </div>
 
-          <ProductPrice 
-            currentPrice={currentPrice} 
-            currentCompareAtPrice={currentCompareAtPrice} 
-            discount={0 /* Badge handled above in desktop layout */} 
-            t={t} 
-            locale={locale} 
+          <ProductPrice
+            currentPrice={currentPrice}
+            currentCompareAtPrice={currentCompareAtPrice}
+            discount={0 /* Badge handled above in desktop layout */}
+            t={t}
+            locale={locale}
             className="items-baseline"
           />
 
-          <ProductNotes t={t} />
+          <ProductNotes t={t} productId={product.id} />
 
           <div
             className="text-third leading-relaxed prose max-w-none [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
-          
+
           {product.attributes && product.attributes.filter(a => a.attributeType !== 'spec_attribute').length > 0 && (
             <ProductOptions
               attributes={product.attributes.filter(a => a.attributeType !== 'spec_attribute')}
@@ -674,7 +808,7 @@ export default function ProductPage() {
         <section >
           <h2 className="text-2xl font-bold text-primary mb-1">{t('product.description')}</h2>
           <Card className="p-8">
-            <div 
+            <div
               className="prose max-w-none [&_h1]:text-primary [&_h2]:text-primary [&_h3]:text-primary [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
               dangerouslySetInnerHTML={{ __html: product.longDescription }}
             />
@@ -701,52 +835,52 @@ export default function ProductPage() {
         const hasDims = currentDimensions && (currentDimensions.weight || currentDimensions.length || currentDimensions.width || currentDimensions.height);
         return ((product.attributes && product.attributes.length > 0) || hasDims);
       })() && (
-        <section >
-          <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
-          <Card className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-              {product.attributes?.map((attr) => (
-                <div key={attr.name} className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
-                  <span className="text-third font-medium">{attr.name}</span>
-                  <span className="text-primary font-semibold">
-                      {attr.attributeType === 'spec_attribute' 
+          <section >
+            <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
+            <Card className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                {product.attributes?.map((attr) => (
+                  <div key={attr.name} className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
+                    <span className="text-third font-medium">{attr.name}</span>
+                    <span className="text-primary font-semibold">
+                      {attr.attributeType === 'spec_attribute'
                         ? attr.values.map(v => v.value).join(', ')
                         : (selectedOptions[attr.name] || attr.values.map(v => v.value).join(', '))}
-                  </span>
-                </div>
-              ))}
-              {currentDimensions && (
-                <>
-                  {currentDimensions.weight && (
-                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
-                      <span className="text-third font-medium">{t('product.dims.weight')}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.weight} kg</span>
-                    </div>
-                  )}
-                  {currentDimensions.length && (
-                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
-                      <span className="text-third font-medium">{t('product.dims.length')}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.length} cm</span>
-                    </div>
-                  )}
-                  {currentDimensions.width && (
-                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
-                      <span className="text-third font-medium">{t('product.dims.width')}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.width} cm</span>
-                    </div>
-                  )}
-                  {currentDimensions.height && (
-                    <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
-                      <span className="text-third font-medium">{t('product.dims.height')}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.height} cm</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
-        </section>
-      )}
+                    </span>
+                  </div>
+                ))}
+                {currentDimensions && (
+                  <>
+                    {currentDimensions.weight && (
+                      <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
+                        <span className="text-third font-medium">{t('product.dims.weight')}</span>
+                        <span className="text-primary font-semibold">{currentDimensions.weight} kg</span>
+                      </div>
+                    )}
+                    {currentDimensions.length && (
+                      <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
+                        <span className="text-third font-medium">{t('product.dims.length')}</span>
+                        <span className="text-primary font-semibold">{currentDimensions.length} cm</span>
+                      </div>
+                    )}
+                    {currentDimensions.width && (
+                      <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
+                        <span className="text-third font-medium">{t('product.dims.width')}</span>
+                        <span className="text-primary font-semibold">{currentDimensions.width} cm</span>
+                      </div>
+                    )}
+                    {currentDimensions.height && (
+                      <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
+                        <span className="text-third font-medium">{t('product.dims.height')}</span>
+                        <span className="text-primary font-semibold">{currentDimensions.height} cm</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
+          </section>
+        )}
 
       {/* Reviews Section */}
       <section>

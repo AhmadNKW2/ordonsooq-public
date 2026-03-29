@@ -90,7 +90,8 @@
     "secureCheckout": "دفع آمن",
     "min": "الأدنى",
     "max": "الأقصى",
-    "apply": "تطبيق"
+    "apply": "تطبيق",
+    "success": "نجاح"
   },
   "nav": {
     "categories": "الفئات",
@@ -410,7 +411,13 @@
     "sortPriceAsc": "السعر: من الأقل للأعلى",
     "sortPriceDesc": "السعر: من الأعلى للأقل",
     "sortNewest": "وصل حديثاً",
-    "sortRating": "الأعلى تقييماً"
+    "sortRating": "الأعلى تقييماً",
+    "notesSubmittedSuccessMessage": "تم إرسال ملاحظاتك بنجاح. سنقوم بمراجعتها قريباً.",
+    "guestDetails": "يرجى تقديم بياناتك لنتمكن من مساعدتك.",
+    "fullName": "الاسم الكامل",
+    "phoneNumber": "رقم الهاتف",
+    "emailOptional": "البريد الإلكتروني (اختياري)",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح."
   },
   "cart": {
     "title": "سلة التسوق",
