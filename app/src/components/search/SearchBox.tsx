@@ -9,10 +9,11 @@ import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui';
 
 export function SearchBox() {
+  const autocompleteMinChars = 3;
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
-  const { query, setQuery, suggestions, isLoading, isOpen, close } = useAutocomplete(2, 450);
+  const { query, setQuery, suggestions, isLoading, isOpen, close } = useAutocomplete(autocompleteMinChars, 450);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -84,7 +85,7 @@ export function SearchBox() {
       )}
 
       {/* Loading indicator */}
-      {isLoading && query.length >= 2 && (
+      {isLoading && query.trim().length >= autocompleteMinChars && (
         <div className="absolute top-full start-0 end-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-4 flex justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
         </div>

@@ -30,7 +30,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
 }
 
-export function useAutocomplete(minChars = 2, debounceMs = 450) {
+export function useAutocomplete(minChars = 3, debounceMs = 450) {
   const [query, setQuery]             = useState('');
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([]);
   const [isLoading, setIsLoading]     = useState(false);

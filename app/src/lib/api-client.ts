@@ -163,13 +163,35 @@ class ApiClient {
       throw new ApiError(response.status, String(message), payload);
     }
 
-    // Handle empty responses (204 No Content)
     const contentType = response.headers.get('content-type');
-    if (response.status === 204 || !contentType?.includes('application/json')) {
+    if (response.status === 204) {
       return {} as T;
     }
 
-    const jsonResponse = await response.json();
+    const rawResponse = await response.text().catch(() => '');
+    if (!rawResponse.trim()) {
+      return {} as T;
+    }
+
+    if (!contentType?.includes('json')) {
+      const message = this.baseUrl
+        ? `Expected JSON response from API for ${endpoint}, received ${contentType || 'unknown content type'}.`
+        : `Expected JSON response from API for ${endpoint}, received ${contentType || 'unknown content type'}. NEXT_PUBLIC_API_URL is not configured.`;
+
+      throw new ApiError(response.status, message, rawResponse.slice(0, 500));
+    }
+
+    let jsonResponse: unknown;
+
+    try {
+      jsonResponse = JSON.parse(rawResponse);
+    } catch {
+      throw new ApiError(
+        response.status,
+        `Received invalid JSON response from API for ${endpoint}.`,
+        rawResponse.slice(0, 500)
+      );
+    }
     
     // Unwrap the response if it has a 'data' property BUT NOT 'meta' (common API pattern)
     // If it has both 'data' and 'meta', keep the structure for pagination
@@ -177,7 +199,7 @@ class ApiClient {
       return jsonResponse.data as T;
     }
 
-    return jsonResponse;
+    return jsonResponse as T;
   }
 
   get<T>(endpoint: string, options?: RequestInit) {

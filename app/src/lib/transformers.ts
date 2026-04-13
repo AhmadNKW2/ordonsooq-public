@@ -41,6 +41,155 @@ function extractPrimaryImageUrl(primaryImage: unknown): string | null {
   return null;
 }
 
+function toFiniteNumber(value: unknown): number | undefined {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim() !== ''
+        ? Number(value)
+        : Number.NaN;
+
+  return Number.isFinite(numericValue) ? numericValue : undefined;
+}
+
+function buildDimensions(weight: unknown, length: unknown, width: unknown, height: unknown): ProductDimensions | undefined {
+  const dimensions: ProductDimensions = {
+    weight: toFiniteNumber(weight) != null ? String(toFiniteNumber(weight)) : undefined,
+    length: toFiniteNumber(length) != null ? String(toFiniteNumber(length)) : undefined,
+    width: toFiniteNumber(width) != null ? String(toFiniteNumber(width)) : undefined,
+    height: toFiniteNumber(height) != null ? String(toFiniteNumber(height)) : undefined,
+  };
+
+  return dimensions.weight || dimensions.length || dimensions.width || dimensions.height
+    ? dimensions
+    : undefined;
+}
+
+function getProductImages(product: ApiProduct): string[] {
+  const images: string[] = [];
+  const mediaGroups = product.media_groups ? Object.values(product.media_groups) : [];
+
+  mediaGroups.sort((a, b) => {
+    const aHasPrimary = a.media?.some((media) => media.is_primary);
+    const bHasPrimary = b.media?.some((media) => media.is_primary);
+    if (aHasPrimary && !bHasPrimary) return -1;
+    if (!aHasPrimary && bHasPrimary) return 1;
+    return 0;
+  });
+
+  mediaGroups.forEach((group) => {
+    if (!Array.isArray(group.media)) return;
+
+    const sortedMedia = [...group.media].sort((a, b) => {
+      if (a.is_group_primary && !b.is_group_primary) return -1;
+      if (!a.is_group_primary && b.is_group_primary) return 1;
+      return 0;
+    });
+
+    sortedMedia.forEach((media) => {
+      if (media.url && !images.includes(media.url)) {
+        images.push(media.url);
+      }
+    });
+  });
+
+  if (Array.isArray(product.media)) {
+    const flatMedia = [...product.media].sort((a, b) => {
+      const primaryDelta = Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary));
+      if (primaryDelta !== 0) return primaryDelta;
+
+      const leftOrder = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+      return leftOrder - rightOrder;
+    });
+
+    flatMedia.forEach((media) => {
+      const url = media.url?.trim() || media.image?.url?.trim();
+      if (url && !images.includes(url)) {
+        images.push(url);
+      }
+    });
+  }
+
+  const primaryImage = extractPrimaryImageUrl((product as { primary_image?: unknown }).primary_image);
+  if (primaryImage && !images.includes(primaryImage)) {
+    images.unshift(primaryImage);
+  }
+
+  return images.length > 0 ? images : ['/placeholder.svg'];
+}
+
+function getProductPricing(product: ApiProduct): { actualPrice: number; compareAtPrice?: number } {
+  const prices: { price: number; sale_price?: number }[] = [];
+
+  if (product.price_groups) {
+    Object.values(product.price_groups).forEach((priceGroup) => {
+      const price = toFiniteNumber(priceGroup.price);
+      const salePrice = toFiniteNumber(priceGroup.sale_price);
+
+      if (price != null) {
+        prices.push({
+          price,
+          sale_price: salePrice,
+        });
+      }
+    });
+  }
+
+  if (prices.length > 0) {
+    const lowestPrice = prices.sort((left, right) => {
+      const leftEffectivePrice = left.sale_price ?? left.price;
+      const rightEffectivePrice = right.sale_price ?? right.price;
+      return leftEffectivePrice - rightEffectivePrice;
+    })[0];
+
+    return {
+      actualPrice: lowestPrice.sale_price ?? lowestPrice.price,
+      compareAtPrice: lowestPrice.sale_price != null && lowestPrice.sale_price < lowestPrice.price
+        ? lowestPrice.price
+        : undefined,
+    };
+  }
+
+  const basePrice = toFiniteNumber(product.price) ?? 0;
+  const salePrice = toFiniteNumber(product.sale_price);
+
+  if (salePrice != null && salePrice > 0 && salePrice < basePrice) {
+    return {
+      actualPrice: salePrice,
+      compareAtPrice: basePrice,
+    };
+  }
+
+  return {
+    actualPrice: basePrice,
+    compareAtPrice: undefined,
+  };
+}
+
+function getProductDimensions(product: ApiProduct, weightGroupId?: string): ProductDimensions | undefined {
+  if (product.weight_groups) {
+    const weightGroup = weightGroupId
+      ? product.weight_groups[weightGroupId]
+      : Object.values(product.weight_groups)[0];
+
+    if (weightGroup) {
+      const groupDimensions = buildDimensions(
+        weightGroup.weight,
+        weightGroup.dimensions?.length,
+        weightGroup.dimensions?.width,
+        weightGroup.dimensions?.height,
+      );
+
+      if (groupDimensions) {
+        return groupDimensions;
+      }
+    }
+  }
+
+  return buildDimensions(product.weight, product.length, product.width, product.height);
+}
+
 /**
  * Transform API Product to Frontend Product
  */
@@ -48,109 +197,72 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   const product = apiProduct as ApiProduct;
 
   // 1. Images
-  let images: string[] = [];
-  const mediaGroups = product.media_groups ? Object.values(product.media_groups) : [];
-  
-  // Sort media groups: group with is_primary image first
-  mediaGroups.sort((a, b) => {
-    const aHasPrimary = a.media?.some(m => m.is_primary);
-    const bHasPrimary = b.media?.some(m => m.is_primary);
-    if (aHasPrimary && !bHasPrimary) return -1;
-    if (!aHasPrimary && bHasPrimary) return 1;
-    return 0;
-  });
-
-  mediaGroups.forEach(group => {
-     if (Array.isArray(group.media)) {
-        // Sort within group: is_group_primary first
-        const sortedMedia = [...group.media].sort((a, b) => {
-           if (a.is_group_primary && !b.is_group_primary) return -1;
-           if (!a.is_group_primary && b.is_group_primary) return 1;
-           return 0;
-        });
-
-        sortedMedia.forEach(m => {
-           if (m.url && !images.includes(m.url)) {
-              images.push(m.url);
-           }
-        });
-     }
-  });
-
-  // Fallback to placeholder
-  if (images.length === 0) {
-     images = ['/placeholder.svg'];
-  }
+  const images = getProductImages(product);
 
   // 2. Price
-  // Calculate default price range or start price from price_groups
-  let actualPrice = 0;
-  let compareAtPrice: number | undefined = undefined;
-  
-  // Collect all prices from groups
-  const prices: { price: number, sale_price?: number }[] = [];
-  if (product.price_groups) {
-    Object.values(product.price_groups).forEach(pg => {
-       const p = parseFloat(String(pg.price));
-       const s = pg.sale_price ? parseFloat(String(pg.sale_price)) : undefined;
-       prices.push({ price: p, sale_price: s });
-    });
-  }
-
-  if (prices.length > 0) {
-      // Use the lowest price for display
-      const lowestPrice = prices.sort((a, b) => {
-         const priceA = a.sale_price ?? a.price;
-         const priceB = b.sale_price ?? b.price;
-         return priceA - priceB;
-      })[0];
-      
-      actualPrice = lowestPrice.sale_price ?? lowestPrice.price;
-      compareAtPrice = lowestPrice.sale_price ? lowestPrice.price : undefined;
-  }
+  const { actualPrice, compareAtPrice } = getProductPricing(product);
 
   // 3. Attributes
   const attributes: ProductAttribute[] = [];
   const attributeIdToName = new Map<number, string>();
   const attributeIdToValuesMap = new Map<number, Map<number, string>>(); 
 
-  if (product.attributes) {
-    Object.entries(product.attributes).forEach(([key, attrGroup]) => {
-       const attrId = parseInt(key);
-       const attrName = getLocalizedText(attrGroup.name_en, attrGroup.name_ar, locale);
-       attributeIdToName.set(attrId, attrName);
+  const mapAttributeCollection = (
+    collection: ApiProduct['attributes'] | ApiProduct['specifications'],
+    fallbackAttributeType: 'variant_attribute' | 'spec_attribute',
+  ) => {
+    if (!collection) return;
 
-       const values: ProductAttributeValue[] = [];
-       const valuesMap = new Map<number, string>();
+    Object.entries(collection).forEach(([key, attrGroup]) => {
+      const attrId = Number(key);
+      const attrName = getLocalizedText(attrGroup.name_en, attrGroup.name_ar, locale);
+      if (!attrName) return;
 
-       if (attrGroup.values) {
-         Object.entries(attrGroup.values).forEach(([valKey, valData]) => {
-             const valId = parseInt(valKey);
-             const valName = getLocalizedText(valData.name_en, valData.name_ar, locale);
-             valuesMap.set(valId, valName);
-             
-             values.push({
-               value: valName,
-               meta: valData.color_code ?? undefined
-             });
-         });
-       }
+      if (Number.isFinite(attrId)) {
+        attributeIdToName.set(attrId, attrName);
+      }
 
-       attributeIdToValuesMap.set(attrId, valuesMap);
+      const values: ProductAttributeValue[] = [];
+      const valuesMap = new Map<number, string>();
 
-       attributes.push({
-         id: key,
-         name: attrName,
-         values: values,
-         isColor: attrName.toLowerCase().includes('color') || attrName.includes('اللون') || Object.values(attrGroup.values || {}).some(v => !!v.color_code),
-         controlsPricing: false, 
-         controlsMedia: false, 
-         controlsWeight: false,
-         attributeType: attrGroup.attribute_type,
-         listSeparately: attrGroup.list_separately
-       });
+      Object.entries(attrGroup.values || {}).forEach(([valKey, valData]) => {
+        const valId = Number(valKey);
+        const valName = getLocalizedText(valData.name_en, valData.name_ar, locale);
+        if (!valName) return;
+
+        if (Number.isFinite(valId)) {
+          valuesMap.set(valId, valName);
+        }
+
+        values.push({
+          value: valName,
+          meta: valData.color_code ?? undefined,
+        });
+      });
+
+      if (Number.isFinite(attrId)) {
+        attributeIdToValuesMap.set(attrId, valuesMap);
+      }
+
+      attributes.push({
+        id: key,
+        name: attrName,
+        values,
+        isColor:
+          attrName.toLowerCase().includes('color') ||
+          attrName.includes('اللون') ||
+          Object.values(attrGroup.values || {}).some((value) => !!value.color_code),
+        controlsPricing: false,
+        controlsMedia: false,
+        controlsWeight: false,
+        attributeType: attrGroup.attribute_type ?? fallbackAttributeType,
+        listSeparately: attrGroup.list_separately ?? false,
+      });
     });
-  }
+  };
+
+  mapAttributeCollection(product.attributes, 'variant_attribute');
+  mapAttributeCollection(product.specifications, 'spec_attribute');
   
   // 4. Stock
   // The API returns is_out_of_stock boolean instead of a quantity field.
@@ -175,7 +287,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
   }
 
   // 5. Variants
-  const variants = product.variants?.filter(v => v.is_active !== false).map(v => {
+    const variants = product.variants?.filter(v => v.is_active !== false).map(v => {
      // Resolve attributes
      const variantAttributes: Record<string, string> = {};
      if (v.attribute_values) {
@@ -191,14 +303,14 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
      }
 
      // Resolve Price
-     let vPrice = 0;
+      let vPrice = actualPrice;
      let vComparePrice: number | undefined = undefined;
      if (product.price_groups && v.price_group_id && product.price_groups[v.price_group_id]) {
         const pg = product.price_groups[v.price_group_id];
-        const p = parseFloat(String(pg.price));
-        const s = pg.sale_price ? parseFloat(String(pg.sale_price)) : undefined;
+        const p = toFiniteNumber(pg.price) ?? 0;
+        const s = toFiniteNumber(pg.sale_price);
         vPrice = s ?? p;
-        vComparePrice = s ? p : undefined;
+        vComparePrice = s != null && s < p ? p : undefined;
      }
 
      // Resolve Image
@@ -212,18 +324,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
      }
 
      // Resolve Dimensions
-     let vDimensions: ProductDimensions | undefined = undefined;
-     if (product.weight_groups && v.weight_group_id && product.weight_groups[v.weight_group_id]) {
-         const wg = product.weight_groups[v.weight_group_id];
-         const vDims = {
-             weight: wg.weight != null ? String(wg.weight) : undefined,
-             length: wg.dimensions?.length != null ? String(wg.dimensions.length) : undefined,
-             width: wg.dimensions?.width != null ? String(wg.dimensions.width) : undefined,
-             height: wg.dimensions?.height != null ? String(wg.dimensions.height) : undefined,
-         };
-         // Only assign if at least one dimension has a real value
-         if (vDims.weight || vDims.length || vDims.width || vDims.height) vDimensions = vDims;
-     }
+     const vDimensions = getProductDimensions(product, v.weight_group_id);
 
      return {
          id: String(v.id),
@@ -372,22 +473,7 @@ export function transformProduct(apiProduct: ApiProduct | ProductDetail, locale:
     variants: variants,
     hasVariants: variants.length > 0,
     attributes: attributes,
-    dimensions: (() => {
-        if (product.weight_groups) {
-            const firstWg = Object.values(product.weight_groups)[0];
-             if (firstWg) {
-                 const dims = {
-                    weight: firstWg.weight != null ? String(firstWg.weight) : undefined,
-                    length: firstWg.dimensions?.length != null ? String(firstWg.dimensions.length) : undefined,
-                    width: firstWg.dimensions?.width != null ? String(firstWg.dimensions.width) : undefined,
-                    height: firstWg.dimensions?.height != null ? String(firstWg.dimensions.height) : undefined,
-                 };
-                 // Only return dims object if at least one field has a real value
-                 if (dims.weight || dims.length || dims.width || dims.height) return dims;
-             }
-        }
-        return undefined;
-    })(),
+    dimensions: getProductDimensions(product),
     stock: stock,
     sku: product.sku,
     rating: parseFloat(String(product.average_rating)),

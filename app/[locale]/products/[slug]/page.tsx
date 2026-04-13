@@ -16,6 +16,7 @@ import { CURRENCY_CONFIG } from "@/lib/constants";
 import { ProductGallery, ProductsSection, ProductOptions, ProductReviews } from "@/components";
 import { Badge, Card, IconButton, Breadcrumb, Modal, Button } from "@/components/ui";
 import { ProductActions } from "./product-actions";
+import type { ProductDetail as ApiProductDetail, ProductLinkedProduct } from "@/types/api.types";
 import { toast } from "sonner";
 
 // Helper Components to reduce duplication
@@ -24,13 +25,19 @@ function ProductHeader({ product, selectedOptionsSummary, t }: { product: any, s
     <>
       {product.brand && (
         <div className="flex items-center gap-2 mb-2">
-          <Link
-            href={`/brands/${product.brand.slug}`}
-            className="flex items-center gap-1 text-sm text-secondary font-medium ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all"
-          >
-            {product.brand.name}
-            <ChevronRight size={16} className="rtl:rotate-180" />
-          </Link>
+          {product.brand.slug ? (
+            <Link
+              href={`/brands/${product.brand.slug}`}
+              className="flex items-center gap-1 text-sm text-secondary font-medium ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all"
+            >
+              {product.brand.name}
+              <ChevronRight size={16} className="rtl:rotate-180" />
+            </Link>
+          ) : (
+            <span className="flex items-center gap-1 text-sm text-secondary font-medium">
+              {product.brand.name}
+            </span>
+          )}
         </div>
       )}
       <h1 className="text-2xl md:text-3xl font-bold text-primary leading-11">
@@ -151,7 +158,7 @@ function ProductNotes({ t, productId }: { t: any, productId: string | number }) 
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} animation="zoom" className="max-w-md w-full p-0 overflow-hidden">
         {!isSuccess && (
-          <div className="p-5 ltr:pr-12 rtl:pl-12 bg-gradient-to-br from-secondary/5 to-white border-b border-gray-100 relative">
+          <div className="p-5 ltr:pr-12 rtl:pl-12 bg-linear-to-br from-secondary/5 to-white border-b border-gray-100 relative">
             <h3 className="text-lg font-bold text-primary flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
                 <MessageSquareText className="w-4 h-4 text-secondary" />
@@ -211,7 +218,7 @@ function ProductNotes({ t, productId }: { t: any, productId: string | number }) 
               )}
 
               <textarea
-                className="w-full text-sm p-4 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-4 focus:ring-secondary/10 focus:border-secondary/50 outline-none resize-none text-primary placeholder:text-gray-400 transition-all min-h-[100px] shadow-inner"
+                className="w-full text-sm p-4 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:ring-4 focus:ring-secondary/10 focus:border-secondary/50 outline-none resize-none text-primary placeholder:text-gray-400 transition-all min-h-25 shadow-inner"
                 placeholder={translations('product.addNotesHere')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -289,6 +296,148 @@ function WishlistBtn({ product, selectedVariant, toggleItem, isInWishlist, isIte
   );
 }
 
+type LinkedProductChoice = {
+  id: number;
+  slug: string;
+  sku: string;
+  name: string;
+  label: string;
+  isCurrent: boolean;
+};
+
+function sortChoices<T extends { label: string; name: string; id: number }>(choices: T[], locale: Locale) {
+  const collator = new Intl.Collator(locale === 'ar' ? 'ar' : 'en', {
+    numeric: true,
+    sensitivity: 'base',
+  });
+
+  return [...choices].sort((left, right) => {
+    const labelComparison = collator.compare(left.label || left.name, right.label || right.name);
+    if (labelComparison !== 0) return labelComparison;
+
+    const nameComparison = collator.compare(left.name, right.name);
+    if (nameComparison !== 0) return nameComparison;
+
+    return left.id - right.id;
+  });
+}
+
+function getLocalizedApiProductName(
+  product: Pick<ApiProductDetail, 'name_en' | 'name_ar'> | ProductLinkedProduct,
+  locale: Locale,
+) {
+  if (locale === 'ar') {
+    return product.name_ar || product.name_en || '';
+  }
+
+  return product.name_en || product.name_ar || '';
+}
+
+function getLongestCommonPrefix(values: string[]) {
+  if (values.length === 0) return '';
+
+  let prefix = values[0];
+
+  for (const value of values.slice(1)) {
+    let index = 0;
+    while (index < prefix.length && index < value.length && prefix[index] === value[index]) {
+      index += 1;
+    }
+    prefix = prefix.slice(0, index);
+    if (!prefix) break;
+  }
+
+  return prefix;
+}
+
+function getLinkedProductLabel(name: string, commonPrefix: string) {
+  const normalizedName = name.trim();
+  if (!normalizedName) return '';
+
+  const trimmedPrefix = commonPrefix.trimEnd();
+  if (!trimmedPrefix || trimmedPrefix.length < 8 || !normalizedName.startsWith(trimmedPrefix)) {
+    return normalizedName;
+  }
+
+  const candidate = normalizedName
+    .slice(trimmedPrefix.length)
+    .replace(/^[\s\-–—:|/]+/, '')
+    .trim();
+
+  return candidate && candidate.length < normalizedName.length ? candidate : normalizedName;
+}
+
+function buildLinkedProductChoices(productData: ApiProductDetail, locale: Locale): LinkedProductChoice[] {
+  const currentChoice = {
+    id: productData.id,
+    slug: productData.slug,
+    sku: productData.sku,
+    name: getLocalizedApiProductName(productData, locale),
+    isCurrent: true,
+  };
+
+  const linkedChoices = (productData.linked_products || []).map((linkedProduct) => ({
+    id: linkedProduct.id,
+    slug: linkedProduct.slug,
+    sku: linkedProduct.sku,
+    name: getLocalizedApiProductName(linkedProduct, locale),
+    isCurrent: false,
+  }));
+
+  const allChoices = [currentChoice, ...linkedChoices];
+  const commonPrefix = getLongestCommonPrefix(allChoices.map((choice) => choice.name));
+
+  return sortChoices(allChoices.map((choice) => ({
+    ...choice,
+    label: getLinkedProductLabel(choice.name, commonPrefix),
+  })), locale);
+}
+
+function LinkedProductChoices({ title, groupName, choices }: { title: string; groupName?: string; choices: LinkedProductChoice[] }) {
+  if (choices.length <= 1) return null;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {groupName ? (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-third">{title}</p>
+          <h3 className="font-semibold text-primary text-sm">{groupName}</h3>
+        </div>
+      ) : (
+        <h3 className="font-semibold text-primary text-sm">{title}</h3>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {choices.map((choice) => {
+          const sharedClassName = "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all";
+
+          if (choice.isCurrent) {
+            return (
+              <span
+                key={choice.id}
+                title={choice.name}
+                className={`${sharedClassName} border-secondary bg-secondary/8 text-secondary`}
+              >
+                {choice.label}
+              </span>
+            );
+          }
+
+          return (
+            <Link
+              key={choice.id}
+              href={`/products/${choice.slug}`}
+              title={choice.name}
+              className={`${sharedClassName} border-gray-200 bg-white text-primary hover:border-secondary/60 hover:text-secondary`}
+            >
+              {choice.label}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductPage() {
   const locale = useLocale() as Locale;
   const t = useTranslations();
@@ -325,6 +474,23 @@ export default function ProductPage() {
     return relatedProductsRaw.filter((p) => p.id !== product.id).slice(0, 4);
   }, [relatedProductsRaw, product]);
 
+  const linkedProductChoices = useMemo(() => {
+    if (!productData) return [];
+    return buildLinkedProductChoices(productData, locale);
+  }, [productData, locale]);
+
+  const variantAttributes = useMemo(() => {
+    return (product?.attributes || []).filter((attribute) => attribute.attributeType !== 'spec_attribute');
+  }, [product?.attributes]);
+
+  const linkedOptionsGroupName = useMemo(() => {
+    return variantAttributes.find((attribute) => attribute.name.trim().length > 0)?.name;
+  }, [variantAttributes]);
+
+  const selectableAttributes = useMemo(() => {
+    return variantAttributes.filter((attribute) => attribute.values.length > 0);
+  }, [variantAttributes]);
+
   // State for selected options
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -358,8 +524,8 @@ export default function ProductPage() {
 
     // 3. Fill in single-value attributes that might be missing from the variant
     // This handles cases where implied global attributes (like "CPU: Intel") are not explicitly in the variant
-    if (product.attributes) {
-      product.attributes.forEach(attr => {
+    if (variantAttributes.length > 0) {
+      variantAttributes.forEach(attr => {
         if (!targetOptions[attr.name] && attr.values.length === 1) {
           targetOptions[attr.name] = attr.values[0].value;
         }
@@ -370,7 +536,7 @@ export default function ProductPage() {
       setSelectedOptions(targetOptions);
     }
     setHasInitialized(true);
-  }, [product?.variants, product?.attributes, requestedVariantId, hasInitialized]);
+  }, [product?.variants, requestedVariantId, hasInitialized, variantAttributes]);
 
   // Find matching variant
   const selectedVariant = useMemo(() => {
@@ -384,10 +550,9 @@ export default function ProductPage() {
   }, [product?.variants, selectedOptions]);
 
   const selectedOptionsSummary = useMemo(() => {
-    if (!product?.attributes || product.attributes.length === 0) return "";
+    if (selectableAttributes.length === 0) return "";
 
-    const parts = product.attributes
-      .filter(attr => attr.attributeType !== 'spec_attribute')
+    const parts = selectableAttributes
       .map((attr) => {
         const value = selectedOptions[attr.name];
         return value ? `${attr.name}: ${value}` : null;
@@ -395,6 +560,13 @@ export default function ProductPage() {
       .filter(Boolean) as string[];
 
     return parts.join(" • ");
+  }, [selectableAttributes, selectedOptions]);
+
+  const specificationAttributes = useMemo(() => {
+    return (product?.attributes || []).filter((attribute) => {
+      if (attribute.values.length > 0) return true;
+      return Boolean(selectedOptions[attribute.name]);
+    });
   }, [product?.attributes, selectedOptions]);
 
   // Determine which image index to show
@@ -473,8 +645,8 @@ export default function ProductPage() {
       const mergedOptions = { ...newOptions, ...bestMatch.attributes };
 
       // Also ensure any single-value global attributes are preserved if missing
-      if (product.attributes) {
-        product.attributes.forEach(attr => {
+      if (variantAttributes.length > 0) {
+        variantAttributes.forEach(attr => {
           if (!mergedOptions[attr.name] && attr.values.length === 1) {
             mergedOptions[attr.name] = attr.values[0].value;
           }
@@ -490,8 +662,8 @@ export default function ProductPage() {
 
     // Also fill in single-value attributes for the fallback case
     const finalOptions = { ...newOptions };
-    if (product?.attributes) {
-      product.attributes.forEach(attr => {
+    if (variantAttributes.length > 0) {
+      variantAttributes.forEach(attr => {
         if (!finalOptions[attr.name] && attr.values.length === 1) {
           finalOptions[attr.name] = attr.values[0].value;
         }
@@ -565,13 +737,17 @@ export default function ProductPage() {
     product, selectedVariant, toggleItem, isInWishlist, isItemLoading, t
   };
 
+  const categoryHref = product.category.slug ? `/categories/${product.category.slug}` : undefined;
+  const vendorHref = product.vendor?.slug ? `/vendors/${product.vendor.slug}` : undefined;
+  const brandHref = product.brand?.slug ? `/brands/${product.brand.slug}` : undefined;
+
   return (
     <>
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
           { label: t('nav.products'), href: "/products" },
-          { label: product.category.name, href: `/categories/${product.category.slug}` },
+          ...(categoryHref ? [{ label: product.category.name, href: categoryHref }] : [{ label: product.category.name }]),
           { label: product.name }
         ]}
       />
@@ -603,12 +779,20 @@ export default function ProductPage() {
 
           <ProductNotes t={t} productId={product.id} />
 
-          <ProductOptions
-            attributes={(product.attributes || []).filter(a => a.attributeType !== 'spec_attribute')}
-            selectedOptions={selectedOptions}
-            onChange={handleOptionChange}
-            isOptionDisabled={isOptionDisabled}
+          <LinkedProductChoices
+            title={t('product.chooseOptions')}
+            groupName={linkedOptionsGroupName}
+            choices={linkedProductChoices}
           />
+
+          {selectableAttributes.length > 0 && (
+            <ProductOptions
+              attributes={selectableAttributes}
+              selectedOptions={selectedOptions}
+              onChange={handleOptionChange}
+              isOptionDisabled={isOptionDisabled}
+            />
+          )}
 
         </div>
       </div>
@@ -653,14 +837,20 @@ export default function ProductPage() {
 
           <ProductNotes t={t} productId={product.id} />
 
+          <LinkedProductChoices
+            title={t('product.chooseOptions')}
+            groupName={linkedOptionsGroupName}
+            choices={linkedProductChoices}
+          />
+
           <div
             className="text-third leading-relaxed prose max-w-none [&_p]:text-third [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:marker:text-third"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
 
-          {product.attributes && product.attributes.filter(a => a.attributeType !== 'spec_attribute').length > 0 && (
+          {selectableAttributes.length > 0 && (
             <ProductOptions
-              attributes={product.attributes.filter(a => a.attributeType !== 'spec_attribute')}
+              attributes={selectableAttributes}
               selectedOptions={selectedOptions}
               onChange={handleOptionChange}
               isOptionDisabled={isOptionDisabled}
@@ -690,16 +880,22 @@ export default function ProductPage() {
                 )}
                 <div>
                   <p className="text-xs text-third">{t('product.soldBy')}</p>
-                  <a
-                    href={`/vendors/${product.vendor?.slug || 'ordonsooq'}`}
-                    className="font-semibold text-primary hover:text-secondary ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all flex items-center gap-1"
-                  >
-                    {product.vendor?.name || "OrdonSooq"}
-                    <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-                  </a>
+                  {vendorHref ? (
+                    <Link
+                      href={vendorHref}
+                      className="font-semibold text-primary hover:text-secondary ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all flex items-center gap-1"
+                    >
+                      {product.vendor?.name || "OrdonSooq"}
+                      <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-primary flex items-center gap-1">
+                      {product.vendor?.name || "OrdonSooq"}
+                    </span>
+                  )}
                   {product.vendor && (
                     <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3 h-3 text-secondary text-secondary" />
+                      <Star className="w-3 h-3 text-secondary" />
                       <span className="text-xs text-third">
                         {product.vendor.rating} {t('product.reviewCount', { count: product.vendor.reviewCount })}
                       </span>
@@ -754,22 +950,36 @@ export default function ProductPage() {
           <Card className="p-4">
             <div className="text-sm text-third flex flex-col gap-2">
               <p>{t('product.sku')}: <span className="text-primary">{currentSku}</span></p>
-              <p>{t('product.category')}: <a href={`/categories/${product.category.slug}`} className="text-primary hover:underline">{product.category.name}</a></p>
+              <p>
+                {t('product.category')}: {categoryHref ? (
+                  <Link href={categoryHref} className="text-primary hover:underline">{product.category.name}</Link>
+                ) : (
+                  <span className="text-primary">{product.category.name}</span>
+                )}
+              </p>
               {product.tags.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <span>{t('product.tags')}:</span>
                   {product.tags.map((tag) => (
-                    <a
+                    <Link
                       key={tag}
-                      href={`/products?tag=${tag}`}
+                      href={`/products?tag=${encodeURIComponent(tag)}`}
                       className="text-primary hover:underline"
                     >
                       {tag}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
-              <p>{t('product.brand')}: <a href={`/brands/${product.brand?.slug}`} className="text-primary hover:underline">{product.brand?.name}</a></p>
+              {product.brand && (
+                <p>
+                  {t('product.brand')}: {brandHref ? (
+                    <Link href={brandHref} className="text-primary hover:underline">{product.brand.name}</Link>
+                  ) : (
+                    <span className="text-primary">{product.brand.name}</span>
+                  )}
+                </p>
+              )}
 
             </div>
           </Card>
@@ -833,13 +1043,13 @@ export default function ProductPage() {
       {/* Specifications Section */}
       {(() => {
         const hasDims = currentDimensions && (currentDimensions.weight || currentDimensions.length || currentDimensions.width || currentDimensions.height);
-        return ((product.attributes && product.attributes.length > 0) || hasDims);
+        return (specificationAttributes.length > 0 || hasDims);
       })() && (
           <section >
             <h2 className="text-2xl font-bold text-primary mb-1 ">{t('product.specifications')}</h2>
             <Card className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                {product.attributes?.map((attr) => (
+                {specificationAttributes.map((attr) => (
                   <div key={attr.name} className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                     <span className="text-third font-medium">{attr.name}</span>
                     <span className="text-primary font-semibold">

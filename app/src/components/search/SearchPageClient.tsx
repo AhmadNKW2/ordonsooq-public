@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useSearchFilters } from '@/lib/search/use-search-params';
-import { useSearch } from '@/lib/search/use-search';
+import { useInfiniteSearchProducts } from '@/lib/search/use-search';
 import { ProductFilters, FloatingFilterSort } from '@/components/products';
 import type { FilterState } from '@/components/products/product-filters';
 import { SearchResults } from './SearchResults';
-import { Pagination } from './Pagination';
-import { Card, Sheet, Select } from '@/components/ui';
+import { Button, Card, Sheet, Select } from '@/components/ui';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SearchResponse, SearchFilters, SortOption } from '@/lib/search/types';
@@ -76,13 +75,67 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   };
 
   // Merge URL filters with current sort key
-  const searchFilters = useMemo<SearchFilters>(() => ({
-    ...filters,
+  const searchFilters = useMemo<Omit<SearchFilters, 'page'>>(() => ({
+    q: filters.q || initialFilters.q,
+    category_ids: filters.category_ids,
+    category: filters.category,
+    subcategory: filters.subcategory,
+    brand_id: filters.brand_id,
+    brand: filters.brand,
+    vendor_id: filters.vendor_id,
+    attrs: filters.attrs,
+    min_price: filters.min_price,
+    max_price: filters.max_price,
     sort_by: SORT_MAP[sortKey] as SortOption,
-  }), [filters, sortKey]);
+    per_page: initialFilters.per_page ?? 20,
+  }), [filters, initialFilters.per_page, initialFilters.q, sortKey]);
 
-  const { data, isLoading } = useSearch(searchFilters, initialData);
-  const results = data ?? initialData;
+  const initialSearchFilters = useMemo<Omit<SearchFilters, 'page'>>(() => ({
+    q: initialFilters.q,
+    category_ids: initialFilters.category_ids,
+    category: initialFilters.category,
+    subcategory: initialFilters.subcategory,
+    brand_id: initialFilters.brand_id,
+    brand: initialFilters.brand,
+    vendor_id: initialFilters.vendor_id,
+    attrs: initialFilters.attrs,
+    min_price: initialFilters.min_price,
+    max_price: initialFilters.max_price,
+    sort_by: initialFilters.sort_by ?? 'popularity_score:desc',
+    per_page: initialFilters.per_page ?? 20,
+  }), [initialFilters]);
+
+  const shouldUseInitialData = useMemo(() => {
+    if (!initialData) return false;
+    return JSON.stringify(searchFilters) === JSON.stringify(initialSearchFilters);
+  }, [initialData, initialSearchFilters, searchFilters]);
+
+  const initialInfiniteData = useMemo(() => {
+    if (!initialData || !shouldUseInitialData) return undefined;
+
+    return {
+      pages: [initialData],
+      pageParams: [initialData.page ?? 1],
+    };
+  }, [initialData, shouldUseInitialData]);
+
+  const {
+    data: infiniteData,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteSearchProducts(searchFilters, {
+    enabled: Boolean(searchFilters.q?.trim()),
+    initialData: initialInfiniteData,
+  });
+
+  const pages = infiniteData?.pages ?? [];
+  const results = pages[0] ?? (shouldUseInitialData ? initialData : null);
+  const resultHits = useMemo(
+    () => pages.flatMap((page) => page.hits ?? []),
+    [pages]
+  );
 
   const activeFiltersCount =
     filterState.categories.length +
@@ -201,13 +254,19 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
             </span>
           </div>
 
-          <SearchResults hits={results?.hits ?? []} isLoading={isLoading} />
-          {results && results.total_pages > 1 && (
-            <Pagination
-              page={results.page}
-              totalPages={results.total_pages}
-              onPageChange={setPage}
-            />
+          <SearchResults hits={resultHits} isLoading={isLoading && resultHits.length === 0} />
+
+          {hasNextPage && (
+            <div className="mt-10 flex justify-center">
+              <Button
+                onClick={() => void fetchNextPage()}
+                isLoading={isFetchingNextPage}
+                variant="outline"
+                size="lg"
+              >
+                {tCommon('loadMoreProducts')}
+              </Button>
+            </div>
           )}
         </main>
       </div>

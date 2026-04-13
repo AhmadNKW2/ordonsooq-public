@@ -290,7 +290,14 @@ export function AuthSocialButtons() {
     const t = useTranslations("auth");
 
     const handleOAuth = (path: string) => {
-        window.location.href = `${process.env.NEXT_PUBLIC_API_URL}${path}`;
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+
+        if (!apiBaseUrl) {
+            console.error("NEXT_PUBLIC_API_URL is not configured.");
+            return;
+        }
+
+        window.location.href = `${apiBaseUrl}${path}`;
     };
 
     return (

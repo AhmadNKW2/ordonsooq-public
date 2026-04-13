@@ -59,6 +59,9 @@ export type ProductVendor = {
 export type ProductMedia = {
   id: number;
   url?: string;
+  type?: string | null;
+  alt_text?: string | null;
+  sort_order?: number | null;
   image?: {
     id: number;
     url: string;
@@ -96,17 +99,17 @@ export type ProductWeight = {
 
 
 export type ProductAttributeValue = {
-  name_en: string;
-  name_ar: string;
-  color_code: string | null;
+  name_en?: string | null;
+  name_ar?: string | null;
+  color_code?: string | null;
 };
 
 export type ProductAttributeGroup = {
-  name_en: string;
-  name_ar: string;
-  attribute_type: 'variant_attribute' | 'spec_attribute';
-  list_separately: boolean;
-  values: Record<string, ProductAttributeValue>;
+  name_en?: string | null;
+  name_ar?: string | null;
+  attribute_type?: 'variant_attribute' | 'spec_attribute';
+  list_separately?: boolean;
+  values?: Record<string, ProductAttributeValue>;
 };
 
 export type ProductMediaItem = {
@@ -142,9 +145,32 @@ export type ProductVariant = {
   is_out_of_stock: boolean;
   quantity?: number;
   attribute_values: Record<string, number>;
-  price_group_id: string;
-  media_group_id: string;
-  weight_group_id: string;
+  price_group_id?: string;
+  media_group_id?: string;
+  weight_group_id?: string;
+};
+
+export type ProductBrandSummary = {
+  id: number;
+  name_en: string;
+  name_ar: string;
+  slug?: string | null;
+  description_en?: string | null;
+  description_ar?: string | null;
+  logo?: string | null;
+  status?: Status;
+  visible?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ProductLinkedProduct = {
+  id: number;
+  name_en: string;
+  name_ar: string;
+  slug: string;
+  sku: string;
 };
 
 export type Product = {
@@ -166,19 +192,31 @@ export type Product = {
   
   // Relations
   vendor: Vendor;
-  brand: Brand | null;
+  brand: ProductBrandSummary | null;
   categories: Category[];
   
   // New Complex Structures
-  attributes: Record<string, ProductAttributeGroup>;
-  media_groups: Record<string, ProductMediaGroup>;
-  price_groups: Record<string, ProductPriceGroup>;
-  weight_groups: Record<string, ProductWeightGroup>;
+  attributes?: Record<string, ProductAttributeGroup>;
+  specifications?: Record<string, ProductAttributeGroup>;
+  media?: ProductMedia[];
+  media_groups?: Record<string, ProductMediaGroup>;
+  price_groups?: Record<string, ProductPriceGroup>;
+  weight_groups?: Record<string, ProductWeightGroup>;
+  cost?: number | string | null;
+  price?: number | string | null;
+  sale_price?: number | string | null;
+  weight?: number | string | null;
+  length?: number | string | null;
+  width?: number | string | null;
+  height?: number | string | null;
   
   quantity?: number;
   is_out_of_stock?: boolean;
   
-  variants: ProductVariant[];
+  variants?: ProductVariant[];
+  linked_group_id?: number | null;
+  linked_product_ids?: number[];
+  linked_products?: ProductLinkedProduct[];
 };
 
 
