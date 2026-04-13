@@ -9,14 +9,33 @@ function parsePerPage(value: string | null): number {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const debug = searchParams.get('debug') === '1';
   const query = searchParams.get('q')?.trim() ?? '';
   const perPage = parsePerPage(searchParams.get('per_page'));
 
   try {
-    const { data, source } = await serverAutocompleteWithSource(query, perPage);
-    return NextResponse.json(data, {
+    const result = await serverAutocompleteWithSource(query, perPage, request.signal);
+    const headers = {
+      'x-search-upstream': result.source,
+      'x-search-status': String(result.status),
+      'x-search-duration-ms': String(result.durationMs),
+    };
+
+    if (debug) {
+      return NextResponse.json({
+        source: result.source,
+        status: result.status,
+        durationMs: result.durationMs,
+        raw: result.rawData,
+        final: result.data,
+      }, {
+        headers,
+      });
+    }
+
+    return NextResponse.json(result.data, {
       headers: {
-        'x-search-upstream': source,
+        ...headers,
       },
     });
   } catch {

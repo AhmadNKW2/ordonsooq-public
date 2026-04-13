@@ -12,7 +12,7 @@ export function SearchBox() {
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
-  const { query, setQuery, suggestions, isLoading, isOpen, close } = useAutocomplete(2, 250);
+  const { query, setQuery, suggestions, isLoading, isOpen, close } = useAutocomplete(2, 450);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside

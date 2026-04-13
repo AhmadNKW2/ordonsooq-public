@@ -12,6 +12,7 @@ function parseOptionalNumber(value: string | null): number | undefined {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const debug = searchParams.get('debug') === '1';
   const attrs = searchParams.getAll('attrs').map((value) => value.trim()).filter(Boolean);
 
   const filters: SearchFilters = {
@@ -31,10 +32,28 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    const { data, source } = await serverSearchWithSource(filters);
-    return NextResponse.json(data, {
+    const result = await serverSearchWithSource(filters, request.signal);
+    const headers = {
+      'x-search-upstream': result.source,
+      'x-search-status': String(result.status),
+      'x-search-duration-ms': String(result.durationMs),
+    };
+
+    if (debug) {
+      return NextResponse.json({
+        source: result.source,
+        status: result.status,
+        durationMs: result.durationMs,
+        raw: result.rawData,
+        final: result.data,
+      }, {
+        headers,
+      });
+    }
+
+    return NextResponse.json(result.data, {
       headers: {
-        'x-search-upstream': source,
+        ...headers,
       },
     });
   } catch {

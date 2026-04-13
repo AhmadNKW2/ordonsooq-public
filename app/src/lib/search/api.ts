@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client';
+import { debugFetch, logSearchDebug } from '@/lib/debug-fetch';
 import type {
   AutocompleteResponse,
   FacetCount,
@@ -92,6 +92,14 @@ type NormalizedOrdonDbItem = {
 };
 
 export type SearchUpstreamSource = 'ordondb' | 'legacy';
+
+export type SearchRequestDebugResult<T> = {
+  data: T;
+  rawData: unknown;
+  source: SearchUpstreamSource;
+  status: number;
+  durationMs: number;
+};
 
 function buildSearchParams(filters: SearchFilters): string {
   const params = new URLSearchParams();
@@ -406,38 +414,25 @@ function normalizeOrdonDbAutocompleteResponse(
   return { suggestions };
 }
 
-async function fetchOrdonDbSearchPayload(query?: string): Promise<OrdonDbSearchResponse> {
-  const response = await fetch(ORDON_DB_SEARCH_URL, {
-    method: 'POST',
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query: normalizeQuery(query) }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`SearchOrdonDBProduct failed: ${response.status}`);
+function unwrapLegacyData<T>(payload: unknown): T {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'data' in payload &&
+    !('meta' in payload)
+  ) {
+    return (payload as { data: T }).data;
   }
 
-  return response.json() as Promise<OrdonDbSearchResponse>;
+  return payload as T;
 }
 
-async function requestOrdonDbSearch(filters: SearchFilters): Promise<SearchResponse> {
-  const payload = await fetchOrdonDbSearchPayload(filters.q);
-  return normalizeOrdonDbSearchResponse(payload, filters);
-}
+function normalizeLegacySearchResponse(rawData: unknown): SearchResponse {
+  const payload = unwrapLegacyData<Partial<SearchResponse>>(rawData);
 
-function shouldUseOrdonDbSearch(filters: SearchFilters): boolean {
-  return typeof filters.q === 'string';
-}
-
-async function legacyServerSearch(filters: SearchFilters): Promise<SearchResponse> {
-  const qs = buildSearchParams(filters);
-  const res = await fetch(`${API_BASE}/search?${qs}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  const json = await res.json();
-  const payload = json?.data ?? json;
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid legacy search response');
+  }
 
   return {
     ...payload,
@@ -445,33 +440,144 @@ async function legacyServerSearch(filters: SearchFilters): Promise<SearchRespons
   } as SearchResponse;
 }
 
-async function legacyClientSearch(filters: SearchFilters): Promise<SearchResponse> {
-  const qs = buildSearchParams(filters);
-  const payload = await apiClient.get<SearchResponse>(`/search?${qs}`);
+function normalizeLegacyAutocompleteResponse(rawData: unknown): AutocompleteResponse {
+  return unwrapLegacyData<AutocompleteResponse>(rawData);
+}
+
+function logProcessedResult(
+  name: string,
+  result: SearchRequestDebugResult<unknown>,
+  extra: Record<string, unknown> = {}
+) {
+  logSearchDebug(name, {
+    source: result.source,
+    status: result.status,
+    durationMs: `${result.durationMs}ms`,
+    ...extra,
+    rawData: result.rawData,
+    finalData: result.data,
+  });
+}
+
+async function fetchOrdonDbSearchPayload(query?: string): Promise<{
+  rawData: OrdonDbSearchResponse;
+  status: number;
+  durationMs: number;
+}> {
+  return fetchOrdonDbSearchPayloadWithSignal(query);
+}
+
+async function fetchOrdonDbSearchPayloadWithSignal(
+  query?: string,
+  signal?: AbortSignal
+): Promise<{
+  rawData: OrdonDbSearchResponse;
+  status: number;
+  durationMs: number;
+}> {
+  const response = await debugFetch<OrdonDbSearchResponse>('SearchOrdonDBProduct', ORDON_DB_SEARCH_URL, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query: normalizeQuery(query) }),
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`SearchOrdonDBProduct failed: ${response.status}`);
+  }
 
   return {
-    ...payload,
-    total_pages: payload.total_pages ?? Math.ceil((payload.total ?? 0) / (payload.per_page || DEFAULT_PER_PAGE)),
+    rawData: response.data,
+    status: response.status,
+    durationMs: response.durationMs,
   };
 }
 
-async function legacyServerAutocomplete(q: string, perPage = 8): Promise<AutocompleteResponse> {
+async function requestOrdonDbSearch(
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<SearchRequestDebugResult<SearchResponse>> {
+  const upstream = await fetchOrdonDbSearchPayloadWithSignal(filters.q, signal);
+  const result: SearchRequestDebugResult<SearchResponse> = {
+    data: normalizeOrdonDbSearchResponse(upstream.rawData, filters),
+    rawData: upstream.rawData,
+    source: 'ordondb',
+    status: upstream.status,
+    durationMs: upstream.durationMs,
+  };
+
+  logProcessedResult('ORDONDB SEARCH FINAL', result, {
+    query: normalizeQuery(filters.q),
+  });
+
+  return result;
+}
+
+function shouldUseOrdonDbSearch(filters: SearchFilters): boolean {
+  return typeof filters.q === 'string';
+}
+
+async function legacyServerSearch(
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<SearchRequestDebugResult<SearchResponse>> {
+  const qs = buildSearchParams(filters);
+  const response = await debugFetch('LegacySearch', `${API_BASE}/search?${qs}`, {
+    cache: 'no-store',
+    signal,
+  });
+
+  if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+
+  const result: SearchRequestDebugResult<SearchResponse> = {
+    data: normalizeLegacySearchResponse(response.data),
+    rawData: response.data,
+    source: 'legacy',
+    status: response.status,
+    durationMs: response.durationMs,
+  };
+
+  logProcessedResult('LEGACY SEARCH FINAL', result, {
+    query: normalizeQuery(filters.q),
+    queryString: qs,
+  });
+
+  return result;
+}
+
+async function legacyServerAutocomplete(
+  q: string,
+  perPage = 8,
+  signal?: AbortSignal
+): Promise<SearchRequestDebugResult<AutocompleteResponse>> {
   const params = new URLSearchParams({ q, per_page: String(perPage) });
-  const response = await fetch(`${API_BASE}/search/autocomplete?${params}`, {
+  const response = await debugFetch('LegacyAutocomplete', `${API_BASE}/search/autocomplete?${params}`, {
     cache: 'no-store',
     credentials: 'include',
+    signal,
   });
 
   if (!response.ok) {
     throw new Error(`Autocomplete failed: ${response.status}`);
   }
 
-  const jsonResponse = await response.json();
-  if (jsonResponse && typeof jsonResponse === 'object' && 'data' in jsonResponse && !('meta' in jsonResponse)) {
-    return jsonResponse.data as AutocompleteResponse;
-  }
+  const result: SearchRequestDebugResult<AutocompleteResponse> = {
+    data: normalizeLegacyAutocompleteResponse(response.data),
+    rawData: response.data,
+    source: 'legacy',
+    status: response.status,
+    durationMs: response.durationMs,
+  };
 
-  return jsonResponse as AutocompleteResponse;
+  logProcessedResult('LEGACY AUTOCOMPLETE FINAL', result, {
+    query: q,
+    perPage,
+  });
+
+  return result;
 }
 
 export async function serverAutocomplete(q: string, perPage = 8): Promise<AutocompleteResponse> {
@@ -480,24 +586,38 @@ export async function serverAutocomplete(q: string, perPage = 8): Promise<Autoco
 
 export async function serverAutocompleteWithSource(
   q: string,
-  perPage = 8
-): Promise<{ data: AutocompleteResponse; source: SearchUpstreamSource }> {
+  perPage = 8,
+  signal?: AbortSignal
+): Promise<SearchRequestDebugResult<AutocompleteResponse>> {
   const normalizedQ = q.trim();
   if (!normalizedQ) {
-    return { data: { suggestions: [] }, source: 'ordondb' };
+    return {
+      data: { suggestions: [] },
+      rawData: { suggestions: [] },
+      source: 'ordondb',
+      status: 200,
+      durationMs: 0,
+    };
   }
 
   try {
-    const payload = await fetchOrdonDbSearchPayload(normalizedQ);
-    return {
-      data: normalizeOrdonDbAutocompleteResponse(payload, perPage),
+    const upstream = await fetchOrdonDbSearchPayloadWithSignal(normalizedQ, signal);
+    const result: SearchRequestDebugResult<AutocompleteResponse> = {
+      data: normalizeOrdonDbAutocompleteResponse(upstream.rawData, perPage),
+      rawData: upstream.rawData,
       source: 'ordondb',
+      status: upstream.status,
+      durationMs: upstream.durationMs,
     };
+
+    logProcessedResult('ORDONDB AUTOCOMPLETE FINAL', result, {
+      query: normalizedQ,
+      perPage,
+    });
+
+    return result;
   } catch {
-    return {
-      data: await legacyServerAutocomplete(normalizedQ, perPage),
-      source: 'legacy',
-    };
+    return legacyServerAutocomplete(normalizedQ, perPage, signal);
   }
 }
 
@@ -508,25 +628,17 @@ export async function serverSearch(filters: SearchFilters): Promise<SearchRespon
 }
 
 export async function serverSearchWithSource(
-  filters: SearchFilters
-): Promise<{ data: SearchResponse; source: SearchUpstreamSource }> {
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<SearchRequestDebugResult<SearchResponse>> {
   if (!shouldUseOrdonDbSearch(filters)) {
-    return {
-      data: await legacyServerSearch(filters),
-      source: 'legacy',
-    };
+    return legacyServerSearch(filters, signal);
   }
 
   try {
-    return {
-      data: await requestOrdonDbSearch(filters),
-      source: 'ordondb',
-    };
+    return requestOrdonDbSearch(filters, signal);
   } catch {
-    return {
-      data: await legacyServerSearch(filters),
-      source: 'legacy',
-    };
+    return legacyServerSearch(filters, signal);
   }
 }
 
@@ -534,31 +646,36 @@ export async function serverSearchWithSource(
 
 export async function clientSearch(filters: SearchFilters): Promise<SearchResponse> {
   const qs = buildSearchParams(filters);
-  const response = await fetch(`${LOCAL_SEARCH_API_PATH}?${qs}`, {
+  const response = await debugFetch<SearchResponse>('LocalSearchRoute', `${LOCAL_SEARCH_API_PATH}?${qs}`, {
     cache: 'no-store',
     credentials: 'include',
   });
 
   if (!response.ok) {
-    return legacyClientSearch(filters);
+    return (await legacyServerSearch(filters)).data;
   }
 
-  return response.json() as Promise<SearchResponse>;
+  return response.data;
 }
 
-export async function clientAutocomplete(q: string, perPage = 8): Promise<AutocompleteResponse> {
+export async function clientAutocomplete(
+  q: string,
+  perPage = 8,
+  signal?: AbortSignal
+): Promise<AutocompleteResponse> {
   const normalizedQ = q.trim();
   if (!normalizedQ) return { suggestions: [] };
 
   const params = new URLSearchParams({ q: normalizedQ, per_page: String(perPage) });
-  const response = await fetch(`${LOCAL_AUTOCOMPLETE_API_PATH}?${params}`, {
+  const response = await debugFetch<AutocompleteResponse>('LocalAutocompleteRoute', `${LOCAL_AUTOCOMPLETE_API_PATH}?${params}`, {
     cache: 'no-store',
     credentials: 'include',
+    signal,
   });
 
   if (!response.ok) {
-    return legacyServerAutocomplete(normalizedQ, perPage);
+    return (await legacyServerAutocomplete(normalizedQ, perPage)).data;
   }
 
-  return response.json() as Promise<AutocompleteResponse>;
+  return response.data;
 }

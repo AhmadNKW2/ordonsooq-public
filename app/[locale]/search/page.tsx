@@ -1,3 +1,4 @@
+import { isSearchDebugEnabled } from '@/lib/debug-fetch';
 import { serverSearch } from '@/lib/search/api';
 import { SearchPageClient } from '@/components/search/SearchPageClient';
 import type { SearchFilters } from '@/lib/search/types';
@@ -8,6 +9,11 @@ interface PageProps {
 
 export default async function SearchPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const shouldDebug = isSearchDebugEnabled();
+
+  if (shouldDebug) {
+    console.log('SSR SEARCH PARAMS:', params);
+  }
 
   const filters: SearchFilters = {
     q:           params.q          || '*',
@@ -22,7 +28,18 @@ export default async function SearchPage({ searchParams }: PageProps) {
   };
 
   // Initial data fetched on the server — no loading spinner on first render
-  const initialData = await serverSearch(filters).catch(() => null);
+  const initialData = await serverSearch(filters).catch((error) => {
+    if (shouldDebug) {
+      console.log('SSR SEARCH ERROR:', error);
+    }
+
+    return null;
+  });
+
+  if (shouldDebug) {
+    console.log('SSR SEARCH FILTERS:', filters);
+    console.log('SSR DATA:', initialData);
+  }
 
   return <SearchPageClient initialData={initialData} initialFilters={filters} />;
 }

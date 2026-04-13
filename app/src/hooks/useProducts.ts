@@ -122,11 +122,12 @@ export function useInfiniteProducts(
     initialPageParam: 1,
     enabled: options?.enabled,
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.meta;
+      const page = lastPage.meta?.page ?? 1;
+      const totalPages = lastPage.meta?.totalPages ?? 1;
       return page < totalPages ? page + 1 : undefined;
     },
     getPreviousPageParam: (firstPage) => {
-      const { page } = firstPage.meta;
+      const page = firstPage.meta?.page ?? 1;
       return page > 1 ? page - 1 : undefined;
     },
   });
