@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { categoryService } from '@/services/category.service';
-import type { CategoryFilters, ProductFilters } from '@/types/api.types';
+import type { CategoryDetail, CategoryFilters, ProductFilters } from '@/types/api.types';
 
 export const CATEGORY_QUERY_KEYS = {
   all: ['categories'] as const,
@@ -56,12 +56,24 @@ export function useCategoryBySlug(slug: string, filters: ProductFilters = {}) {
 /**
  * Hook to fetch a single category by Slug with infinite pagination for its products
  */
-export function useInfiniteCategoryBySlug(slug: string, filters: Omit<ProductFilters, 'page'> = {}) {
+export function useInfiniteCategoryBySlug(
+  slug: string,
+  filters: Omit<ProductFilters, 'page'> = {},
+  options?: { enabled?: boolean; initialData?: CategoryDetail; initialPage?: number },
+) {
+  const initialPage = options?.initialPage ?? options?.initialData?.productsMeta?.page ?? 1;
+
   return useInfiniteQuery({
     queryKey: CATEGORY_QUERY_KEYS.detailBySlugInfinite(slug, filters),
     queryFn: ({ pageParam = 1 }) => categoryService.getBySlug(slug, { ...filters, page: pageParam }),
-    initialPageParam: 1,
-    enabled: !!slug,
+    initialPageParam: initialPage,
+    initialData: options?.initialData
+      ? {
+          pages: [options.initialData],
+          pageParams: [initialPage],
+        }
+      : undefined,
+    enabled: options?.enabled ?? !!slug,
     getNextPageParam: (lastPage) => {
       const page = lastPage.productsMeta?.page || 1;
       const totalPages = lastPage.productsMeta?.totalPages || 1;

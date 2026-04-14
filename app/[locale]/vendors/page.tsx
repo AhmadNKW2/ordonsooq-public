@@ -1,31 +1,25 @@
-"use client";
-
-import { useTranslations } from "next-intl";
-import { useVendors } from "@/hooks/useVendors";
+import { getTranslations } from "next-intl/server";
 import { EntityGridPage } from "@/components/layout/entity-grid-page";
+import { vendorService } from "@/services/vendor.service";
 
-export default function VendorsPage() {
-  const t = useTranslations("nav");
-  
-  const { data: vendorsData, isLoading } = useVendors({
-      limit: 100,
-      status: 'active',
-      visible: true,
-      sortBy: 'sort_order',
-      sortOrder: 'ASC'
-  });
+export default async function VendorsPage() {
+  const t = await getTranslations("nav");
+  const vendorsData = await vendorService.getAll({
+    limit: 100,
+    status: "active",
+    visible: true,
+    sortBy: "sort_order",
+    sortOrder: "ASC",
+  }).catch(() => null);
 
-  // Handle potential API response variations (wrapped vs unwrapped)
-  const vendors = Array.isArray(vendorsData) 
-      ? vendorsData 
-      : (vendorsData?.data || []);
+  const vendors = Array.isArray(vendorsData) ? vendorsData : vendorsData?.data || [];
 
   return (
     <EntityGridPage
-        type="vendor"
-        data={vendors}
-        isLoading={isLoading}
-        title={t("stores")}
+      type="vendor"
+      data={vendors}
+      isLoading={false}
+      title={t("stores")}
     />
   );
 }

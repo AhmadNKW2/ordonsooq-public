@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "@/i18n/navigation";
-import { AddToCartButton } from "@/components";
+import { AddToCartButton } from "@/components/products/add-to-cart-button";
 import { Button } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useCheckout } from "@/hooks/useCheckout";

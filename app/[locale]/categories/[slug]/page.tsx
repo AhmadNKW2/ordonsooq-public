@@ -1,42 +1,31 @@
-"use client";
+import { EntitySlugPageClient } from "@/components/layout/entity-slug-page-client";
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/message-catalog";
+import { RouteIntlProvider } from "@/i18n/route-intl-provider";
+import { LISTING_MESSAGE_NAMESPACES } from "@/i18n/scoped-messages";
+import { searchFiltersToApiFilters, searchParamsToSearchFilters } from "@/lib/search/filter-utils";
+import { categoryService } from "@/services/category.service";
 
-import { useMemo } from "react";
-import { useParams } from "next/navigation";
-import { useInfiniteCategoryBySlug } from "@/hooks";
-import { EntityListingPage } from "@/components/layout/entity-listing-page";
-import { useSearchFilters, searchFiltersToApiFilters } from "@/lib/search/use-search-params";
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-export default function CategoryPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const { filters } = useSearchFilters();
+export default async function CategoryPage({ params, searchParams }: PageProps) {
+  const locale = (await getLocale()) as Locale;
+  const { slug } = await params;
+  const filters = searchParamsToSearchFilters(await searchParams);
   const apiFilters = searchFiltersToApiFilters(filters);
-
-  const { data: infiniteData, isLoading: categoryLoading, error: categoryError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteCategoryBySlug(slug, apiFilters);
-
-  const categoryData = useMemo(() => {
-    if (!infiniteData?.pages.length) return undefined;
-    const firstPage = infiniteData.pages[0];
-    const allProducts = infiniteData.pages.flatMap((page) => page.products || []);
-    const lastPageMeta = infiniteData.pages.at(-1)?.productsMeta;
-
-    return {
-      ...firstPage,
-      products: allProducts,
-      productsMeta: lastPageMeta
-    };
-  }, [infiniteData]);
+  const initialData = await categoryService.getBySlug(slug, apiFilters).catch(() => undefined);
 
   return (
-    <EntityListingPage
+    <RouteIntlProvider locale={locale} namespaces={LISTING_MESSAGE_NAMESPACES}>
+      <EntitySlugPageClient
         type="category"
         slug={slug}
-        data={categoryData}
-        isLoading={categoryLoading}
-        error={categoryError}
-        fetchNextPage={fetchNextPage}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-    />
+        initialData={initialData}
+        initialPage={apiFilters.page}
+      />
+    </RouteIntlProvider>
   );
 }

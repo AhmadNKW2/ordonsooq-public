@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { productService } from '@/services/product.service';
-import type { ProductFilters } from '@/types/api.types';
+import type { PaginatedResponse, Product, ProductDetail, ProductFilters } from '@/types/api.types';
 
 export const PRODUCT_QUERY_KEYS = {
   all: ['products'] as const,
@@ -44,11 +44,12 @@ export function useProduct(id: number) {
 /**
  * Hook to fetch a single product by Slug
  */
-export function useProductBySlug(slug: string) {
+export function useProductBySlug(slug: string, options?: { enabled?: boolean; initialData?: ProductDetail }) {
   return useQuery({
     queryKey: PRODUCT_QUERY_KEYS.detailBySlug(slug),
     queryFn: () => productService.getBySlug(slug),
-    enabled: !!slug,
+    enabled: options?.enabled ?? !!slug,
+    initialData: options?.initialData,
   });
 }
 
@@ -57,12 +58,14 @@ export function useProductBySlug(slug: string) {
  */
 export function useProductsByCategory(
   categoryId: number,
-  filters: Omit<ProductFilters, 'categoryId'> = {}
+  filters: Omit<ProductFilters, 'categoryId'> = {},
+  options?: { enabled?: boolean; initialData?: PaginatedResponse<Product> },
 ) {
   return useQuery({
     queryKey: PRODUCT_QUERY_KEYS.byCategory(categoryId, filters),
     queryFn: () => productService.getByCategory(categoryId, filters),
-    enabled: !!categoryId && categoryId > 0,
+    enabled: options?.enabled ?? (!!categoryId && categoryId > 0),
+    initialData: options?.initialData,
   });
 }
 
@@ -113,13 +116,21 @@ export function useProductSearch(
  */
 export function useInfiniteProducts(
   filters: Omit<ProductFilters, 'page'> = {},
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; initialData?: PaginatedResponse<Product>; initialPage?: number },
 ) {
+  const initialPage = options?.initialPage ?? options?.initialData?.meta?.page ?? 1;
+
   return useInfiniteQuery({
     queryKey: [...PRODUCT_QUERY_KEYS.lists(), 'infinite', filters],
     queryFn: ({ pageParam = 1 }) =>
       productService.getAll({ ...filters, page: pageParam }),
-    initialPageParam: 1,
+    initialPageParam: initialPage,
+    initialData: options?.initialData
+      ? {
+          pages: [options.initialData],
+          pageParams: [initialPage],
+        }
+      : undefined,
     enabled: options?.enabled,
     getNextPageParam: (lastPage) => {
       const page = lastPage.meta?.page ?? 1;

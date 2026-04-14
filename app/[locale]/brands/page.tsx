@@ -1,28 +1,23 @@
-"use client";
-
-import { useTranslations } from "next-intl";
-import { useBrands } from "@/hooks/useBrands";
+import { getTranslations } from "next-intl/server";
 import { EntityGridPage } from "@/components/layout/entity-grid-page";
+import { brandService } from "@/services/brand.service";
 
-export default function BrandsPage() {
-  const t = useTranslations("nav");
-  
-  const { data: brandsData, isLoading } = useBrands({
-      limit: 100,
-      status: 'active',
-      visible: true,
-      sortBy: 'sort_order',
-      sortOrder: 'ASC'
-  });
-
-  const brands = brandsData?.data || [];
+export default async function BrandsPage() {
+  const t = await getTranslations("nav");
+  const brandsData = await brandService.getAll({
+    limit: 100,
+    status: "active",
+    visible: true,
+    sortBy: "sort_order",
+    sortOrder: "ASC",
+  }).catch(() => null);
 
   return (
     <EntityGridPage
-        type="brand"
-        data={brands}
-        isLoading={isLoading}
-        title={t("brands")}
+      type="brand"
+      data={brandsData?.data || []}
+      isLoading={false}
+      title={t("brands")}
     />
   );
 }

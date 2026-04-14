@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { homeService } from '@/services';
+import { homeService } from '@/services/home.service';
+import type { HomeData } from '@/types/api.types';
 
 export const homeKeys = {
   all: ['home'] as const,
@@ -10,10 +11,11 @@ export const homeKeys = {
  * Hook to fetch home page data (categories, vendors, banners)
  * Uses a single API call to /api/home
  */
-export function useHome() {
+export function useHome(options?: { initialData?: HomeData }) {
   return useQuery({
     queryKey: homeKeys.data(),
     queryFn: () => homeService.getHomeData(),
+    initialData: options?.initialData,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
     retry: 1,

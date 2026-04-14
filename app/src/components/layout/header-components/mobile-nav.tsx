@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { useHome } from "@/hooks";
+import { useHome } from "@/hooks/useHome";
 import { transformHomeCategory, type Locale } from "@/lib/transformers";
 import { Category } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
@@ -87,7 +87,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   return (
     <div
       className={cn(
-        "lg:hidden fixed inset-0 top-[100px] bg-white z-40 transition-transform duration-300 flex flex-col",
+        "lg:hidden fixed inset-0 top-25 bg-white z-40 transition-transform duration-300 flex flex-col",
         isOpen ? "translate-x-0" : (isArabic ? "translate-x-full" : "-translate-x-full")
       )}
     >

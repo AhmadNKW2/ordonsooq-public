@@ -1,18 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getRequestConfig } from 'next-intl/server';
-import enMessages from '../../../messages/en.json';
-import arMessages from '../../../messages/ar.json';
-
-// Can be imported from a shared config
-export const locales = ['en', 'ar'] as const;
-export type Locale = (typeof locales)[number];
-
-export const defaultLocale: Locale = 'ar';
-
-const messages = {
-  en: enMessages,
-  ar: arMessages,
-};
+import { locales, type Locale, messageCatalog } from './message-catalog';
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const locale = await requestLocale;
@@ -24,6 +12,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: messages[locale as Locale]
+    messages: messageCatalog[locale as Locale]
   };
 });

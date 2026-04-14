@@ -6,7 +6,7 @@ import { Check } from "lucide-react";
 import { FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Button, Card, Sheet, Select } from "@/components/ui";
-import { useListingVariantProducts } from "@/hooks";
+import { useListingVariantProducts } from "@/hooks/useListingVariantProducts";
 import { useInfiniteSearchProducts } from "@/lib/search/use-search";
 import { useSearchFilters } from "@/lib/search/use-search-params";
 import type { SearchFilters, FacetCount, SortOption } from "@/lib/search/types";

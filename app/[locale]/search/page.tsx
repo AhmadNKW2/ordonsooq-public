@@ -1,6 +1,10 @@
 import { isSearchDebugEnabled } from '@/lib/debug-fetch';
+import { getLocale } from 'next-intl/server';
 import { serverSearch } from '@/lib/search/api';
 import { SearchPageClient } from '@/components/search/SearchPageClient';
+import type { Locale } from '@/i18n/message-catalog';
+import { RouteIntlProvider } from '@/i18n/route-intl-provider';
+import { SEARCH_MESSAGE_NAMESPACES } from '@/i18n/scoped-messages';
 import type { SearchFilters } from '@/lib/search/types';
 
 interface PageProps {
@@ -8,6 +12,7 @@ interface PageProps {
 }
 
 export default async function SearchPage({ searchParams }: PageProps) {
+  const locale = (await getLocale()) as Locale;
   const params = await searchParams;
   const shouldDebug = isSearchDebugEnabled();
 
@@ -41,5 +46,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
     console.log('SSR DATA:', initialData);
   }
 
-  return <SearchPageClient initialData={initialData} initialFilters={filters} />;
+  return (
+    <RouteIntlProvider locale={locale} namespaces={SEARCH_MESSAGE_NAMESPACES}>
+      <SearchPageClient initialData={initialData} initialFilters={filters} />
+    </RouteIntlProvider>
+  );
 }

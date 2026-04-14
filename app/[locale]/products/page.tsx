@@ -1,12 +1,15 @@
-"use client";
+import { getLocale } from "next-intl/server";
+import { ProductsPageClient } from "@/components/layout/products-page-client";
+import type { Locale } from "@/i18n/message-catalog";
+import { RouteIntlProvider } from "@/i18n/route-intl-provider";
+import { LISTING_MESSAGE_NAMESPACES } from "@/i18n/scoped-messages";
 
-import { Suspense } from "react";
-import { EntityListingPage } from "@/components/layout/entity-listing-page";
+export default async function ProductsPage() {
+  const locale = (await getLocale()) as Locale;
 
-export default function ProductsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <EntityListingPage type="shop" />
-    </Suspense>
+    <RouteIntlProvider locale={locale} namespaces={LISTING_MESSAGE_NAMESPACES}>
+      <ProductsPageClient />
+    </RouteIntlProvider>
   );
 }

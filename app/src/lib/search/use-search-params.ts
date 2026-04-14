@@ -8,6 +8,7 @@ import {
   parseAsArrayOf,
 } from 'nuqs';
 import type { SortOption } from './types';
+import { searchFiltersToApiFilters as sharedSearchFiltersToApiFilters, type SearchFilterState } from './filter-utils';
 
 export function useSearchFilters() {
   const [q,           setQ]           = useQueryState('q', parseAsString.withDefault(''));
@@ -65,7 +66,7 @@ export function useSearchFilters() {
       max_price:   maxPrice ?? undefined,
       sort_by:     (sortBy as SortOption) ?? 'popularity_score:desc',
       page,
-    },
+    } satisfies SearchFilterState,
     setQ,
     setBrand,
     setBrandId,
@@ -84,17 +85,5 @@ export function useSearchFilters() {
 }
 
 export function searchFiltersToApiFilters(filters: ReturnType<typeof useSearchFilters>["filters"]) {
-  const sortParts = filters.sort_by ? filters.sort_by.split(':') : ['average_rating', 'desc'];
-  let sortBy = sortParts[0];
-  if (sortBy === 'popularity_score') sortBy = 'average_rating';
-  if (sortBy === 'rating') sortBy = 'average_rating';
-
-  return {
-    page: filters.page,
-    limit: 24, // good for grid layout
-    sortBy: sortBy as any,
-    sortOrder: (sortParts[1] || 'DESC').toUpperCase() as any,
-    minPrice: filters.min_price,
-    maxPrice: filters.max_price,
-  };
+  return sharedSearchFiltersToApiFilters(filters);
 }

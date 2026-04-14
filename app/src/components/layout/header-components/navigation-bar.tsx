@@ -6,7 +6,7 @@ import { ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_LINKS } from "@/lib/constants";
 import { useTranslations, useLocale } from "next-intl";
-import { useHome } from "@/hooks";
+import { useHome } from "@/hooks/useHome";
 import type { Category, HomeCategory } from "@/types/api.types";
 
 export function NavigationBar() {
@@ -269,7 +269,6 @@ export function NavigationBar() {
                         {section.links.map((link, linkIdx) => (
                           <li key={linkIdx}>
                             <Link
-                              prefetch={false}
                               href={link.href}
                               className="group flex items-start gap-3 p-3 -mx-3 rounded-xl hover:bg-gray-50/80 transition-all duration-300"
                               onClick={handleLinkClick}

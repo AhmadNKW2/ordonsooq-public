@@ -1,5 +1,3 @@
-"use client";
-
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 

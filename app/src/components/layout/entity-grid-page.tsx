@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
@@ -135,7 +133,7 @@ export function EntityGridPage({ type, data, isLoading, title, subtitle, error }
                             <span className="text-2xl font-bold text-gray-300">{name?.[0]}</span>
                             )}
                     </div>
-                    <div className="p-4 flex-grow flex flex-col items-center text-center">
+                    <div className="p-4 grow flex flex-col items-center text-center">
                         <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
                             {name}
                         </h3>
