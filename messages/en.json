@@ -77,6 +77,7 @@
     "categories": "Categories",
     "price": "Price",
     "brands": "Brands",
+    "availability": "Availability",
     "rating": "Rating",
     "stars": "Stars",
     "noProductsFound": "No products found for this selection",

@@ -4,7 +4,35 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const handleI18nRouting = createMiddleware(routing);
 
-export default function middleware(request: NextRequest) {
+async function resetApiRequestLogsForDocumentRequest(request: NextRequest) {
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
+
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  if (request.headers.get('sec-fetch-dest') !== 'document') {
+    return;
+  }
+
+  try {
+    await fetch(new URL('/api/internal/request-logs', request.url), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ type: 'reset' }),
+    });
+  } catch {
+    // Ignore logging reset failures to avoid blocking routing.
+  }
+}
+
+export default async function middleware(request: NextRequest) {
+  await resetApiRequestLogsForDocumentRequest(request);
+
   const { pathname } = request.nextUrl;
 
   const pathSegments = pathname.split('/').filter(Boolean);

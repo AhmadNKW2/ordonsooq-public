@@ -25,7 +25,7 @@ export const CURRENCY_CONFIG = {
 // Navigation Links
 export const NAV_LINKS = [
   { label: "nav.home", href: "/" },
-  { label: "nav.shop", href: "/products" },
+  { label: "nav.products", href: "/products" },
   { label: "nav.categories", href: "/categories" },
   { label: "nav.brands", href: "/brands" },
   { label: "nav.stores", href: "/vendors" },

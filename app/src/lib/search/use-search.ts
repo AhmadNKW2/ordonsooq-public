@@ -6,26 +6,34 @@ import type { SearchFilters, SearchResponse } from './types';
 
 export const SEARCH_QUERY_KEYS = {
   all: ['search'] as const,
-  results: (filters: SearchFilters) => [...SEARCH_QUERY_KEYS.all, 'results', filters] as const,
+  results: (filters: SearchFilters, locale?: string) => [...SEARCH_QUERY_KEYS.all, 'results', locale ?? 'en', filters] as const,
   autocomplete: (q: string) => [...SEARCH_QUERY_KEYS.all, 'autocomplete', q] as const,
 };
 
-export function useSearch(filters: SearchFilters, initialData?: SearchResponse | null) {
+export function useSearch(filters: SearchFilters, initialData?: SearchResponse | null, options?: { locale?: string }) {
   return useQuery({
-    queryKey: SEARCH_QUERY_KEYS.results(filters),
-    queryFn: () => clientSearch(filters),
+    queryKey: SEARCH_QUERY_KEYS.results(filters, options?.locale),
+    queryFn: () => clientSearch(filters, options?.locale),
     initialData: initialData ?? undefined,
     staleTime: 30_000, // 30s
   });
 }
 
-export function useInfiniteSearchProducts(filters: Omit<SearchFilters, 'page'>, options?: { enabled?: boolean, initialData?: { pages: SearchResponse[]; pageParams: number[] } }) {
+export function useInfiniteSearchProducts(
+  filters: Omit<SearchFilters, 'page'>,
+  options?: {
+    enabled?: boolean,
+    initialData?: { pages: SearchResponse[]; pageParams: number[] },
+    locale?: string,
+  }
+) {
   return useInfiniteQuery({
-    queryKey: [...SEARCH_QUERY_KEYS.all, 'infinite', filters],
-    queryFn: ({ pageParam = 1 }) => clientSearch({ ...filters, page: pageParam }),
+    queryKey: [...SEARCH_QUERY_KEYS.all, 'infinite', options?.locale ?? 'en', filters],
+    queryFn: ({ pageParam = 1 }) => clientSearch({ ...filters, page: pageParam }, options?.locale),
     initialPageParam: 1,
     initialData: options?.initialData as any, // bypassing strict generic typing for brevity
     enabled: options?.enabled,
+    placeholderData: (previousData) => previousData,
     getNextPageParam: (lastPage) => {
       const page = lastPage.page || 1;
       const totalPages = lastPage.total_pages || 1;

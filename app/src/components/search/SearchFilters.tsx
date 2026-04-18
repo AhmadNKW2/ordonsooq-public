@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { joinFilterValues, splitFilterValues } from '@/lib/search/filter-utils';
 import { useSearchFilters } from '@/lib/search/use-search-params';
 import { Card, Checkbox } from '@/components/ui';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -31,12 +32,12 @@ export function SearchFilters({ facets }: Props) {
     );
   };
 
-  const facetMap = Object.fromEntries(facets.map((f) => [f.field_name, f]));
+  const brandFacet = facets.find((facet) => ["brand", "brand_id", "brand_ids"].includes(facet.field_name));
+  const categoryFacet = facets.find((facet) => ["category", "category_id", "category_ids", "categories_ids"].includes(facet.field_name));
 
   const activeFiltersCount =
-    (filters.brand ? 1 : 0) +
-    (filters.category ? 1 : 0) +
-    (filters.subcategory ? 1 : 0) +
+    (filters.brand_ids ? 1 : 0) +
+    (filters.category_ids ? 1 : 0) +
     (filters.min_price || filters.max_price ? 1 : 0);
 
   return (
@@ -54,31 +55,31 @@ export function SearchFilters({ facets }: Props) {
       </div>
 
       {/* Brand facet */}
-      {facetMap.brand && (
+      {brandFacet && (
         <FilterSection
           title={t('brandFilter')}
           isExpanded={expandedSections.includes("brand")}
           onToggle={() => toggleSection("brand")}
         >
           <FacetGroup
-            facet={facetMap.brand}
-            selected={filters.brand}
-            onSelect={(v) => changeFilter('brand', v)}
+            facet={brandFacet}
+            selected={splitFilterValues(filters.brand_ids)}
+            onSelect={(values) => changeFilter('brand_ids', joinFilterValues(values))}
           />
         </FilterSection>
       )}
 
       {/* Category facet */}
-      {facetMap.category && (
+      {categoryFacet && (
         <FilterSection
           title={t('categoryFilter')}
           isExpanded={expandedSections.includes("category")}
           onToggle={() => toggleSection("category")}
         >
           <FacetGroup
-            facet={facetMap.category}
-            selected={filters.category}
-            onSelect={(v) => changeFilter('category', v)}
+            facet={categoryFacet}
+            selected={splitFilterValues(filters.category_ids)}
+            onSelect={(values) => changeFilter('category_ids', joinFilterValues(values))}
           />
         </FilterSection>
       )}
@@ -117,8 +118,8 @@ function FacetGroup({
   onSelect,
 }: {
   facet: FacetCount;
-  selected?: string;
-  onSelect: (value: string | null) => void;
+  selected: string[];
+  onSelect: (value: string[]) => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -128,14 +129,22 @@ function FacetGroup({
           className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
         >
           <Checkbox
-            checked={selected === c.value}
-            onChange={() => onSelect(selected === c.value ? null : c.value)}
+            checked={selected.includes(c.value)}
+            onChange={() => onSelect(
+              selected.includes(c.value)
+                ? selected.filter((value) => value !== c.value)
+                : [...selected, c.value]
+            )}
           />
           <span
             className="text-sm text-primary cursor-pointer flex-1 truncate"
-            onClick={() => onSelect(selected === c.value ? null : c.value)}
+            onClick={() => onSelect(
+              selected.includes(c.value)
+                ? selected.filter((value) => value !== c.value)
+                : [...selected, c.value]
+            )}
           >
-            {c.value}
+            {c.label ?? c.value}
           </span>
           <span className="text-xs text-third">
             ({c.count})

@@ -5,6 +5,14 @@ export type DebugFetchResult<T = unknown> = {
   durationMs: number;
 };
 
+import {
+  createApiLogEntry,
+  parseApiBodyText,
+  sendApiLogEntry,
+  serializeRequestBody,
+  toApiLogError,
+} from "@/lib/api-request-log";
+
 export function isSearchDebugEnabled(): boolean {
   return process.env.NEXT_PUBLIC_SEARCH_DEBUG === '1';
 }
@@ -28,33 +36,86 @@ export async function debugFetch<T = unknown>(
   options: RequestInit = {}
 ): Promise<DebugFetchResult<T>> {
   const start = Date.now();
-  const response = await fetch(url, options);
-  const durationMs = Date.now() - start;
-  const text = await response.text();
-
-  let data: unknown;
+  const startedAt = new Date();
 
   try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
-  }
+    const response = await fetch(url, options);
+    const durationMs = Date.now() - start;
+    const text = await response.text();
+    const parsedBody = parseApiBodyText(text, response.headers.get('content-type'));
+    const data = parsedBody.value;
 
-  if (isSearchDebugEnabled()) {
-    console.log('\n==============================');
-    console.log(`FETCH DEBUG: ${name}`);
-    console.log('URL:', url);
-    console.log('METHOD:', options.method || 'GET');
-    console.log('STATUS:', response.status);
-    console.log('TIME:', `${durationMs}ms`);
-    console.log('RESPONSE:', data);
-    console.log('==============================\n');
-  }
+    const entry = createApiLogEntry({
+      timestamp: startedAt,
+      source: "debug-fetch",
+      label: name,
+      durationMs,
+      request: {
+        method: options.method || 'GET',
+        url,
+        headers: options.headers,
+        body: serializeRequestBody(options.body),
+        credentials: options.credentials,
+        cache: options.cache,
+        mode: options.mode,
+        redirect: options.redirect,
+        referrer: options.referrer,
+        integrity: options.integrity,
+        keepalive: options.keepalive,
+      },
+      response: {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        body: data,
+      },
+      notes: parsedBody.jsonError ? ["Response body could not be parsed as JSON."] : undefined,
+    });
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    data: data as T,
-    durationMs,
-  };
+    await sendApiLogEntry(entry).catch(() => undefined);
+
+    if (isSearchDebugEnabled()) {
+      console.log('\n==============================');
+      console.log(`FETCH DEBUG: ${name}`);
+      console.log('URL:', url);
+      console.log('METHOD:', options.method || 'GET');
+      console.log('REQUEST BODY:', serializeRequestBody(options.body));
+      console.log('STATUS:', response.status);
+      console.log('TIME:', `${durationMs}ms`);
+      console.log('RESPONSE:', data);
+      console.log('==============================\n');
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: data as T,
+      durationMs,
+    };
+  } catch (error) {
+    const entry = createApiLogEntry({
+      timestamp: startedAt,
+      source: "debug-fetch",
+      label: name,
+      durationMs: Date.now() - start,
+      request: {
+        method: options.method || 'GET',
+        url,
+        headers: options.headers,
+        body: serializeRequestBody(options.body),
+        credentials: options.credentials,
+        cache: options.cache,
+        mode: options.mode,
+        redirect: options.redirect,
+        referrer: options.referrer,
+        integrity: options.integrity,
+        keepalive: options.keepalive,
+      },
+      error: toApiLogError(error),
+    });
+
+    await sendApiLogEntry(entry).catch(() => undefined);
+    throw error;
+  }
 }

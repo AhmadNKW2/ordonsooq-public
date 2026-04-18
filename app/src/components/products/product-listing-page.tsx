@@ -7,9 +7,10 @@ import { FilterState, ProductFilters, FloatingFilterSort } from "@/components/pr
 import { ProductGrid } from "@/components/products/product-grid";
 import { Button, Card, Sheet, Select } from "@/components/ui";
 import { useListingVariantProducts } from "@/hooks/useListingVariantProducts";
+import { joinFilterValues, splitFilterValues } from "@/lib/search/filter-utils";
 import { useInfiniteSearchProducts } from "@/lib/search/use-search";
 import { useSearchFilters } from "@/lib/search/use-search-params";
-import type { SearchFilters, FacetCount, SortOption } from "@/lib/search/types";
+import type { SearchFilters, SortOption } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 import type { Brand as ApiBrand, PaginationMeta } from "@/types/api.types";
 import { Category } from "@/types";
@@ -62,7 +63,16 @@ export function ProductListingPage({
   const t = useTranslations('product');
   const tCommon = useTranslations('common');
   
-  const { filters: urlFilters, setSortBy: setUrlSortBy, setPage, setMinPrice, setMaxPrice, changeFilter } = useSearchFilters();
+  const {
+    filters: urlFilters,
+    setSortBy: setUrlSortBy,
+    setPage,
+    setMinPrice,
+    setMaxPrice,
+    setAverageRatingMin,
+    setIsOutOfStock,
+    changeFilter,
+  } = useSearchFilters();
 
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -76,41 +86,57 @@ export function ProductListingPage({
   };
 
   const [filters, setFilters] = useState<FilterState>({
-    categories: initialFilters.category_ids ? initialFilters.category_ids.split(',') : [],
-    brands:     initialFilters.brand_id ? [initialFilters.brand_id] : (initialFilters.brand ? [initialFilters.brand] : []),
-    vendors:    initialFilters.vendor_id ? [initialFilters.vendor_id] : [],
-    attrs:      initialFilters.attrs    || [],
+    categories: splitFilterValues(initialFilters.category_ids),
+    brands: splitFilterValues(initialFilters.brand_ids),
+    vendors: splitFilterValues(initialFilters.vendor_ids),
+    attributeValues: splitFilterValues(initialFilters.attributes_values_ids),
+    specificationValues: splitFilterValues(initialFilters.specifications_values_ids),
     priceRange:
       initialFilters.min_price != null || initialFilters.max_price != null
         ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
         : null,
-    rating: null,
+    rating: initialFilters.average_rating_min ?? null,
+    stockStatus:
+      initialFilters.is_out_of_stock === true
+        ? 'out'
+        : initialFilters.is_out_of_stock === false
+          ? 'in'
+          : null,
   });
 
   const handleFilterChange = (newState: FilterState) => {
     setFilters(newState);
-    void changeFilter('category_ids', newState.categories.length > 0 ? newState.categories.join(',') : null);
-    void changeFilter('brand',    newState.brands[0]    ?? null);
-    void changeFilter('vendor_id',newState.vendors[0]   ?? null);
-    void changeFilter('attrs',    newState.attrs.length > 0 ? newState.attrs : null);
+    void changeFilter('category_ids', joinFilterValues(newState.categories));
+    void changeFilter('brand_ids', joinFilterValues(newState.brands));
+    void changeFilter('vendor_ids', joinFilterValues(newState.vendors));
+    void changeFilter('attributes_values_ids', joinFilterValues(newState.attributeValues));
+    void changeFilter('specifications_values_ids', joinFilterValues(newState.specificationValues));
     void setMinPrice(newState.priceRange?.min ?? null);
     void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
+    void setAverageRatingMin(newState.rating ?? null);
+    void setIsOutOfStock(
+      newState.stockStatus == null
+        ? null
+        : newState.stockStatus === 'out'
+    );
     void setPage(1);
   };
 
   // Build API filters
   const searchFilters: Omit<SearchFilters, 'page'> = useMemo(() => {
     return {
-      per_page: 25,
-      ...initialFilters,
-      ...urlFilters,
+      q: urlFilters.q?.trim() ? urlFilters.q : initialFilters.q,
+      category_ids: urlFilters.category_ids ?? initialFilters.category_ids,
+      brand_ids: urlFilters.brand_ids ?? initialFilters.brand_ids,
+      vendor_ids: urlFilters.vendor_ids ?? initialFilters.vendor_ids,
+      attributes_values_ids: urlFilters.attributes_values_ids ?? initialFilters.attributes_values_ids,
+      specifications_values_ids: urlFilters.specifications_values_ids ?? initialFilters.specifications_values_ids,
+      min_price: urlFilters.min_price ?? initialFilters.min_price,
+      max_price: urlFilters.max_price ?? initialFilters.max_price,
+      is_out_of_stock: urlFilters.is_out_of_stock ?? initialFilters.is_out_of_stock,
+      average_rating_min: urlFilters.average_rating_min ?? initialFilters.average_rating_min,
       sort_by: SORT_MAP[sortKey] as SortOption,
-      // URL filters overwrite initial if present, but for base pages like Brand -> we want both or override
-      category_ids: urlFilters.category_ids || initialFilters.category_ids,
-      brand_id: urlFilters.brand_id || initialFilters.brand_id,
-      vendor_id: urlFilters.vendor_id || initialFilters.vendor_id,
-      brand: urlFilters.brand || initialFilters.brand,
-      attrs: urlFilters.attrs || initialFilters.attrs,
+      per_page: initialFilters.per_page ?? 25,
     };
   }, [sortKey, urlFilters, initialFilters]);
 
@@ -124,6 +150,7 @@ export function ProductListingPage({
       fetchNextPage: searchFetchNextPage,
     } = useInfiniteSearchProducts(searchFilters, { 
       enabled: useSearch,
+      locale,
       initialData: preloadedProducts && productsMeta && useSearch ? {
         pages: [{
           hits: preloadedProducts,
@@ -170,19 +197,24 @@ export function ProductListingPage({
     filters.categories.length +
     filters.brands.length +
     filters.vendors.length +
-    filters.attrs.length +
+    filters.attributeValues.length +
+    filters.specificationValues.length +
     (filters.priceRange ? 1 : 0) +
-    (filters.rating ? 1 : 0);
+    (filters.rating ? 1 : 0) +
+    (filters.stockStatus ? 1 : 0);
 
   const filtersComponent = (
     <ProductFilters
+      key={`${locale}|listing|${initialFilters.q ?? '*'}|${initialFilters.category_ids ?? ''}|${initialFilters.brand_ids ?? ''}|${initialFilters.vendor_ids ?? ''}`}
       facets={facets}
       selectedCategories={filters.categories}
       selectedBrands={filters.brands}
       selectedVendors={filters.vendors}
-      selectedAttrs={filters.attrs}
+      selectedAttributeValues={filters.attributeValues}
+      selectedSpecificationValues={filters.specificationValues}
       priceRange={filters.priceRange || undefined}
       rating={filters.rating || undefined}
+      stockStatus={filters.stockStatus || undefined}
       onFilterChange={handleFilterChange}
       className="w-full"
     />
@@ -232,7 +264,7 @@ export function ProductListingPage({
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}
         <aside
-          className="w-full lg:w-64 flex-shrink-0 hidden lg:block"
+          className="hidden w-full shrink-0 lg:block lg:w-64"
         >
           <div className="sticky top-24">
             {filtersComponent}
@@ -276,11 +308,11 @@ export function ProductListingPage({
             </span>
           </div>
 
-          <div className="min-h-[400px]">
+          <div className="min-h-100">
             {isLoading || variantsLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="aspect-[2/3] bg-gray-100 rounded-lg animate-pulse" />
+                  <div key={i} className="aspect-2/3 animate-pulse rounded-lg bg-gray-100" />
                 ))}
               </div>
             ) : productList.length > 0 ? (
@@ -312,9 +344,11 @@ export function ProductListingPage({
                     categories: [],
                     brands: [],
                     vendors: [],
-                    attrs: [],
+                    attributeValues: [],
+                    specificationValues: [],
                     priceRange: null,
                     rating: null,
+                    stockStatus: null,
                   })}
                 >
                   {tCommon('clearAll', { count: '' }).replace('()', '')}

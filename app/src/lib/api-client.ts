@@ -1,9 +1,37 @@
 import { getCookie, setCookie, deleteCookie } from "@/lib/utils";
+import {
+  createApiLogEntry,
+  parseApiBodyText,
+  type ParsedApiBody,
+  sendApiLogEntry,
+  serializeRequestBody,
+  toApiLogError,
+} from "@/lib/api-request-log";
 
 type ApiClientConfig = {
   baseUrl?: string;
   headers?: HeadersInit;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function extractAccessToken(payload: unknown): string | undefined {
+  const record = asRecord(payload);
+  if (!record) return undefined;
+
+  if (typeof record.access_token === "string" && record.access_token.trim()) {
+    return record.access_token;
+  }
+
+  const data = asRecord(record.data);
+  if (typeof data?.access_token === "string" && data.access_token.trim()) {
+    return data.access_token;
+  }
+
+  return undefined;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -59,32 +87,92 @@ class ApiClient {
     deleteCookie('access_token');
   }
 
+  private async logRequest(
+    label: string,
+    url: string,
+    config: RequestInit,
+    startedAt: Date,
+    details?: {
+      response?: Response;
+      responseBody?: unknown;
+      error?: unknown;
+      notes?: string[];
+    }
+  ) {
+    const entry = createApiLogEntry({
+      timestamp: startedAt,
+      source: "api-client",
+      label,
+      durationMs: Date.now() - startedAt.getTime(),
+      request: {
+        method: config.method || "GET",
+        url,
+        headers: config.headers,
+        body: serializeRequestBody(config.body),
+        credentials: config.credentials,
+        cache: config.cache,
+        mode: config.mode,
+        redirect: config.redirect,
+        referrer: config.referrer,
+        integrity: config.integrity,
+        keepalive: config.keepalive,
+      },
+      response: details?.response
+        ? {
+            ok: details.response.ok,
+            status: details.response.status,
+            statusText: details.response.statusText,
+            headers: details.response.headers,
+            body: details.responseBody,
+          }
+        : undefined,
+      error: details?.error ? toApiLogError(details.error) : undefined,
+      notes: details?.notes,
+    });
+
+    await sendApiLogEntry(entry).catch(() => undefined);
+  }
+
   private async refreshSession(): Promise<boolean> {
     if (this.refreshInFlight) return this.refreshInFlight;
 
     this.refreshInFlight = (async () => {
+      const startedAt = new Date();
+      const url = `${this.baseUrl}/auth/refresh`;
+      const config: RequestInit = {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...this.defaultHeaders,
+          ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
+        },
+      };
+
       try {
-        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            ...this.defaultHeaders,
-            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
-          },
+        const response = await fetch(url, config);
+        const rawResponse = await response.text().catch(() => "");
+        const parsedResponse = parseApiBodyText(rawResponse, response.headers.get("content-type"));
+
+        await this.logRequest("/auth/refresh", url, config, startedAt, {
+          response,
+          responseBody: parsedResponse.value,
         });
 
         if (!response.ok) return false;
 
         // Try to parse the new token from valid JSON response
-        const data = await response.json().catch(() => null);
-        const newToken = data?.data?.access_token || data?.access_token;
+        const newToken = extractAccessToken(parsedResponse.value);
         
         if (newToken) {
           this.setAccessToken(newToken);
         }
 
         return true;
-      } catch {
+      } catch (error) {
+        await this.logRequest("/auth/refresh", url, config, startedAt, {
+          error,
+        });
+
         return false;
       } finally {
         this.refreshInFlight = null;
@@ -130,7 +218,29 @@ class ApiClient {
       },
     };
 
-    const response = await fetch(url, config);
+    const startedAt = new Date();
+    let response: Response;
+    let rawResponse = "";
+    let parsedResponse: ParsedApiBody = { value: null };
+
+    try {
+      response = await fetch(url, config);
+      rawResponse = await response.text().catch(() => '');
+      parsedResponse = parseApiBodyText(rawResponse, response.headers.get('content-type'));
+
+      await this.logRequest(endpoint, url, config, startedAt, {
+        response,
+        responseBody: parsedResponse.value,
+        notes: meta?.hasRetriedAfterRefresh ? ["Retried after refresh."] : undefined,
+      });
+    } catch (error) {
+      await this.logRequest(endpoint, url, config, startedAt, {
+        error,
+        notes: meta?.hasRetriedAfterRefresh ? ["Retried after refresh."] : undefined,
+      });
+
+      throw error;
+    }
 
     if (!response.ok) {
       // If access token expired, try refresh once and retry the original request.
@@ -153,11 +263,14 @@ class ApiClient {
         this.handleHardLogout();
       }
 
-      const payload = await response.json().catch(() => ({}));
+      const payload = parsedResponse.value && typeof parsedResponse.value === "object"
+        ? parsedResponse.value
+        : rawResponse || {};
       const message =
         (payload && typeof payload === "object" &&
           (((payload as any).message as string | undefined) ||
             ((payload as any).error?.message as string | undefined))) ||
+        (typeof parsedResponse.value === "string" && parsedResponse.value.trim() ? parsedResponse.value : undefined) ||
         `HTTP Error: ${response.status}`;
 
       throw new ApiError(response.status, String(message), payload);
@@ -168,7 +281,6 @@ class ApiClient {
       return {} as T;
     }
 
-    const rawResponse = await response.text().catch(() => '');
     if (!rawResponse.trim()) {
       return {} as T;
     }
@@ -181,17 +293,15 @@ class ApiClient {
       throw new ApiError(response.status, message, rawResponse.slice(0, 500));
     }
 
-    let jsonResponse: unknown;
-
-    try {
-      jsonResponse = JSON.parse(rawResponse);
-    } catch {
+    if (parsedResponse.jsonError) {
       throw new ApiError(
         response.status,
         `Received invalid JSON response from API for ${endpoint}.`,
         rawResponse.slice(0, 500)
       );
     }
+    
+    const jsonResponse = parsedResponse.value;
     
     // Unwrap the response if it has a 'data' property BUT NOT 'meta' (common API pattern)
     // If it has both 'data' and 'meta', keep the structure for pagination

@@ -13,7 +13,7 @@ import { EntityCarousel, type EntityCarouselItem } from "@/components/home/entit
 import { Star, MapPin, Phone, Mail } from "lucide-react";
 
 interface EntityListingPageProps {
-  type: 'brand' | 'category' | 'vendor' | 'shop';
+  type: 'brand' | 'category' | 'vendor' | 'products';
   slug?: string;
   data?: any;
   isLoading?: boolean;
@@ -38,7 +38,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   const isBrand = type === 'brand';
   const isCategory = type === 'category';
   const isVendor = type === 'vendor';
-  const isShop = type === 'shop';
+  const isProductsPage = type === 'products';
 
   // --- Category Specific Logic ---
   const transformedCategory = useMemo(() => {
@@ -80,7 +80,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
 
   // --- Data Normalization for View ---
   const viewData = useMemo(() => {
-      if (!data && !isShop) return null;
+      if (!data && !isProductsPage) return null;
       
       let title = "";
       let description = "";
@@ -96,19 +96,19 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
           title = name || "";
           description = desc || "";
           image = data.logo || "";
-      } else if (isShop) {
+        } else if (isProductsPage) {
           title = t('product.allProductsTitle');
           description = t('product.allProductsSubtitle');
           image = ""; // Or some default shop banner
       }
       
       return { title, description, image };
-  }, [data, isCategory, transformedCategory, isBrand, isVendor, isShop, isAr, t]);
+      }, [data, isCategory, transformedCategory, isBrand, isVendor, isProductsPage, isAr, t]);
 
   // --- Loading State ---
   if (isLoading) {
     // Determine title for skeleton breadcrumb
-    const rootTitle = isBrand ? t("nav.brands") : isCategory ? t("nav.categories") : isShop ? t("nav.products") : t("nav.stores");
+    const rootTitle = isBrand ? t("nav.brands") : isCategory ? t("nav.categories") : isProductsPage ? t("nav.products") : t("nav.stores");
     
     return (
       <ListingLayout
@@ -131,7 +131,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   }
 
   // --- Error/Not Found State ---
-  if (error || (!isShop && !data) || (isCategory && !transformedCategory)) {
+  if (error || (!isProductsPage && !data) || (isCategory && !transformedCategory)) {
     notFound();
   }
 
@@ -143,14 +143,14 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   if (isBrand) { rootPath = "/brands"; rootLabel = t("nav.brands"); }
   else if (isCategory) { rootPath = "/categories"; rootLabel = t("nav.categories"); }
   else if (isVendor) { rootPath = "/vendors"; rootLabel = t("nav.stores"); }
-  else if (isShop) { rootPath = "/products"; rootLabel = t("nav.products"); }
+  else if (isProductsPage) { rootPath = "/products"; rootLabel = t("nav.products"); }
 
   // --- Vendor Details ---
   // Mock data as in original file
   const rating = 4.8;
   const reviewCount = 120;
 
-  const headerContent = !isShop ? (
+  const headerContent = !isProductsPage ? (
     <EntityHeader
       title={viewData.title}
       image={viewData.image}
@@ -194,18 +194,18 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   ) : undefined;
 
   const initialFilters = isBrand 
-    ? { brand_id: String(id) } 
+    ? { brand_ids: String(id) } 
     : isCategory 
       ? { category_ids: String(id) } 
       : isVendor
-        ? { vendor_id: String(id) }
-        : {};
+        ? { vendor_ids: String(id) }
+        : { q: '*' };
 
   const breadcrumbs = [
     { label: t("common.home"), href: "/" },
   ];
 
-  if (isShop) {
+  if (isProductsPage) {
     breadcrumbs.push({ label: rootLabel, href: rootPath });
   } else {
     breadcrumbs.push({ label: rootLabel, href: rootPath });
@@ -215,8 +215,8 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
   return (
     <ListingLayout
       heroContent={headerContent}
-      title={isShop ? viewData.title : undefined}
-      subtitle={isShop ? viewData.description : undefined}
+      title={isProductsPage ? viewData.title : undefined}
+      subtitle={isProductsPage ? viewData.description : undefined}
       breadcrumbs={breadcrumbs}
     >
       {isCategory && subcategories.length > 0 && (
@@ -231,13 +231,13 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
 
       <ProductListingPage
         initialFilters={initialFilters}
-        title={isShop ? undefined : t("common.products")}
+        title={isProductsPage ? undefined : t("common.products")}
         availableCategories={isCategory ? subcategories : undefined}
-        preloadedProducts={data?.products}
-        productsMeta={data?.productsMeta}
-        onLoadMore={fetchNextPage}
-        hasMore={hasNextPage}
-        isLoadingMore={isFetchingNextPage}
+        preloadedProducts={isCategory ? undefined : data?.products}
+        productsMeta={isCategory ? undefined : data?.productsMeta}
+        onLoadMore={isCategory ? undefined : fetchNextPage}
+        hasMore={isCategory ? undefined : hasNextPage}
+        isLoadingMore={isCategory ? undefined : isFetchingNextPage}
       />
       {isVendor && (
         <ProductReviews

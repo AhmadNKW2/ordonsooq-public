@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { useInfiniteBrandBySlug } from "@/hooks/useBrands";
-import { useInfiniteCategoryBySlug } from "@/hooks/useCategories";
 import { useInfiniteVendorBySlug } from "@/hooks/useVendors";
 import { EntityListingPage } from "@/components/layout/entity-listing-page";
 import { searchFiltersToApiFilters } from "@/lib/search/filter-utils";
@@ -25,14 +24,12 @@ export function EntitySlugPageClient({
   initialData,
   initialPage,
 }: EntitySlugPageClientProps) {
+  if (type === "category") {
+    return <EntityListingPage type="category" slug={slug} data={initialData} />;
+  }
+
   const { filters } = useSearchFilters();
   const apiFilters = searchFiltersToApiFilters(filters);
-
-  const categoryQuery = useInfiniteCategoryBySlug(slug, apiFilters, {
-    enabled: type === "category",
-    initialData: type === "category" ? (initialData as CategoryDetail | undefined) : undefined,
-    initialPage,
-  });
 
   const brandQuery = useInfiniteBrandBySlug(slug, apiFilters, {
     enabled: type === "brand",
@@ -46,7 +43,7 @@ export function EntitySlugPageClient({
     initialPage,
   });
 
-  const activeQuery = type === "category" ? categoryQuery : type === "brand" ? brandQuery : vendorQuery;
+  const activeQuery = type === "brand" ? brandQuery : vendorQuery;
 
   const data = useMemo(() => {
     if (!activeQuery.data?.pages.length) {

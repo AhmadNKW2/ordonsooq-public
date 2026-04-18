@@ -10,7 +10,7 @@ export interface TextareaProps
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, error, label, id: propId, ...props }, ref) => {
     const generatedId = React.useId();
-    const id = propId || generatedId;
+    const id = propId ?? (label ? generatedId : undefined);
     
     return (
       <div className="w-full">
@@ -28,7 +28,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             className={cn(
               INPUT_STYLES.base,
               INPUT_STYLES.padding,
-              "min-h-[80px] py-3",
+              "min-h-20 py-3",
               error ? INPUT_STYLES.error : INPUT_STYLES.default,
               className
             )}

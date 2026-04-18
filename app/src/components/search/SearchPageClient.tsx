@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { joinFilterValues, splitFilterValues } from '@/lib/search/filter-utils';
 import { useSearchFilters } from '@/lib/search/use-search-params';
 import { useInfiniteSearchProducts } from '@/lib/search/use-search';
 import { ProductFilters, FloatingFilterSort } from '@/components/products';
@@ -32,11 +33,21 @@ interface Props {
 }
 
 export function SearchPageClient({ initialData, initialFilters }: Props) {
+  const locale = useLocale();
   const t = useTranslations('product');
   const tSearch = useTranslations('search');
   const tCommon = useTranslations('common');
   
-  const { filters, setSortBy, setPage, setMinPrice, setMaxPrice, changeFilter } = useSearchFilters();
+  const {
+    filters,
+    setSortBy,
+    setPage,
+    setMinPrice,
+    setMaxPrice,
+    setAverageRatingMin,
+    setIsOutOfStock,
+    changeFilter,
+  } = useSearchFilters();
 
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -52,55 +63,69 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
 
   // Local ProductFilters state (synced to URL via useSearchFilters)
   const [filterState, setFilterState] = useState<FilterState>({
-    categories: initialFilters.category ? [initialFilters.category] : (initialFilters.category_ids ? initialFilters.category_ids.split(',') : []),
-    brands:     initialFilters.brand    ? [initialFilters.brand]    : (initialFilters.brand_id ? [initialFilters.brand_id] : []),
-    vendors:    initialFilters.vendor_id ? [initialFilters.vendor_id] : [],
-    attrs:      initialFilters.attrs    || [],
+    categories: splitFilterValues(initialFilters.category_ids),
+    brands: splitFilterValues(initialFilters.brand_ids),
+    vendors: splitFilterValues(initialFilters.vendor_ids),
+    attributeValues: splitFilterValues(initialFilters.attributes_values_ids),
+    specificationValues: splitFilterValues(initialFilters.specifications_values_ids),
     priceRange:
       initialFilters.min_price != null || initialFilters.max_price != null
         ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
         : null,
-    rating: null,
+    rating: initialFilters.average_rating_min ?? null,
+    stockStatus:
+      initialFilters.is_out_of_stock === true
+        ? 'out'
+        : initialFilters.is_out_of_stock === false
+          ? 'in'
+          : null,
   });
 
   const handleFilterChange = (newState: FilterState) => {
     setFilterState(newState);
-    void changeFilter('category', newState.categories.length > 0 ? newState.categories.join(',') : null);
-    void changeFilter('brand',    newState.brands[0]    ?? null);
-    void changeFilter('vendor_id',newState.vendors[0]   ?? null);
-    void changeFilter('attrs',    newState.attrs.length > 0 ? newState.attrs : null);
+    void changeFilter('category_ids', joinFilterValues(newState.categories));
+    void changeFilter('brand_ids', joinFilterValues(newState.brands));
+    void changeFilter('vendor_ids', joinFilterValues(newState.vendors));
+    void changeFilter('attributes_values_ids', joinFilterValues(newState.attributeValues));
+    void changeFilter('specifications_values_ids', joinFilterValues(newState.specificationValues));
     void setMinPrice(newState.priceRange?.min ?? null);
     void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
+    void setAverageRatingMin(newState.rating ?? null);
+    void setIsOutOfStock(
+      newState.stockStatus == null
+        ? null
+        : newState.stockStatus === 'out'
+    );
     void setPage(1);
   };
 
   // Merge URL filters with current sort key
   const searchFilters = useMemo<Omit<SearchFilters, 'page'>>(() => ({
-    q: filters.q || initialFilters.q,
-    category_ids: filters.category_ids,
-    category: filters.category,
-    subcategory: filters.subcategory,
-    brand_id: filters.brand_id,
-    brand: filters.brand,
-    vendor_id: filters.vendor_id,
-    attrs: filters.attrs,
-    min_price: filters.min_price,
-    max_price: filters.max_price,
+    q: filters.q?.trim() ? filters.q : initialFilters.q,
+    category_ids: filters.category_ids ?? initialFilters.category_ids,
+    brand_ids: filters.brand_ids ?? initialFilters.brand_ids,
+    vendor_ids: filters.vendor_ids ?? initialFilters.vendor_ids,
+    attributes_values_ids: filters.attributes_values_ids ?? initialFilters.attributes_values_ids,
+    specifications_values_ids: filters.specifications_values_ids ?? initialFilters.specifications_values_ids,
+    min_price: filters.min_price ?? initialFilters.min_price,
+    max_price: filters.max_price ?? initialFilters.max_price,
+    is_out_of_stock: filters.is_out_of_stock ?? initialFilters.is_out_of_stock,
+    average_rating_min: filters.average_rating_min ?? initialFilters.average_rating_min,
     sort_by: SORT_MAP[sortKey] as SortOption,
     per_page: initialFilters.per_page ?? 20,
-  }), [filters, initialFilters.per_page, initialFilters.q, sortKey]);
+  }), [filters, initialFilters, sortKey]);
 
   const initialSearchFilters = useMemo<Omit<SearchFilters, 'page'>>(() => ({
     q: initialFilters.q,
     category_ids: initialFilters.category_ids,
-    category: initialFilters.category,
-    subcategory: initialFilters.subcategory,
-    brand_id: initialFilters.brand_id,
-    brand: initialFilters.brand,
-    vendor_id: initialFilters.vendor_id,
-    attrs: initialFilters.attrs,
+    brand_ids: initialFilters.brand_ids,
+    vendor_ids: initialFilters.vendor_ids,
+    attributes_values_ids: initialFilters.attributes_values_ids,
+    specifications_values_ids: initialFilters.specifications_values_ids,
     min_price: initialFilters.min_price,
     max_price: initialFilters.max_price,
+    is_out_of_stock: initialFilters.is_out_of_stock,
+    average_rating_min: initialFilters.average_rating_min,
     sort_by: initialFilters.sort_by ?? 'popularity_score:desc',
     per_page: initialFilters.per_page ?? 20,
   }), [initialFilters]);
@@ -128,6 +153,7 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   } = useInfiniteSearchProducts(searchFilters, {
     enabled: Boolean(searchFilters.q?.trim()),
     initialData: initialInfiniteData,
+    locale,
   });
 
   const pages = infiniteData?.pages ?? [];
@@ -141,9 +167,11 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     filterState.categories.length +
     filterState.brands.length +
     filterState.vendors.length +
-    filterState.attrs.length +
+    filterState.attributeValues.length +
+    filterState.specificationValues.length +
     (filterState.priceRange ? 1 : 0) +
-    (filterState.rating ? 1 : 0);
+    (filterState.rating ? 1 : 0) +
+    (filterState.stockStatus ? 1 : 0);
 
   const sortOptions = [
     { value: 'popular',    label: t('sortPopular')   },
@@ -153,15 +181,23 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     { value: 'rating',     label: t('sortRating')    },
   ];
 
+  const facetRenderKey = useMemo(
+    () => `${locale}|search|${initialFilters.q ?? '*'}`,
+    [initialFilters.q, locale]
+  );
+
   const filtersComponent = (
     <ProductFilters
+      key={facetRenderKey}
       facets={results?.facets ?? []}
       selectedCategories={filterState.categories}
       selectedBrands={filterState.brands}
       selectedVendors={filterState.vendors}
-      selectedAttrs={filterState.attrs}
+      selectedAttributeValues={filterState.attributeValues}
+      selectedSpecificationValues={filterState.specificationValues}
       priceRange={filterState.priceRange ?? undefined}
       rating={filterState.rating ?? undefined}
+      stockStatus={filterState.stockStatus ?? undefined}
       onFilterChange={handleFilterChange}
       className="w-full"
     />
