@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { joinFilterValues, splitFilterValues } from '@/lib/search/filter-utils';
 import { useSearchFilters } from '@/lib/search/use-search-params';
@@ -9,6 +9,7 @@ import { ProductFilters, FloatingFilterSort } from '@/components/products';
 import type { FilterState } from '@/components/products/product-filters';
 import { SearchResults } from './SearchResults';
 import { Button, Card, Sheet, Select } from '@/components/ui';
+import { useLoading } from '@/components/ui/global-loader';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SearchResponse, SearchFilters, SortOption } from '@/lib/search/types';
@@ -37,6 +38,7 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   const t = useTranslations('product');
   const tSearch = useTranslations('search');
   const tCommon = useTranslations('common');
+  const { setIsLoading } = useLoading();
   
   const {
     filters,
@@ -56,6 +58,12 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   const [sortKey, setSortKey] = useState(() => toSortKey(initialFilters.sort_by));
 
   const handleSortChange = (key: string) => {
+    if (key === sortKey) {
+      setShowSort(false);
+      return;
+    }
+
+    setIsLoading(true);
     setSortKey(key);
     void setSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
     setShowSort(false);
@@ -81,7 +89,44 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
           : null,
   });
 
+  const syncedFilterState = useMemo<FilterState>(() => ({
+    categories: splitFilterValues(filters.category_ids),
+    brands: splitFilterValues(filters.brand_ids),
+    vendors: splitFilterValues(filters.vendor_ids),
+    attributeValues: splitFilterValues(filters.attributes_values_ids),
+    specificationValues: splitFilterValues(filters.specifications_values_ids),
+    priceRange:
+      filters.min_price != null || filters.max_price != null
+        ? { min: filters.min_price ?? 0, max: filters.max_price ?? Infinity }
+        : null,
+    rating: filters.average_rating_min ?? null,
+    stockStatus:
+      filters.is_out_of_stock === true
+        ? 'out'
+        : filters.is_out_of_stock === false
+          ? 'in'
+          : null,
+  }), [
+    filters.attributes_values_ids,
+    filters.average_rating_min,
+    filters.brand_ids,
+    filters.category_ids,
+    filters.is_out_of_stock,
+    filters.max_price,
+    filters.min_price,
+    filters.specifications_values_ids,
+    filters.vendor_ids,
+  ]);
+
+  useEffect(() => {
+    setFilterState(syncedFilterState);
+  }, [syncedFilterState]);
+
   const handleFilterChange = (newState: FilterState) => {
+    if (JSON.stringify(newState) !== JSON.stringify(filterState)) {
+      setIsLoading(true);
+    }
+
     setFilterState(newState);
     void changeFilter('category_ids', joinFilterValues(newState.categories));
     void changeFilter('brand_ids', joinFilterValues(newState.brands));
@@ -102,15 +147,15 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   // Merge URL filters with current sort key
   const searchFilters = useMemo<Omit<SearchFilters, 'page'>>(() => ({
     q: filters.q?.trim() ? filters.q : initialFilters.q,
-    category_ids: filters.category_ids ?? initialFilters.category_ids,
-    brand_ids: filters.brand_ids ?? initialFilters.brand_ids,
-    vendor_ids: filters.vendor_ids ?? initialFilters.vendor_ids,
-    attributes_values_ids: filters.attributes_values_ids ?? initialFilters.attributes_values_ids,
-    specifications_values_ids: filters.specifications_values_ids ?? initialFilters.specifications_values_ids,
-    min_price: filters.min_price ?? initialFilters.min_price,
-    max_price: filters.max_price ?? initialFilters.max_price,
-    is_out_of_stock: filters.is_out_of_stock ?? initialFilters.is_out_of_stock,
-    average_rating_min: filters.average_rating_min ?? initialFilters.average_rating_min,
+    category_ids: filters.category_ids,
+    brand_ids: filters.brand_ids,
+    vendor_ids: filters.vendor_ids,
+    attributes_values_ids: filters.attributes_values_ids,
+    specifications_values_ids: filters.specifications_values_ids,
+    min_price: filters.min_price,
+    max_price: filters.max_price,
+    is_out_of_stock: filters.is_out_of_stock,
+    average_rating_min: filters.average_rating_min,
     sort_by: SORT_MAP[sortKey] as SortOption,
     per_page: initialFilters.per_page ?? 20,
   }), [filters, initialFilters, sortKey]);

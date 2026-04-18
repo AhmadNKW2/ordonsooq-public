@@ -127,22 +127,27 @@ function buildGroupedFacetMap(
 
 function FilterOptionRow({ checked, label, count, control, onToggle }: FilterOptionRowProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 cursor-pointer hover:text-primary transition-colors",
-        checked ? "" : ""
-      )}
-      onClick={onToggle}
-    >
-      {control}
-      <span className="min-w-0 flex-1 cursor-pointer wrap-break-word text-sm text-primary">
-        {label}
-      </span>
-      {typeof count === "number" ? (
-        <span className="text-xs text-third">
-          ({count})
+    <div className="flex items-center gap-2">
+      <div className="shrink-0">
+        {control}
+      </div>
+      <button
+        type="button"
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-2 text-start hover:text-primary transition-colors",
+          checked ? "" : ""
+        )}
+        onClick={onToggle}
+      >
+        <span className="min-w-0 flex-1 wrap-break-word text-sm text-primary">
+          {label}
         </span>
-      ) : null}
+        {typeof count === "number" ? (
+          <span className="text-xs text-third">
+            ({count})
+          </span>
+        ) : null}
+      </button>
     </div>
   );
 }

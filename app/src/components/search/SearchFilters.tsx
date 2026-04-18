@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { joinFilterValues, splitFilterValues } from '@/lib/search/filter-utils';
 import { useSearchFilters } from '@/lib/search/use-search-params';
 import { Card, Checkbox } from '@/components/ui';
+import { useLoading } from '@/components/ui/global-loader';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FacetCount } from '@/lib/search/types';
@@ -16,6 +17,7 @@ interface Props {
 export function SearchFilters({ facets }: Props) {
   const t = useTranslations('search');
   const tCommon = useTranslations('common');
+  const { setIsLoading } = useLoading();
   const { filters, changeFilter, setMinPrice, setMaxPrice, resetFilters } = useSearchFilters();
 
   const [expandedSections, setExpandedSections] = useState<string[]>([
@@ -46,7 +48,10 @@ export function SearchFilters({ facets }: Props) {
         <h3 className="font-semibold text-primary">{tCommon('filters')}</h3>
         {activeFiltersCount > 0 && (
           <button
-            onClick={resetFilters}
+            onClick={() => {
+              setIsLoading(true);
+              resetFilters();
+            }}
             className="text-sm text-primary hover:underline"
           >
             {tCommon('clearAll', { count: activeFiltersCount })}
@@ -64,7 +69,10 @@ export function SearchFilters({ facets }: Props) {
           <FacetGroup
             facet={brandFacet}
             selected={splitFilterValues(filters.brand_ids)}
-            onSelect={(values) => changeFilter('brand_ids', joinFilterValues(values))}
+            onSelect={(values) => {
+              setIsLoading(true);
+              changeFilter('brand_ids', joinFilterValues(values));
+            }}
           />
         </FilterSection>
       )}
@@ -79,7 +87,10 @@ export function SearchFilters({ facets }: Props) {
           <FacetGroup
             facet={categoryFacet}
             selected={splitFilterValues(filters.category_ids)}
-            onSelect={(values) => changeFilter('category_ids', joinFilterValues(values))}
+            onSelect={(values) => {
+              setIsLoading(true);
+              changeFilter('category_ids', joinFilterValues(values));
+            }}
           />
         </FilterSection>
       )}

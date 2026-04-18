@@ -6,6 +6,7 @@ import { Check } from "lucide-react";
 import { FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Button, Card, Sheet, Select } from "@/components/ui";
+import { useLoading } from "@/components/ui/global-loader";
 import { useListingVariantProducts } from "@/hooks/useListingVariantProducts";
 import { joinFilterValues, splitFilterValues } from "@/lib/search/filter-utils";
 import { useInfiniteSearchProducts } from "@/lib/search/use-search";
@@ -62,6 +63,7 @@ export function ProductListingPage({
   const locale = useLocale() as string;
   const t = useTranslations('product');
   const tCommon = useTranslations('common');
+  const { setIsLoading } = useLoading();
   
   const {
     filters: urlFilters,
@@ -80,6 +82,12 @@ export function ProductListingPage({
   const [sortKey, setSortKey] = useState(() => toSortKey(initialFilters.sort_by || urlFilters.sort_by));
 
   const handleSortChange = (key: string) => {
+    if (key === sortKey) {
+      setShowSort(false);
+      return;
+    }
+
+    setIsLoading(true);
     setSortKey(key);
     void setUrlSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
     setShowSort(false);
@@ -105,6 +113,10 @@ export function ProductListingPage({
   });
 
   const handleFilterChange = (newState: FilterState) => {
+    if (JSON.stringify(newState) !== JSON.stringify(filters)) {
+      setIsLoading(true);
+    }
+
     setFilters(newState);
     void changeFilter('category_ids', joinFilterValues(newState.categories));
     void changeFilter('brand_ids', joinFilterValues(newState.brands));
