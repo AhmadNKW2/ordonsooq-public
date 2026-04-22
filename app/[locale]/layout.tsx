@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { Figtree, Almarai } from "next/font/google";
 import { setRequestLocale } from "next-intl/server";
 import { Footer } from "@/components/layout/footer";
@@ -8,8 +9,11 @@ import type { Locale } from "@/i18n/message-catalog";
 import { RouteIntlProvider } from "@/i18n/route-intl-provider";
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { SITE_CONFIG } from "@/lib/constants";
+import { getQueryClient } from "@/lib/query-client";
 import { routing } from "@/i18n/routing";
 import { ROOT_MESSAGE_NAMESPACES } from "@/i18n/scoped-messages";
+import { homeKeys } from "@/hooks/useHome";
+import { homeService } from "@/services/home.service";
 import { Analytics } from "@vercel/analytics/next";
 import "./../globals.css";
 
@@ -66,24 +70,33 @@ type Props = {
 
 export default async function RootLayout({ children, params }: Props) {
   const { locale } = await params;
+  const queryClient = getQueryClient();
 
   setRequestLocale(locale);
 
+  await queryClient.prefetchQuery({
+    queryKey: homeKeys.data(),
+    queryFn: () => homeService.getHomeData(),
+  }).catch(() => undefined);
+
   const isRTL = locale === 'ar';
   const resolvedLocale = locale as Locale;
+  const dehydratedState = dehydrate(queryClient);
 
   return (
     <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'} className={`${figtree.variable} ${almarai.variable}`}>
       <body className={`${isRTL ? almarai.className : figtree.className} antialiased min-h-screen flex flex-col bg-gray-50/50`}>
         <RouteIntlProvider locale={resolvedLocale} namespaces={ROOT_MESSAGE_NAMESPACES}>
           <Providers>
-            <Header />
-            <main className="flex-1">
-              <PageWrapper>
-                {children}
-              </PageWrapper>
-            </main>
-            <Footer />
+            <HydrationBoundary state={dehydratedState}>
+              <Header />
+              <main className="flex-1">
+                <PageWrapper>
+                  {children}
+                </PageWrapper>
+              </main>
+              <Footer />
+            </HydrationBoundary>
           </Providers>
         </RouteIntlProvider>
         <Analytics />

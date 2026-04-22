@@ -22,9 +22,13 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## API Request Logging
 
-Outbound requests made through the shared API client and search fetch wrapper are written to `logs/api-requests.log` as a formatted JSON array with full request/response details.
+API request logging is disabled by default in development.
 
+- Set `NEXT_PUBLIC_ENABLE_API_REQUEST_LOGGING=1` to enable logging in the browser and on the server.
+- Set `ENABLE_API_REQUEST_LOGGING=1` to enable logging for server-only flows.
+- When enabled, entries are appended to a newline-delimited JSON log under the OS temp directory by default.
 - Set `API_LOG_FILE_PATH` to change the log file location.
+- Set `API_LOG_MAX_BYTES` to cap the log file size before it is rotated.
 - Set `API_LOG_BASE_URL` if server-rendered requests cannot reach the local app with the default `http://127.0.0.1:3000` fallback.
 
 ## Learn More

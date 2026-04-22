@@ -90,7 +90,7 @@ export function searchParamsToSearchFilters(params: SearchParamsInput): SearchFi
     max_price: finiteNumber(params.max_price),
     is_out_of_stock: booleanValue(params.is_out_of_stock),
     average_rating_min: finiteNumber(params.average_rating_min),
-    sort_by: (firstString(params.sort_by) as SortOption | undefined) ?? "popularity_score:desc",
+    sort_by: firstString(params.sort_by) as SortOption | undefined,
     page: finiteNumber(params.page) ?? 1,
   };
 }

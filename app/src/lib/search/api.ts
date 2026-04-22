@@ -22,26 +22,7 @@ type OrdonDbAttributeValue = {
 type OrdonDbAttributeGroup = {
   name_en?: string | null;
   name_ar?: string | null;
-  values?: Record<string, OrdonDbAttributeValue>;
-};
-
-type OrdonDbCategory = {
-  id?: number | string;
-  name_en?: string | null;
-  name_ar?: string | null;
-  slug?: string | null;
-};
-
-type OrdonDbBrand = {
-  id?: number | string;
-  name_en?: string | null;
-  name_ar?: string | null;
-};
-
-type OrdonDbVendor = {
-  id?: number | string;
-  name_en?: string | null;
-  name_ar?: string | null;
+  values?: Record<string, OrdonDbAttributeValue | undefined> | null;
 };
 
 type OrdonDbMedia = {
@@ -50,31 +31,40 @@ type OrdonDbMedia = {
   sort_order?: number | null;
 };
 
-type OrdonDbProduct = {
-  id?: number | string;
+type OrdonDbCategory = {
+  id?: number | string | null;
   name_en?: string | null;
   name_ar?: string | null;
   slug?: string | null;
-  created_at?: string | null;
+};
+
+type OrdonDbEntitySummary = {
+  id?: number | string | null;
+  name_en?: string | null;
+  name_ar?: string | null;
+};
+
+type OrdonDbProduct = {
+  id?: number | string | null;
+  slug?: string | null;
+  name_en?: string | null;
+  name_ar?: string | null;
   price?: number | string | null;
   sale_price?: number | string | null;
-  is_out_of_stock?: boolean | null;
+  quantity?: number | string | null;
   average_rating?: number | string | null;
-  brand?: OrdonDbBrand | null;
-  vendor?: OrdonDbVendor | null;
+  is_out_of_stock?: boolean | null;
+  created_at?: string | null;
+  brand?: OrdonDbEntitySummary | null;
+  vendor?: OrdonDbEntitySummary | null;
   categories?: OrdonDbCategory[] | null;
   categories_ids?: Array<number | string> | null;
-  attributes_ids?: Array<number | string> | null;
-  attributes_values_ids?: Array<number | string> | null;
-  specifications_ids?: Array<number | string> | null;
-  specifications_values_ids?: Array<number | string> | null;
   attributes?: Record<string, OrdonDbAttributeGroup> | null;
   specifications?: Record<string, OrdonDbAttributeGroup> | null;
   media?: OrdonDbMedia[] | null;
 };
 
 type OrdonDbSearchResult = {
-  id?: number | string;
   name?: string | null;
   name_ar?: string | null;
   product?: OrdonDbProduct | null;
@@ -227,7 +217,7 @@ const facetCatalogCache = new Map<SearchLocale, {
 
 const facetCatalogPromises = new Map<SearchLocale, Promise<FacetCatalogs>>();
 
-function buildSearchParams(filters: SearchFilters, locale?: string): string {
+function buildSearchParams(filters: SearchFilters, locale?: string, options?: { includeLocale?: boolean }): string {
   const params = new URLSearchParams();
 
   if (filters.q) params.set('q', filters.q);
@@ -242,10 +232,12 @@ function buildSearchParams(filters: SearchFilters, locale?: string): string {
   if (filters.max_price != null)    params.set('max_price', String(filters.max_price));
   if (filters.is_out_of_stock != null) params.set('is_out_of_stock', String(filters.is_out_of_stock));
   if (filters.average_rating_min != null) params.set('average_rating_min', String(filters.average_rating_min));
-  if (filters.sort_by)              params.set('sort_by', filters.sort_by);
+  if (filters.sort_by && filters.sort_by !== 'popularity_score:desc') {
+    params.set('sort_by', filters.sort_by);
+  }
   if (filters.page)                 params.set('page', String(filters.page));
   if (filters.per_page)             params.set('per_page', String(filters.per_page));
-  if (locale)                       params.set('locale', locale);
+  if (options?.includeLocale && locale) params.set('locale', locale);
 
   return params.toString();
 }
@@ -674,12 +666,7 @@ function buildGroupedDisjunctiveFacetRequests(
 }
 
 function buildCategoryFacetSearchFilters(filters: SearchFilters): SearchFilters {
-  return {
-    q: filters.q,
-    sort_by: filters.sort_by,
-    page: 1,
-    per_page: filters.per_page,
-  };
+  return buildFacetSearchFilters(filters, { category_ids: undefined });
 }
 
 function buildDisjunctiveFacetRequests(filters: SearchFilters, facets: FacetCount[] | undefined): DisjunctiveFacetRequest[] {
@@ -767,10 +754,6 @@ function buildFacetFromCountMap(
       };
     })
     .filter((item) => {
-      if (item.count <= 0 && !selectedIds.includes(item.value)) {
-        return false;
-      }
-
       if (!options.hideUnresolvedNumericValues) {
         return true;
       }
@@ -1134,6 +1117,7 @@ function normalizeOrdonDbItem(result: OrdonDbSearchResult, locale: SearchLocale)
   return {
     hit: {
       id: String(product.id),
+      slug: product.slug?.trim() || String(product.id),
       name_en: product.name_en?.trim() || result.name?.trim() || String(product.id),
       name_ar: product.name_ar?.trim() || result.name_ar?.trim() || product.name_en?.trim() || result.name?.trim() || String(product.id),
       brand: brand?.label || '',
@@ -1143,6 +1127,8 @@ function normalizeOrdonDbItem(result: OrdonDbSearchResult, locale: SearchLocale)
       is_available: !isOutOfStock,
       images: extractImages(product),
       rating,
+      stock: toFiniteNumber(product.quantity) ?? (!isOutOfStock ? 1 : 0),
+      createdAt: product.created_at?.trim() || undefined,
       popularity_score: toFiniteNumber(result.score) ?? 0,
     },
     categories,
@@ -1203,7 +1189,7 @@ function buildFacetFromIds(
     if (normalizedId) valueSet.add(normalizedId);
   });
 
-  effectiveLookup.forEach((_entry, key) => valueSet.add(key));
+  countMap.forEach((_count, key) => valueSet.add(key));
 
   const counts = Array.from(valueSet)
     .map((value) => {
@@ -1218,10 +1204,6 @@ function buildFacetFromIds(
       };
     })
     .filter((item) => {
-      if (item.count <= 0 && !selectedIds.includes(item.value)) {
-        return false;
-      }
-
       if (!options.hideUnresolvedNumericValues) {
         return true;
       }
@@ -1404,6 +1386,7 @@ function normalizeOrdonDbAutocompleteResponse(
     .slice(0, perPage)
     .map((item) => ({
       id: item.hit.id,
+      slug: item.hit.slug,
       name_en: item.hit.name_en,
       name_ar: item.hit.name_ar,
       image: item.hit.images?.[0],
@@ -1532,9 +1515,7 @@ function buildOrdonDbSearchRequest(filters: SearchFilters): OrdonDbSearchRequest
     };
   }
 
-  if (filters.is_out_of_stock != null) {
-    requestFilters.is_out_of_stock = filters.is_out_of_stock;
-  }
+  requestFilters.is_out_of_stock = filters.is_out_of_stock ?? false;
 
   if (filters.average_rating_min != null) {
     requestFilters.average_rating = {
@@ -1685,7 +1666,7 @@ async function legacyServerSearch(
   signal?: AbortSignal,
   locale?: string
 ): Promise<SearchRequestDebugResult<SearchResponse>> {
-  const qs = buildSearchParams(filters, locale);
+  const qs = buildSearchParams(filters, locale, { includeLocale: true });
   const response = await debugFetch('LegacySearch', `${API_BASE}/search?${qs}`, {
     cache: 'no-store',
     signal,
@@ -1815,10 +1796,11 @@ export async function serverSearchWithSource(
 // ─── Client-side fetch (uses apiClient for consistency) ─────────────────────
 
 export async function clientSearch(filters: SearchFilters, locale?: string): Promise<SearchResponse> {
-  const qs = buildSearchParams(filters, locale);
+  const qs = buildSearchParams(filters);
   const response = await debugFetch<SearchResponse>('LocalSearchRoute', `${LOCAL_SEARCH_API_PATH}?${qs}`, {
     cache: 'no-store',
     credentials: 'include',
+    headers: locale ? { 'x-search-locale': locale } : undefined,
   });
 
   if (!response.ok) {

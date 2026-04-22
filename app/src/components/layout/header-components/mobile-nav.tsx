@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Heart, User, Globe, ChevronRight, ChevronLeft, ArrowLeft, ExternalLink } from "lucide-react";
+import { ChevronRight, ArrowLeft, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 interface MobileNavProps {
   isOpen: boolean;
   onClose: () => void;
+  topOffset?: number;
 }
 
 const variants = {
@@ -33,7 +34,7 @@ const variants = {
   }),
 };
 
-export function MobileNav({ isOpen, onClose }: MobileNavProps) {
+export function MobileNav({ isOpen, onClose, topOffset = 0 }: MobileNavProps) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
   const pathname = usePathname();
@@ -87,9 +88,10 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   return (
     <div
       className={cn(
-        "lg:hidden fixed inset-0 top-25 bg-white z-40 transition-transform duration-300 flex flex-col",
+        "lg:hidden fixed inset-x-0 bottom-16 bg-white z-40 transition-transform duration-300 flex flex-col",
         isOpen ? "translate-x-0" : (isArabic ? "translate-x-full" : "-translate-x-full")
       )}
+      style={{ top: topOffset }}
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
         <nav className="min-h-full">
@@ -166,7 +168,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         </nav>
       </div>
 
-      <div className="mb-16 p-4 border-t border-gray-100 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="p-4 border-t border-gray-100 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex justify-center items-center gap-3">
           <LanguageSwitcher />
         </div>

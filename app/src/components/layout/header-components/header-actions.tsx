@@ -17,12 +17,7 @@ import { formatPrice } from "@/lib/utils";
 import { CURRENCY_CONFIG } from "@/lib/constants";
 import { useLocale } from "next-intl";
 
-interface HeaderActionsProps {
-  onSearchToggle: () => void;
-
-}
-
-export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
+export function HeaderActions() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
@@ -62,15 +57,6 @@ export function HeaderActions({ onSearchToggle }: HeaderActionsProps) {
 
   return (
     <div className="flex items-center gap-3">
-      {/* Mobile Search Toggle - Hidden since search bar is always visible */}
-      {/* <IconButton
-        variant="header"
-        className="md:hidden"
-        onClick={onSearchToggle}
-        aria-label="Toggle search"
-        icon="search"
-      /> */}
-
       {/* Language Switcher - Desktop Only */}
       <div className="hidden lg:block ">
         <LanguageSwitcher />

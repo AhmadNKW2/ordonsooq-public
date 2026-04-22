@@ -34,8 +34,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               INPUT_STYLES.base,
               INPUT_STYLES.padding,
-              "h-9 md:h-11",
-              variant === "search" && "rounded-full bg-gray-50 border-gray-200 focus:bg-white ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 md:ltr:pl-12 md:rtl:pr-12",
+              "h-11 md:h-11",
+              variant === "search" && "rounded-full bg-gray-50 border-gray-200 focus:bg-white ltr:pl-4 ltr:pr-14 rtl:pr-4 rtl:pl-14 md:ltr:pr-16 md:rtl:pl-16",
               error
                 ? INPUT_STYLES.error
                 : INPUT_STYLES.default,
@@ -49,9 +49,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {variant === "search" && (
             <button
                 type="submit"
-                className="absolute ltr:left-1 rtl:right-1 md:ltr:left-2 md:rtl:right-2 top-1/2 -translate-y-1/2 p-1.5 md:p-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
-                >
-                <Search className="w-4 h-4" />
+                className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex w-12 md:w-18 items-center justify-center bg-[#F0BB1C] text-white ltr:rounded-r-full ltr:rounded-l-none rtl:rounded-l-full rtl:rounded-r-none hover:brightness-95 transition-[filter]"
+              >
+                <Search className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           )}
           {Icon && iconPosition === "right" && !variant && (

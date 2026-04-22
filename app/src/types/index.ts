@@ -219,7 +219,9 @@ export interface TransactionsResponse {
 // Cart Types
 export interface CartVariantAttribute {
   attribute_name_en: string;
+  attribute_name_ar?: string;
   value_en: string;
+  value_ar?: string;
   color_code?: string;
 }
 
@@ -236,6 +238,7 @@ export interface CartVariant {
 export interface CartProduct {
   id: number;
   name_en: string;
+  name_ar?: string;
   price: number;
   sale_price?: number;
   image: string;
@@ -343,7 +346,6 @@ export interface Order {
   subtotal: number;
   discount: number;
   shipping: number;
-  tax: number;
   total: number;
   notes?: string;
   createdAt: string;

@@ -20,7 +20,7 @@ import { Button, Input, Card, Radio, Textarea, Select, Checkbox } from "@/compon
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/useAuth";
 import { formatPrice } from "@/lib/utils";
-import { SHIPPING_OPTIONS, JORDAN_CITIES } from "@/lib/constants";
+import { FREE_SHIPPING_MIN_ORDER_AMOUNT, SHIPPING_OPTIONS, JORDAN_CITIES } from "@/lib/constants";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { orderService } from "@/services/order.service";
 
@@ -56,9 +56,8 @@ export function CheckoutPageClient() {
   });
 
   const selectedShipping = SHIPPING_OPTIONS.find((shippingOption) => shippingOption.id === shippingMethod) ?? SHIPPING_OPTIONS[0];
-  const shipping = totalPrice > 50 && selectedShipping.price > 0 ? 0 : selectedShipping.price;
-  const tax = totalPrice * 0.1;
-  const finalTotal = totalPrice + shipping + tax;
+  const shipping = totalPrice >= FREE_SHIPPING_MIN_ORDER_AMOUNT && selectedShipping.price > 0 ? 0 : selectedShipping.price;
+  const finalTotal = totalPrice + shipping;
 
   const validateShipping = () => {
     const nextErrors: Record<string, string> = {};
@@ -477,10 +476,6 @@ export function CheckoutPageClient() {
                   {shipping === 0 ? t("free") : formatPrice(shipping)}
                 </span>
               </div>
-              <div className="flex justify-between text-third">
-                <span>{t("tax")}</span>
-                <span>{formatPrice(tax)}</span>
-              </div>
             </div>
 
             <div className="flex justify-between text-lg font-bold text-primary">
@@ -551,10 +546,6 @@ export function CheckoutPageClient() {
                   <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
                     {shipping === 0 ? t("free") : formatPrice(shipping)}
                   </span>
-                </div>
-                <div className="flex justify-between text-sm text-third">
-                  <span>{t("tax")}</span>
-                  <span>{formatPrice(tax)}</span>
                 </div>
               </div>
             </motion.div>

@@ -11,11 +11,14 @@ import { ListingLayout } from "@/components/layout/listing-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityCarousel, type EntityCarouselItem } from "@/components/home/entity-carousel";
 import { Star, MapPin, Phone, Mail } from "lucide-react";
+import type { SearchFilters, SearchResponse } from "@/lib/search/types";
 
 interface EntityListingPageProps {
   type: 'brand' | 'category' | 'vendor' | 'products';
   slug?: string;
   data?: any;
+  initialSearchFilters?: Partial<SearchFilters>;
+  initialSearchData?: SearchResponse | null;
   isLoading?: boolean;
   error?: any;
   fetchNextPage?: () => void;
@@ -23,7 +26,7 @@ interface EntityListingPageProps {
   isFetchingNextPage?: boolean;
 }
 
-export function EntityListingPage({ type, slug = "", data, isLoading = false, error, fetchNextPage, hasNextPage, isFetchingNextPage }: EntityListingPageProps) {
+export function EntityListingPage({ type, slug = "", data, initialSearchFilters, initialSearchData, isLoading = false, error, fetchNextPage, hasNextPage, isFetchingNextPage }: EntityListingPageProps) {
   const locale = useLocale() as Locale;
   const isAr = locale === 'ar';
   const t = useTranslations();
@@ -59,24 +62,6 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
       isCategory: true,
     }));
   }, [subcategories]);
-
-  const preloadedProducts = useMemo(() => {
-     if (isCategory && data && 'products' in data) {
-         return data.products as any[];
-     }
-     return undefined;
-  }, [isCategory, data]);
-
-  const preloadedBrands = useMemo(() => {
-    if (!preloadedProducts) return undefined;
-    const brandsMap = new Map();
-    preloadedProducts.forEach((p: any) => {
-      if (p.brand && typeof p.brand === 'object' && 'id' in p.brand) {
-        brandsMap.set(p.brand.id, p.brand);
-      }
-    });
-    return Array.from(brandsMap.values());
-  }, [preloadedProducts]);
 
   // --- Data Normalization for View ---
   const viewData = useMemo(() => {
@@ -193,13 +178,13 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
     </EntityHeader>
   ) : undefined;
 
-  const initialFilters = isBrand 
-    ? { brand_ids: String(id) } 
+  const initialFilters = initialSearchFilters ?? (isBrand 
+    ? { brand_ids: String(id), is_out_of_stock: false } 
     : isCategory 
-      ? { category_ids: String(id) } 
+      ? { category_ids: String(id), is_out_of_stock: false } 
       : isVendor
-        ? { vendor_ids: String(id) }
-        : { q: '*' };
+        ? { vendor_ids: String(id), is_out_of_stock: false }
+        : { q: '*', is_out_of_stock: false });
 
   const breadcrumbs = [
     { label: t("common.home"), href: "/" },
@@ -233,11 +218,7 @@ export function EntityListingPage({ type, slug = "", data, isLoading = false, er
         initialFilters={initialFilters}
         title={isProductsPage ? undefined : t("common.products")}
         availableCategories={isCategory ? subcategories : undefined}
-        preloadedProducts={isCategory ? undefined : data?.products}
-        productsMeta={isCategory ? undefined : data?.productsMeta}
-        onLoadMore={isCategory ? undefined : fetchNextPage}
-        hasMore={isCategory ? undefined : hasNextPage}
-        isLoadingMore={isCategory ? undefined : isFetchingNextPage}
+        initialSearchData={initialSearchData}
       />
       {isVendor && (
         <ProductReviews

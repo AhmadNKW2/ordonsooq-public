@@ -44,7 +44,7 @@
       "overnight": "Overnight Shipping",
       "overnightDesc": "Next business day",
       "free": "Free Shipping",
-      "freeDesc": "7-10 business days (Orders over $50)"
+      "freeDesc": "7-10 business days (Orders over 50 JD)"
     }
   },
   "common": {
@@ -98,6 +98,7 @@
     "categories": "Categories",
     "products": "Products",
     "deals": "Deals",
+    "below50JOD": "Below 50 JD",
     "newArrivals": "New Arrivals",
     "brands": "Brands",
     "stores": "Stores",
@@ -278,7 +279,7 @@
   },
   "features": {
     "freeShipping": "Free Shipping",
-    "freeShippingDesc": "Free delivery on orders over $50",
+    "freeShippingDesc": "Free delivery on orders over 50 JD",
     "easyReturns": "Easy Returns",
     "easyReturnsDesc": "30-day return policy",
     "secureCheckout": "Secure Checkout",
@@ -372,7 +373,7 @@
     "brand": "Brand",
     "features": {
       "freeShipping": "Free Shipping",
-      "freeShippingDesc": "Orders over $50",
+      "freeShippingDesc": "Orders over 50 JD",
       "returns": "Easy Returns",
       "returnsDesc": "30-day policy",
       "secure": "Secure",
@@ -400,7 +401,7 @@
     "viewOffer": "View offer",
     "tags": "Tags",
     "freeShipping": "Free Shipping",
-    "freeShippingDesc": "Orders over $50",
+    "freeShippingDesc": "Orders over 50 JD",
     "easyReturns": "Easy Returns",
     "secure": "Secure",
     "safeCheckout": "Safe checkout",
@@ -444,6 +445,7 @@
     "subtotalWithCount": "Subtotal ({count} items)",
     "freeShippingUnlocked": "Free shipping unlocked!",
     "addAmountForFreeShipping": "Add {amount} for free shipping",
+    "addItemsForFreeShipping": "{count, plural, one {Add # more item for free shipping} other {Add # more items for free shipping}}",
     "secureCheckoutNotice": "🔒 Secure checkout powered by Stripe",
     "free": "Free",
     "proceedToCheckout": "Proceed to Checkout",
@@ -545,7 +547,7 @@
       "accessibility": "Accessibility"
     },
     "freeShipping": "Free Shipping",
-    "freeShippingDesc": "On orders over $50",
+    "freeShippingDesc": "On orders over 50 JD",
     "securePayment": "Secure Payment",
     "securePaymentDesc": "100% protected",
     "support247": "24/7 Support",
@@ -577,7 +579,7 @@
     "explore": "Explore"
   },
   "topBar": {
-    "announcement": "🎉 Free shipping on orders over $50! Use code: {code}"
+    "announcement": "🎉 Free shipping on orders over {amount} JD!"
   },
   "categories": {
     "errorLoading": "Error loading categories. Please try again.",

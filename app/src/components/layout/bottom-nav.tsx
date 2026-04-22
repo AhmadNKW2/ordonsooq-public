@@ -71,7 +71,7 @@ export function BottomNav() {
                   </span>
                 ) : null}
               </div>
-              <span className="text-[10px] font-medium tracking-wide">
+              <span className="text-[10px] font-bold tracking-wide">
                 {t(item.label) || item.label} 
               </span>
             </Link>

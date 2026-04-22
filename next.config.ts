@@ -2,11 +2,16 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./app/src/i18n/request.ts');
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
-  },
+  ...(isDevelopment
+    ? {}
+    : {
+        experimental: {
+          optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
+        },
+      }),
   images: {
     remotePatterns: [
       {

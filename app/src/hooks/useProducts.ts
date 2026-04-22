@@ -6,6 +6,7 @@ export const PRODUCT_QUERY_KEYS = {
   all: ['products'] as const,
   lists: () => [...PRODUCT_QUERY_KEYS.all, 'list'] as const,
   list: (filters: ProductFilters) => [...PRODUCT_QUERY_KEYS.lists(), filters] as const,
+  infinite: (filters: Omit<ProductFilters, 'page'>) => [...PRODUCT_QUERY_KEYS.lists(), 'infinite', filters] as const,
   details: () => [...PRODUCT_QUERY_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...PRODUCT_QUERY_KEYS.details(), id] as const,
   detailBySlug: (slug: string) => [...PRODUCT_QUERY_KEYS.details(), 'slug', slug] as const,
@@ -121,7 +122,7 @@ export function useInfiniteProducts(
   const initialPage = options?.initialPage ?? options?.initialData?.meta?.page ?? 1;
 
   return useInfiniteQuery({
-    queryKey: [...PRODUCT_QUERY_KEYS.lists(), 'infinite', filters],
+    queryKey: PRODUCT_QUERY_KEYS.infinite(filters),
     queryFn: ({ pageParam = 1 }) =>
       productService.getAll({ ...filters, page: pageParam }),
     initialPageParam: initialPage,

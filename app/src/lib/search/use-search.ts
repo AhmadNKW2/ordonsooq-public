@@ -33,6 +33,7 @@ export function useInfiniteSearchProducts(
     initialPageParam: 1,
     initialData: options?.initialData as any, // bypassing strict generic typing for brevity
     enabled: options?.enabled,
+    staleTime: 30_000,
     placeholderData: (previousData) => previousData,
     getNextPageParam: (lastPage) => {
       const page = lastPage.page || 1;

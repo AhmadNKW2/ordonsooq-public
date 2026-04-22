@@ -10,9 +10,12 @@ export const SITE_CONFIG = {
     instagram: "https://instagram.com/ordonsooq",
   },
   contact: {
-    email: "support@ordonsooq.com",
-    phone: "+962 797675310",
-    address: "123 Commerce Street, Shopping City, SC 12345",
+    email: "help@ordonsooq.com",
+    phone: "+962 791001410",
+    address: {
+      en: "Jordan, Amman, Alwaha Circle, Wasfi Al-Tal St., Almehanya Towers, 1st floor, office 101",
+      ar: "الأردن، عمّان، دوار الواحة، شارع وصفي التل، أبراج المهنية، الطابق الأول، مكتب 101",
+    },
   },
 };
 
@@ -21,6 +24,10 @@ export const CURRENCY_CONFIG = {
   symbol: "JOD",
   symbolAr: "دينار",
 };
+
+export const BELOW_50_JOD_MAX_PRICE = 50;
+export const FREE_SHIPPING_MIN_ORDER_AMOUNT = 50;
+export const STANDARD_SHIPPING_FEE = 2;
 
 // Navigation Links
 export const NAV_LINKS = [
@@ -139,7 +146,7 @@ export const SHIPPING_OPTIONS = [
     label: "options.shipping.free",
     description: "options.shipping.freeDesc",
     price: 0,
-    minOrder: 50,
+    minOrder: FREE_SHIPPING_MIN_ORDER_AMOUNT,
   },
 ];
 

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -10,21 +12,26 @@ interface LogoProps {
 }
 
 export function Logo({ asLink = true, className }: LogoProps) {
+  const locale = useLocale();
+  const isArabic = locale === "ar";
+  const logoSrc = isArabic ? "/SVG/Logo%20AR.svg" : "/SVG/Logo%20EN.svg";
+
   const logoContent = (
-    <>
-      <div className="flex justify-center items-center bg-white h-5 w-5 md:h-9 md:w-9 rounded-full">
-        <div className="h-4 w-4 md:h-7 md:w-7 rounded-full bg-white border-4 md:border-6 border-primary"></div>
-      </div>
-      <span className="text-md md:text-2xl text-white inline">rdonsooq</span>
-    </>
+    <Image
+      src={logoSrc}
+      alt="ordonsooq"
+      width={isArabic ? 649 : 853}
+      height={isArabic ? 238 : 176}
+      priority
+      className="h-9 md:h-11                                                                                                                                                                                                                                                                                                                                                           w-auto"
+    />
   );
 
   if (asLink) {
     return (
       <Link
         href="/"
-        className={cn("inline-flex items-center gap-0.5 font-bold", className)}
-        dir="ltr"
+        className={cn("inline-flex items-center shrink-0", className)}
       >
         {logoContent}
       </Link>
@@ -32,7 +39,7 @@ export function Logo({ asLink = true, className }: LogoProps) {
   }
 
   return (
-    <span className={cn("inline-flex items-center gap-0.5 font-bold", className)} dir="ltr">
+    <span className={cn("inline-flex items-center shrink-0", className)}>
       {logoContent}
     </span>
   );

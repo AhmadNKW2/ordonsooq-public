@@ -14,7 +14,7 @@ import { Logo } from "./header-components";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { IconButton, IconName } from "../ui/icon-button";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 const FEATURES = [
   {
@@ -61,7 +61,11 @@ const PAYMENT_IMAGES = [
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const t = useTranslations();
+  const locale = useLocale();
   const containerClass = "container mx-auto py-5 px-4 md:px-12";
+  const contactAddress = locale === "ar"
+    ? SITE_CONFIG.contact.address.ar
+    : SITE_CONFIG.contact.address.en;
 
   return (
     <footer className="bg-gray-900 text-third2">
@@ -111,11 +115,11 @@ export function Footer() {
                   className="flex items-center gap-3 text-third2 hover:text-secondary transition-colors"
                 >
                   <Phone className="w-5 h-5" />
-                  {SITE_CONFIG.contact.phone}
+                  <span dir="ltr" className="text-left">{SITE_CONFIG.contact.phone}</span>
                 </a>
                 <div className="flex items-center gap-3 text-third2">
                   <MapPin className="w-5 h-5 shrink-0" />
-                  <span>{SITE_CONFIG.contact.address}</span>
+                  <span>{contactAddress}</span>
                 </div>
               </div>
               {/* Social Links */}

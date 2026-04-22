@@ -1,12 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { useInfiniteBrandBySlug } from "@/hooks/useBrands";
-import { useInfiniteVendorBySlug } from "@/hooks/useVendors";
 import { EntityListingPage } from "@/components/layout/entity-listing-page";
-import { searchFiltersToApiFilters } from "@/lib/search/filter-utils";
-import { useSearchFilters } from "@/lib/search/use-search-params";
 import type { BrandDetail, CategoryDetail, VendorDetail } from "@/types/api.types";
+import type { SearchFilters, SearchResponse } from "@/lib/search/types";
 
 type EntityType = "brand" | "category" | "vendor";
 type EntityData = BrandDetail | CategoryDetail | VendorDetail;
@@ -15,62 +11,24 @@ interface EntitySlugPageClientProps {
   type: EntityType;
   slug: string;
   initialData?: EntityData;
-  initialPage?: number;
+  initialSearchFilters?: SearchFilters;
+  initialSearchData?: SearchResponse | null;
 }
 
 export function EntitySlugPageClient({
   type,
   slug,
   initialData,
-  initialPage,
+  initialSearchFilters,
+  initialSearchData,
 }: EntitySlugPageClientProps) {
-  if (type === "category") {
-    return <EntityListingPage type="category" slug={slug} data={initialData} />;
-  }
-
-  const { filters } = useSearchFilters();
-  const apiFilters = searchFiltersToApiFilters(filters);
-
-  const brandQuery = useInfiniteBrandBySlug(slug, apiFilters, {
-    enabled: type === "brand",
-    initialData: type === "brand" ? (initialData as BrandDetail | undefined) : undefined,
-    initialPage,
-  });
-
-  const vendorQuery = useInfiniteVendorBySlug(slug, apiFilters, {
-    enabled: type === "vendor",
-    initialData: type === "vendor" ? (initialData as VendorDetail | undefined) : undefined,
-    initialPage,
-  });
-
-  const activeQuery = type === "brand" ? brandQuery : vendorQuery;
-
-  const data = useMemo(() => {
-    if (!activeQuery.data?.pages.length) {
-      return initialData;
-    }
-
-    const firstPage = activeQuery.data.pages[0];
-    const allProducts = activeQuery.data.pages.flatMap((page) => page.products || []);
-    const lastPageMeta = activeQuery.data.pages.at(-1)?.productsMeta;
-
-    return {
-      ...firstPage,
-      products: allProducts,
-      productsMeta: lastPageMeta,
-    };
-  }, [activeQuery.data, initialData]);
-
   return (
     <EntityListingPage
       type={type}
       slug={slug}
-      data={data}
-      isLoading={activeQuery.isLoading}
-      error={activeQuery.error}
-      fetchNextPage={activeQuery.fetchNextPage}
-      hasNextPage={activeQuery.hasNextPage}
-      isFetchingNextPage={activeQuery.isFetchingNextPage}
+      data={initialData}
+      initialSearchFilters={initialSearchFilters}
+      initialSearchData={initialSearchData}
     />
   );
 }

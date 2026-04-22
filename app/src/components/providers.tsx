@@ -8,6 +8,7 @@ import { getQueryClient } from "@/lib/query-client";
 import { CartProvider } from "@/hooks/use-cart";
 import { WishlistProvider } from "@/hooks/use-wishlist";
 import { AuthModalProvider } from "@/contexts/auth-modal-context";
+import { ApiRequestLogResetListener } from "@/components/ui/api-request-log-reset-listener";
 import { GlobalLoaderProvider } from "@/components/ui/global-loader";
 
 const ReactQueryDevtools = dynamic(
@@ -21,12 +22,15 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   const queryClient = getQueryClient();
-  const isDevelopment = process.env.NODE_ENV === "development";
+  const isReactQueryDevtoolsEnabled =
+    process.env.NODE_ENV === "development" &&
+    process.env.NEXT_PUBLIC_ENABLE_REACT_QUERY_DEVTOOLS === "1";
 
   return (
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
         <GlobalLoaderProvider>
+          <ApiRequestLogResetListener />
           <CartProvider>
             <AuthModalProvider>
               <WishlistProvider>
@@ -36,7 +40,7 @@ export function Providers({ children }: ProvidersProps) {
           </CartProvider>
         </GlobalLoaderProvider>
       </NuqsAdapter>
-      {isDevelopment ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+      {isReactQueryDevtoolsEnabled ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   );
 }

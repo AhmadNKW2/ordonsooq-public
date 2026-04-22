@@ -140,7 +140,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
               </div>
 
               <h3 className={cn(
-                "mt-4 font-medium text-primary group-hover/item:text-secondary transition-all text-center max-w-35 line-clamp-2",
+                "mt-2 font-medium text-primary group-hover/item:text-secondary transition-all text-center max-w-35 line-clamp-2",
                 isCompact ? "text-xs md:text-sm" : "text-sm md:text-base"
               )}>
                 {item.name}

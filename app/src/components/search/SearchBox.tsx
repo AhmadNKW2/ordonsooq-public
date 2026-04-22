@@ -5,8 +5,9 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAutocomplete } from '@/lib/search/use-autocomplete';
 import Image from 'next/image';
-import { Search, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui';
+import { productService } from '@/services/product.service';
 
 export function SearchBox() {
   const autocompleteMinChars = 3;
@@ -32,10 +33,26 @@ export function SearchBox() {
     router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   }
 
-  function handleSuggestionClick(suggestion: { id: string }) {
+  async function handleSuggestionClick(suggestion: { id: string; slug?: string | null }) {
     close();
-    // Navigate to product page — uses product id since Typesense may not return slug
-    router.push(`/products/${suggestion.id}`);
+
+    const resolvedSlug = suggestion.slug?.trim();
+    if (resolvedSlug) {
+      router.push(`/products/${resolvedSlug}`);
+      return;
+    }
+
+    const productId = Number(suggestion.id);
+    if (!Number.isFinite(productId)) {
+      return;
+    }
+
+    const product = await productService.getById(productId).catch(() => null);
+    const slug = product?.slug?.trim();
+
+    if (slug) {
+      router.push(`/products/${slug}`);
+    }
   }
 
   const getName = (s: { name_en: string; name_ar: string }) =>

@@ -3,9 +3,27 @@ import { routing } from './app/src/i18n/routing';
 import { NextRequest, NextResponse } from 'next/server';
 
 const handleI18nRouting = createMiddleware(routing);
+const API_REQUEST_LOG_INGEST_HEADER_NAME = 'x-ordonsooq-api-log';
+const API_REQUEST_LOG_INGEST_HEADER_VALUE = '1';
+
+function isEnabledFlag(value?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  return normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes' || normalizedValue === 'on';
+}
+
+function isApiRequestLoggingEnabled(): boolean {
+  return process.env.NODE_ENV === 'development' && (
+    isEnabledFlag(process.env.NEXT_PUBLIC_ENABLE_API_REQUEST_LOGGING) ||
+    isEnabledFlag(process.env.ENABLE_API_REQUEST_LOGGING)
+  );
+}
 
 async function resetApiRequestLogsForDocumentRequest(request: NextRequest) {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isApiRequestLoggingEnabled()) {
     return;
   }
 
@@ -22,6 +40,7 @@ async function resetApiRequestLogsForDocumentRequest(request: NextRequest) {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        [API_REQUEST_LOG_INGEST_HEADER_NAME]: API_REQUEST_LOG_INGEST_HEADER_VALUE,
       },
       body: JSON.stringify({ type: 'reset' }),
     });

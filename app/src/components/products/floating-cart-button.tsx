@@ -63,9 +63,10 @@ export interface FloatingCartButtonProps {
   variantId?: string | number;
   color?: "blue" | "white";
   iconType?: "shopping-cart" | "add-to-cart";
+  onAnimationEnd?: () => void;
 }
 
-export function FloatingCartButton({ product, cartItem, variantId, color = "blue", iconType = "shopping-cart" }: FloatingCartButtonProps) {
+export function FloatingCartButton({ product, cartItem, variantId, color = "blue", iconType = "shopping-cart", onAnimationEnd }: FloatingCartButtonProps) {
   const t = useTranslations('product');
   const { addItem, updateQuantity, loadingItems } = useCart();
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -92,7 +93,10 @@ export function FloatingCartButton({ product, cartItem, variantId, color = "blue
         const wait = Math.max(0, MIN_MS - elapsed);
         window.setTimeout(() => {
           setStatus('success');
-          window.setTimeout(() => setStatus('idle'), SUCCESS_HOLD);
+          window.setTimeout(() => {
+            setStatus('idle');
+            onAnimationEnd?.();
+          }, SUCCESS_HOLD);
         }, wait);
       },
       onError: () => setStatus('idle'),

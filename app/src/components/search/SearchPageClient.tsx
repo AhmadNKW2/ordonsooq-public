@@ -65,7 +65,7 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
 
     setIsLoading(true);
     setSortKey(key);
-    void setSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
+    void setSortBy(key === 'popular' ? null : (SORT_MAP[key] ?? null));
     setShowSort(false);
   };
 
@@ -81,12 +81,6 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
         ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
         : null,
     rating: initialFilters.average_rating_min ?? null,
-    stockStatus:
-      initialFilters.is_out_of_stock === true
-        ? 'out'
-        : initialFilters.is_out_of_stock === false
-          ? 'in'
-          : null,
   });
 
   const syncedFilterState = useMemo<FilterState>(() => ({
@@ -100,18 +94,11 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
         ? { min: filters.min_price ?? 0, max: filters.max_price ?? Infinity }
         : null,
     rating: filters.average_rating_min ?? null,
-    stockStatus:
-      filters.is_out_of_stock === true
-        ? 'out'
-        : filters.is_out_of_stock === false
-          ? 'in'
-          : null,
   }), [
     filters.attributes_values_ids,
     filters.average_rating_min,
     filters.brand_ids,
     filters.category_ids,
-    filters.is_out_of_stock,
     filters.max_price,
     filters.min_price,
     filters.specifications_values_ids,
@@ -121,6 +108,12 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
   useEffect(() => {
     setFilterState(syncedFilterState);
   }, [syncedFilterState]);
+
+  useEffect(() => {
+    if (filters.is_out_of_stock != null) {
+      void setIsOutOfStock(null);
+    }
+  }, [filters.is_out_of_stock, setIsOutOfStock]);
 
   const handleFilterChange = (newState: FilterState) => {
     if (JSON.stringify(newState) !== JSON.stringify(filterState)) {
@@ -136,11 +129,6 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     void setMinPrice(newState.priceRange?.min ?? null);
     void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
     void setAverageRatingMin(newState.rating ?? null);
-    void setIsOutOfStock(
-      newState.stockStatus == null
-        ? null
-        : newState.stockStatus === 'out'
-    );
     void setPage(1);
   };
 
@@ -154,9 +142,9 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     specifications_values_ids: filters.specifications_values_ids,
     min_price: filters.min_price,
     max_price: filters.max_price,
-    is_out_of_stock: filters.is_out_of_stock,
+    is_out_of_stock: false,
     average_rating_min: filters.average_rating_min,
-    sort_by: SORT_MAP[sortKey] as SortOption,
+    sort_by: sortKey === 'popular' ? undefined : SORT_MAP[sortKey],
     per_page: initialFilters.per_page ?? 20,
   }), [filters, initialFilters, sortKey]);
 
@@ -169,9 +157,9 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     specifications_values_ids: initialFilters.specifications_values_ids,
     min_price: initialFilters.min_price,
     max_price: initialFilters.max_price,
-    is_out_of_stock: initialFilters.is_out_of_stock,
+    is_out_of_stock: initialFilters.is_out_of_stock ?? false,
     average_rating_min: initialFilters.average_rating_min,
-    sort_by: initialFilters.sort_by ?? 'popularity_score:desc',
+    sort_by: initialFilters.sort_by,
     per_page: initialFilters.per_page ?? 20,
   }), [initialFilters]);
 
@@ -215,8 +203,7 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
     filterState.attributeValues.length +
     filterState.specificationValues.length +
     (filterState.priceRange ? 1 : 0) +
-    (filterState.rating ? 1 : 0) +
-    (filterState.stockStatus ? 1 : 0);
+    (filterState.rating ? 1 : 0);
 
   const sortOptions = [
     { value: 'popular',    label: t('sortPopular')   },
@@ -242,7 +229,6 @@ export function SearchPageClient({ initialData, initialFilters }: Props) {
       selectedSpecificationValues={filterState.specificationValues}
       priceRange={filterState.priceRange ?? undefined}
       rating={filterState.rating ?? undefined}
-      stockStatus={filterState.stockStatus ?? undefined}
       onFilterChange={handleFilterChange}
       className="w-full"
     />

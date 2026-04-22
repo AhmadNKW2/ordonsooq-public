@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronDown, X } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button, Badge, Card, Checkbox, Radio, Input } from "@/components/ui";
@@ -13,9 +14,6 @@ const BRAND_FACET_FIELDS = ["brand_ids", "brand", "brand_id"];
 const VENDOR_FACET_FIELDS = ["vendor_ids", "vendor_id", "vendor"];
 const ATTRIBUTE_FACET_FIELDS = ["attributes_values_ids", "attr_pairs", "attributes"];
 const SPECIFICATION_FACET_FIELDS = ["specifications_values_ids", "specifications"];
-const STOCK_FACET_FIELDS = ["stock_status"];
-
-type StockStatus = "in" | "out";
 
 interface ProductFiltersProps {
   facets?: FacetCount[];
@@ -26,7 +24,6 @@ interface ProductFiltersProps {
   selectedSpecificationValues?: string[];
   priceRange?: { min: number; max: number };
   rating?: number;
-  stockStatus?: StockStatus;
   onFilterChange: (filters: FilterState) => void;
   className?: string;
 }
@@ -39,7 +36,6 @@ export interface FilterState {
   specificationValues: string[];
   priceRange: { min: number; max: number } | null;
   rating: number | null;
-  stockStatus: StockStatus | null;
 }
 
 type GroupedFacetItem = {
@@ -56,6 +52,7 @@ type FilterOptionRowProps = {
   count?: number;
   control: React.ReactNode;
   onToggle: () => void;
+  disabled?: boolean;
 };
 
 function findFacet(facets: FacetCount[], fieldNames: string[]) {
@@ -125,21 +122,26 @@ function buildGroupedFacetMap(
   return groups;
 }
 
-function FilterOptionRow({ checked, label, count, control, onToggle }: FilterOptionRowProps) {
+function FilterOptionRow({ checked, label, count, control, onToggle, disabled = false }: FilterOptionRowProps) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="shrink-0">
+    <div className={cn("flex items-center gap-2", disabled && "opacity-45")}>
+      <div
+        className="shrink-0"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
         {control}
       </div>
       <button
         type="button"
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 text-start hover:text-primary transition-colors",
-          checked ? "" : ""
+          "flex min-w-0 flex-1 items-center gap-2 text-start transition-colors",
+          disabled ? "cursor-not-allowed" : "hover:text-primary"
         )}
-        onClick={onToggle}
+        onClick={disabled ? undefined : onToggle}
+        disabled={disabled}
       >
-        <span className="min-w-0 flex-1 wrap-break-word text-sm text-primary">
+        <span className={cn("min-w-0 flex-1 wrap-break-word text-sm text-primary", disabled && "text-third")}>
           {label}
         </span>
         {typeof count === "number" ? (
@@ -161,7 +163,6 @@ export function ProductFilters({
   selectedSpecificationValues = [],
   priceRange,
   rating,
-  stockStatus,
   onFilterChange,
   className,
 }: ProductFiltersProps) {
@@ -172,7 +173,6 @@ export function ProductFilters({
     "vendors",
     "attributes",
     "specifications",
-    "availability",
     "rating",
   ]);
 
@@ -184,7 +184,6 @@ export function ProductFilters({
     specificationValues: selectedSpecificationValues,
     priceRange: priceRange || null,
     rating: rating || null,
-    stockStatus: stockStatus || null,
   }), [
     priceRange,
     rating,
@@ -193,7 +192,6 @@ export function ProductFilters({
     selectedCategories,
     selectedSpecificationValues,
     selectedVendors,
-    stockStatus,
   ]);
 
   const [filters, setFilters] = useState<FilterState>({
@@ -204,7 +202,6 @@ export function ProductFilters({
     specificationValues: selectedSpecificationValues,
     priceRange: priceRange || null,
     rating: rating || null,
-    stockStatus: stockStatus || null,
   });
 
   const [localMinPrice, setLocalMinPrice] = useState<string>(priceRange?.min?.toString() || '');
@@ -274,15 +271,6 @@ export function ProductFilters({
     onFilterChange(newFilters);
   };
 
-  const handleStockStatusChange = (nextStatus: StockStatus) => {
-    const newFilters = {
-      ...filters,
-      stockStatus: filters.stockStatus === nextStatus ? null : nextStatus,
-    };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
-  };
-
   const clearAllFilters = () => {
     const newFilters: FilterState = {
       categories: [],
@@ -292,7 +280,6 @@ export function ProductFilters({
       specificationValues: [],
       priceRange: null,
       rating: null,
-      stockStatus: null,
     };
     setFilters(newFilters);
     setLocalMinPrice('');
@@ -310,15 +297,13 @@ export function ProductFilters({
     filters.attributeValues.length +
     filters.specificationValues.length +
     (filters.priceRange ? 1 : 0) +
-    (filters.rating ? 1 : 0) +
-    (filters.stockStatus ? 1 : 0);
+    (filters.rating ? 1 : 0);
 
   const categoryFacet = findFacet(facets, CATEGORY_FACET_FIELDS);
   const brandFacet = findFacet(facets, BRAND_FACET_FIELDS);
   const vendorFacet = findFacet(facets, VENDOR_FACET_FIELDS);
   const attributeFacet = findFacet(facets, ATTRIBUTE_FACET_FIELDS);
   const specificationFacet = findFacet(facets, SPECIFICATION_FACET_FIELDS);
-  const stockFacet = findFacet(facets, STOCK_FACET_FIELDS);
 
   const resolvedCategoryCounts = useMemo(
     () => categoryFacet?.counts.filter((item) => !hasUnresolvedNumericLabel(item)) ?? [],
@@ -472,16 +457,6 @@ export function ProductFilters({
               <X className="w-3 h-3" />
             </Badge>
           )}
-          {filters.stockStatus && (
-            <Badge
-              variant="outline"
-              className="flex items-center gap-1 cursor-pointer"
-              onClick={() => handleStockStatusChange(filters.stockStatus as StockStatus)}
-            >
-              {filters.stockStatus === 'out' ? t('product.outOfStock') : t('product.inStock')}
-              <X className="w-3 h-3" />
-            </Badge>
-          )}
         </div>
       )}
 
@@ -491,6 +466,7 @@ export function ProductFilters({
           title={t('common.categories')}
           isExpanded={expandedSections.includes("categories")}
           onToggle={() => toggleSection("categories")}
+          bodyClassName="max-h-72"
         >
           <div className="flex flex-col gap-3">
             {resolvedCategoryCounts.map((catCount) => (
@@ -499,98 +475,15 @@ export function ProductFilters({
                 checked={filters.categories.includes(catCount.value)}
                 label={labelForFacetValue(catCount)}
                 count={catCount.count}
+                disabled={catCount.count === 0 && !filters.categories.includes(catCount.value)}
                 onToggle={() => handleCategoryChange(catCount.value)}
                 control={(
                   <Checkbox
-                  id={`cat-${catCount.value}`}
-                  checked={filters.categories.includes(catCount.value)}
-                  onChange={() => handleCategoryChange(catCount.value)}
-                />
-                )}
-              />
-            ))}
-          </div>
-        </FilterSection>
-      )}
-
-      {/* Attributes dynamically grouped by original attribute name */}
-      {Object.entries(attributeGroups).map(([key, group]) => (
-        <FilterSection
-          key={key}
-          title={group.title}
-          isExpanded={!expandedSections.includes(`attr-collapse-${key}`)}
-          onToggle={() => toggleSection(`attr-collapse-${key}`)}
-        >
-          <div className="flex flex-col gap-3">
-            {group.items.map((item) => (
-              <FilterOptionRow
-                key={item.value}
-                checked={filters.attributeValues.includes(item.value)}
-                label={item.label}
-                count={item.count}
-                onToggle={() => handleAttributeValueChange(item.value)}
-                control={(
-                  <Checkbox
-                  id={`attr-${item.value}`}
-                  checked={filters.attributeValues.includes(item.value)}
-                  onChange={() => handleAttributeValueChange(item.value)}
-                />
-                )}
-              />
-            ))}
-          </div>
-        </FilterSection>
-      ))}
-
-      {Object.entries(specificationGroups).map(([key, group]) => (
-        <FilterSection
-          key={key}
-          title={group.title}
-          isExpanded={!expandedSections.includes(`spec-collapse-${key}`)}
-          onToggle={() => toggleSection(`spec-collapse-${key}`)}
-        >
-          <div className="flex flex-col gap-3">
-            {group.items.map((item) => (
-              <FilterOptionRow
-                key={item.value}
-                checked={filters.specificationValues.includes(item.value)}
-                label={item.label}
-                count={item.count}
-                onToggle={() => handleSpecificationValueChange(item.value)}
-                control={(
-                  <Checkbox
-                  id={`spec-${item.value}`}
-                  checked={filters.specificationValues.includes(item.value)}
-                  onChange={() => handleSpecificationValueChange(item.value)}
-                />
-                )}
-              />
-            ))}
-          </div>
-        </FilterSection>
-      ))}
-
-      {/* Vendors Section */}
-      {resolvedVendorCounts.length > 0 && (
-        <FilterSection
-          title={t('nav.stores') || 'Vendors'}
-          isExpanded={expandedSections.includes("vendors")}
-          onToggle={() => toggleSection("vendors")}
-        >
-          <div className="flex flex-col gap-3">
-            {resolvedVendorCounts.map((vendorCount) => (
-              <FilterOptionRow
-                key={vendorCount.value}
-                checked={filters.vendors.includes(vendorCount.value)}
-                label={labelForFacetValue(vendorCount)}
-                count={vendorCount.count}
-                onToggle={() => handleVendorChange(vendorCount.value)}
-                control={(
-                  <Checkbox
-                  id={`vendor-${vendorCount.value}`}
-                  checked={filters.vendors.includes(vendorCount.value)}
-                  onChange={() => handleVendorChange(vendorCount.value)}
-                />
+                    id={`cat-${catCount.value}`}
+                    checked={filters.categories.includes(catCount.value)}
+                    disabled={catCount.count === 0 && !filters.categories.includes(catCount.value)}
+                    onChange={() => handleCategoryChange(catCount.value)}
+                  />
                 )}
               />
             ))}
@@ -603,6 +496,7 @@ export function ProductFilters({
         title={t('common.price')}
         isExpanded={expandedSections.includes("price")}
         onToggle={() => toggleSection("price")}
+        bodyClassName="max-h-48"
       >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -624,24 +518,24 @@ export function ProductFilters({
               className="w-full text-sm h-9"
             />
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="w-full"
             onClick={() => {
               const minStr = localMinPrice;
               const maxStr = localMaxPrice;
-              
+
               if (!minStr && !maxStr) {
-                 handlePriceChange(null);
-                 return;
+                handlePriceChange(null);
+                return;
               }
 
               const min = minStr ? parseInt(minStr) : 0;
               const max = maxStr ? parseInt(maxStr) : Infinity;
 
               if (!isNaN(min) && !isNaN(max)) {
-                 handlePriceChange({ min, max });
+                handlePriceChange({ min, max });
               }
             }}
           >
@@ -656,6 +550,7 @@ export function ProductFilters({
           title={t('common.brands')}
           isExpanded={expandedSections.includes("brands")}
           onToggle={() => toggleSection("brands")}
+          bodyClassName="max-h-64"
         >
           <div className="flex flex-col gap-3">
             {resolvedBrandCounts.map((brandCount) => (
@@ -664,13 +559,15 @@ export function ProductFilters({
                 checked={filters.brands.includes(brandCount.value)}
                 label={labelForFacetValue(brandCount)}
                 count={brandCount.count}
+                disabled={brandCount.count === 0 && !filters.brands.includes(brandCount.value)}
                 onToggle={() => handleBrandChange(brandCount.value)}
                 control={(
                   <Checkbox
-                  id={`brand-${brandCount.value}`}
-                  checked={filters.brands.includes(brandCount.value)}
-                  onChange={() => handleBrandChange(brandCount.value)}
-                />
+                    id={`brand-${brandCount.value}`}
+                    checked={filters.brands.includes(brandCount.value)}
+                    disabled={brandCount.count === 0 && !filters.brands.includes(brandCount.value)}
+                    onChange={() => handleBrandChange(brandCount.value)}
+                  />
                 )}
               />
             ))}
@@ -678,43 +575,109 @@ export function ProductFilters({
         </FilterSection>
       )}
 
-      {stockFacet && stockFacet.counts.length > 0 && (
+
+      {/* Attributes dynamically grouped by original attribute name */}
+      {Object.entries(attributeGroups).map(([key, group]) => (
         <FilterSection
-          title={t('common.availability')}
-          isExpanded={expandedSections.includes("availability")}
-          onToggle={() => toggleSection("availability")}
+          key={key}
+          title={group.title}
+          isExpanded={!expandedSections.includes(`attr-collapse-${key}`)}
+          onToggle={() => toggleSection(`attr-collapse-${key}`)}
+          bodyClassName="max-h-80"
         >
           <div className="flex flex-col gap-3">
-            {stockFacet.counts.map((stockCount) => {
-              const currentStatus = stockCount.value === 'out' ? 'out' : 'in';
-
-              return (
-                <FilterOptionRow
-                  key={stockCount.value}
-                  checked={filters.stockStatus === currentStatus}
-                  label={stockCount.label ?? (currentStatus === 'out' ? t('product.outOfStock') : t('product.inStock'))}
-                  count={stockCount.count}
-                  onToggle={() => handleStockStatusChange(currentStatus)}
-                  control={(
-                    <Radio
-                    id={`stock-${stockCount.value}`}
-                    name="stock-status"
-                    checked={filters.stockStatus === currentStatus}
-                    onChange={() => handleStockStatusChange(currentStatus)}
+            {group.items.map((item) => (
+              <FilterOptionRow
+                key={item.value}
+                checked={filters.attributeValues.includes(item.value)}
+                label={item.label}
+                count={item.count}
+                disabled={item.count === 0 && !filters.attributeValues.includes(item.value)}
+                onToggle={() => handleAttributeValueChange(item.value)}
+                control={(
+                  <Checkbox
+                    id={`attr-${item.value}`}
+                    checked={filters.attributeValues.includes(item.value)}
+                    disabled={item.count === 0 && !filters.attributeValues.includes(item.value)}
+                    onChange={() => handleAttributeValueChange(item.value)}
                   />
-                  )}
-                />
-              );
-            })}
+                )}
+              />
+            ))}
+          </div>
+        </FilterSection>
+      ))}
+
+      {/* Specifications Section */}
+      {Object.entries(specificationGroups).map(([key, group]) => (
+        <FilterSection
+          key={key}
+          title={group.title}
+          isExpanded={!expandedSections.includes(`spec-collapse-${key}`)}
+          onToggle={() => toggleSection(`spec-collapse-${key}`)}
+          bodyClassName="max-h-80"
+        >
+          <div className="flex flex-col gap-3">
+            {group.items.map((item) => (
+              <FilterOptionRow
+                key={item.value}
+                checked={filters.specificationValues.includes(item.value)}
+                label={item.label}
+                count={item.count}
+                disabled={item.count === 0 && !filters.specificationValues.includes(item.value)}
+                onToggle={() => handleSpecificationValueChange(item.value)}
+                control={(
+                  <Checkbox
+                    id={`spec-${item.value}`}
+                    checked={filters.specificationValues.includes(item.value)}
+                    disabled={item.count === 0 && !filters.specificationValues.includes(item.value)}
+                    onChange={() => handleSpecificationValueChange(item.value)}
+                  />
+                )}
+              />
+            ))}
+          </div>
+        </FilterSection>
+      ))}
+
+      {/* Vendors Section */}
+      {resolvedVendorCounts.length > 0 && (
+        <FilterSection
+          title={t('nav.stores') || 'Vendors'}
+          isExpanded={expandedSections.includes("vendors")}
+          onToggle={() => toggleSection("vendors")}
+          bodyClassName="max-h-64"
+        >
+          <div className="flex flex-col gap-3">
+            {resolvedVendorCounts.map((vendorCount) => (
+              <FilterOptionRow
+                key={vendorCount.value}
+                checked={filters.vendors.includes(vendorCount.value)}
+                label={labelForFacetValue(vendorCount)}
+                count={vendorCount.count}
+                disabled={vendorCount.count === 0 && !filters.vendors.includes(vendorCount.value)}
+                onToggle={() => handleVendorChange(vendorCount.value)}
+                control={(
+                  <Checkbox
+                    id={`vendor-${vendorCount.value}`}
+                    checked={filters.vendors.includes(vendorCount.value)}
+                    disabled={vendorCount.count === 0 && !filters.vendors.includes(vendorCount.value)}
+                    onChange={() => handleVendorChange(vendorCount.value)}
+                  />
+                )}
+              />
+            ))}
           </div>
         </FilterSection>
       )}
+
 
       {/* Rating Section */}
       <FilterSection
         title={t('common.rating')}
         isExpanded={expandedSections.includes("rating")}
         onToggle={() => toggleSection("rating")}
+        bodyClassName="max-h-44"
       >
         <div className="flex flex-col gap-3">
           {RATING_OPTIONS.map((option) => (
@@ -725,11 +688,11 @@ export function ProductFilters({
               onToggle={() => handleRatingChange(option.value)}
               control={(
                 <Radio
-                id={`rating-${option.value}`}
-                name="rating"
-                checked={filters.rating === option.value}
-                onChange={() => handleRatingChange(option.value)}
-              />
+                  id={`rating-${option.value}`}
+                  name="rating"
+                  checked={filters.rating === option.value}
+                  onChange={() => handleRatingChange(option.value)}
+                />
               )}
             />
           ))}
@@ -744,30 +707,46 @@ interface FilterSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  bodyClassName?: string;
 }
 
-function FilterSection({ title, isExpanded, onToggle, children }: FilterSectionProps) {
+function FilterSection({ title, isExpanded, onToggle, children, bodyClassName }: FilterSectionProps) {
   return (
     <div className="border-b border-gray-100 py-4 last:border-b-0">
       <button
         onClick={onToggle}
         className="flex items-center justify-between w-full text-left"
+        aria-expanded={isExpanded}
       >
         <span className="font-medium text-primary">{title}</span>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-third" />
-        ) : (
+        <motion.span
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="inline-flex"
+        >
           <ChevronDown className="w-4 h-4 text-third" />
-        )}
+        </motion.span>
       </button>
-      <div
-        className={cn(
-          "transition-all duration-300",
-          isExpanded ? "max-h-200 mt-4 opacity-100" : "max-h-0 opacity-0 hidden"
-        )}
+      <motion.div
+        initial={false}
+        animate={{
+          height: isExpanded ? "auto" : 0,
+          opacity: isExpanded ? 1 : 0,
+          marginTop: isExpanded ? 16 : 0,
+        }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        className="overflow-hidden"
       >
-        {children}
-      </div>
+        <div
+          className={cn(
+            "overflow-y-auto pe-1",
+            !isExpanded && "pointer-events-none",
+            bodyClassName,
+          )}
+        >
+          {children}
+        </div>
+      </motion.div>
     </div>
   );
 }

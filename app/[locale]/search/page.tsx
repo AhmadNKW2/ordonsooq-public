@@ -14,13 +14,6 @@ function parseOptionalNumber(value?: string): number | undefined {
   return Number.isFinite(numericValue) ? numericValue : undefined;
 }
 
-function parseOptionalBoolean(value?: string): boolean | undefined {
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-
-  return undefined;
-}
-
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
@@ -43,9 +36,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
     specifications_values_ids: params.specifications_values_ids,
     min_price: parseOptionalNumber(params.min_price),
     max_price: parseOptionalNumber(params.max_price),
-    is_out_of_stock: parseOptionalBoolean(params.is_out_of_stock),
+    is_out_of_stock: false,
     average_rating_min: parseOptionalNumber(params.average_rating_min),
-    sort_by:     (params.sort_by as SearchFilters['sort_by']) || 'popularity_score:desc',
+    sort_by: params.sort_by as SearchFilters['sort_by'] | undefined,
     page: parseOptionalNumber(params.page) ?? 1,
     per_page: parseOptionalNumber(params.per_page) ?? 20,
   };

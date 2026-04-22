@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { X, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
+import { X, ShoppingBag, Trash2, ArrowRight, Truck } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useCheckout } from "@/hooks/useCheckout";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
+import { FREE_SHIPPING_MIN_ORDER_AMOUNT, STANDARD_SHIPPING_FEE } from "@/lib/constants";
 import { cn, formatPrice } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -23,11 +24,24 @@ export function CartSidebar() {
     removeItem,
     updateQuantity,
     totalAmount,
+    totalItems,
     loadingItems
   } = useCart();
   const { handleCheckout } = useCheckout();
 
   const closeCart = () => setIsOpen(false);
+  const getProductName = (item: typeof items[number]) =>
+    isArabic
+      ? item.product.name_ar || item.product.name_en || ""
+      : item.product.name_en || item.product.name_ar || "";
+
+  const getVariantSummary = (item: typeof items[number]) =>
+    item.variant?.attributes
+      .map((attribute) => isArabic
+        ? attribute.value_ar || attribute.value_en
+        : attribute.value_en || attribute.value_ar)
+      .filter(Boolean)
+      .join(", ");
 
   const toNumber = (value: unknown): number => {
     if (typeof value === "number") return value;
@@ -68,6 +82,11 @@ export function CartSidebar() {
 
     return variant ? pickCompare(variant) : pickCompare(product);
   };
+
+  const freeShippingUnlocked = totalAmount >= FREE_SHIPPING_MIN_ORDER_AMOUNT;
+  const remainingAmountForFreeShipping = Math.max(FREE_SHIPPING_MIN_ORDER_AMOUNT - totalAmount, 0);
+  const freeShippingProgress = Math.min((totalAmount / FREE_SHIPPING_MIN_ORDER_AMOUNT) * 100, 100);
+  const shippingAmount = freeShippingUnlocked ? 0 : STANDARD_SHIPPING_FEE;
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -131,7 +150,7 @@ export function CartSidebar() {
         <div className="flex items-center justify-between p-4 border-gray-100">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-gray-900">{tCart("title")} ({items.length})</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tCart("title")} ({totalItems})</h2>
           </div>
           <button
             onClick={closeCart}
@@ -170,7 +189,7 @@ export function CartSidebar() {
                         {item.product.image ? (
                           <img
                             src={item.product.image}
-                            alt={item.product.name_en}
+                            alt={getProductName(item)}
                             className="w-full h-full object-cover"
                             loading="lazy"
                             decoding="async"
@@ -188,8 +207,8 @@ export function CartSidebar() {
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
-                            <Link href={productHref} onClick={closeCart} className="font-medium text-gray-900 line-clamp-2 text-sm hover:underline">
-                              {item.product.name_en}
+                            <Link href={productHref} onClick={closeCart} className="font-medium text-gray-900 line-clamp-2 text-sm">
+                              {getProductName(item)}
                             </Link>
                             <button
                               onClick={() => removeItem(item.id)}
@@ -200,7 +219,7 @@ export function CartSidebar() {
                           </div>
                           {item.variant && (
                             <p className="text-xs text-gray-500 mt-1">
-                              {item.variant.attributes.map(attr => `${attr.value_en}`).join(', ')}
+                              {getVariantSummary(item)}
                             </p>
                           )}
                         </div>
@@ -244,6 +263,26 @@ export function CartSidebar() {
         {/* Footer */}
         {items.length > 0 && (
           <div className="flex flex-col gap-5 p-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="p-4 bg-white rounded-xl border border-gray-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Truck className="w-4 h-4 text-secondary" />
+                <p className="text-sm font-medium text-primary flex-1">
+                  {freeShippingUnlocked
+                    ? tCart("freeShippingUnlocked")
+                    : tCart("addAmountForFreeShipping", { amount: formatPrice(remainingAmountForFreeShipping, undefined, locale) })}
+                </p>
+                <span className="text-xs font-bold text-secondary">
+                  {Math.round(freeShippingProgress)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
+                  style={{ width: `${freeShippingProgress}%` }}
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">{tCart("subtotal")}</span>
@@ -251,7 +290,9 @@ export function CartSidebar() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">{tCart("shipping")}</span>
-                <span className="text-green-600 font-medium">{tCart("freeShipping")}</span>
+                <span className={freeShippingUnlocked ? "text-green-600 font-medium" : "font-medium text-gray-900"}>
+                  {freeShippingUnlocked ? tCart("free") : formatPrice(shippingAmount, undefined, locale)}
+                </span>
               </div>
             </div>
 

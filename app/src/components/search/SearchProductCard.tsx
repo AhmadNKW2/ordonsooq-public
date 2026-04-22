@@ -1,10 +1,12 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import Image from 'next/image';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatPrice } from '@/lib/utils';
 import type { SearchHit } from '@/lib/search/types';
+import { productService } from '@/services/product.service';
 
 interface Props {
   hit: SearchHit;
@@ -13,14 +15,48 @@ interface Props {
 export function SearchProductCard({ hit }: Props) {
   const locale = useLocale();
   const t = useTranslations('search');
+  const router = useRouter();
+  const [isResolvingSlug, setIsResolvingSlug] = useState(false);
 
   const name = locale === 'ar' ? hit.name_ar : hit.name_en;
   const image = hit.images?.[0];
   const hasDiscount = hit.sale_price != null && hit.sale_price < hit.price;
   const displayPrice = hasDiscount ? hit.sale_price! : hit.price;
+  const resolvedSlug = hit.slug?.trim();
+  const href = resolvedSlug ? `/products/${resolvedSlug}` : '/products';
+
+  const handleClick = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (resolvedSlug) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isResolvingSlug) {
+      return;
+    }
+
+    const productId = Number(hit.id);
+    if (!Number.isFinite(productId)) {
+      return;
+    }
+
+    setIsResolvingSlug(true);
+
+    try {
+      const product = await productService.getById(productId);
+      const slug = product?.slug?.trim();
+
+      if (slug) {
+        router.push(`/products/${slug}`);
+      }
+    } finally {
+      setIsResolvingSlug(false);
+    }
+  };
 
   return (
-    <Link href={`/products/${hit.id}`} className="group block">
+    <Link href={href} onClick={handleClick} className="group block">
       <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white">
         {/* Image */}
         <div className="aspect-square bg-gray-100 relative overflow-hidden">

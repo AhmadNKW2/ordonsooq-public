@@ -1,4 +1,10 @@
 const API_REQUEST_LOG_INGEST_PATH = "/api/internal/request-logs";
+export const API_REQUEST_LOG_INGEST_HEADER_NAME = "x-ordonsooq-api-log";
+export const API_REQUEST_LOG_INGEST_HEADER_VALUE = "1";
+const MAX_API_LOG_STRING_LENGTH = 2_000;
+const MAX_API_LOG_ARRAY_ITEMS = 20;
+const MAX_API_LOG_OBJECT_ENTRIES = 30;
+const MAX_API_LOG_DEPTH = 4;
 
 type ApiLogResetPayload = {
   type: "reset";
@@ -76,8 +82,89 @@ export type ParsedApiBody = {
   jsonError?: string;
 };
 
+function isEnabledFlag(value?: string): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  return normalizedValue === "1" || normalizedValue === "true" || normalizedValue === "yes" || normalizedValue === "on";
+}
+
+function summarizeApiLogString(value: string): string {
+  if (value.length <= MAX_API_LOG_STRING_LENGTH) {
+    return value;
+  }
+
+  const truncatedCharacters = value.length - MAX_API_LOG_STRING_LENGTH;
+  return `${value.slice(0, MAX_API_LOG_STRING_LENGTH)}... <truncated ${truncatedCharacters} chars>`;
+}
+
+export function summarizeApiLogValue(value: unknown, depth = 0): unknown {
+  if (value == null || typeof value === "boolean" || typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return summarizeApiLogString(value);
+  }
+
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    const items = value
+      .slice(0, MAX_API_LOG_ARRAY_ITEMS)
+      .map((item) => summarizeApiLogValue(item, depth + 1));
+
+    if (value.length > MAX_API_LOG_ARRAY_ITEMS) {
+      items.push({ __truncatedItems: value.length - MAX_API_LOG_ARRAY_ITEMS });
+    }
+
+    return items;
+  }
+
+  if (typeof value === "object") {
+    if (depth >= MAX_API_LOG_DEPTH) {
+      return {
+        __type: Object.prototype.toString.call(value),
+        __truncated: true,
+      };
+    }
+
+    const entries = Object.entries(value as Record<string, unknown>);
+    const limitedEntries = entries
+      .slice(0, MAX_API_LOG_OBJECT_ENTRIES)
+      .map(([key, entryValue]) => [key, summarizeApiLogValue(entryValue, depth + 1)]);
+    const summarized: Record<string, unknown> = Object.fromEntries(limitedEntries);
+
+    if (entries.length > MAX_API_LOG_OBJECT_ENTRIES) {
+      summarized.__truncatedKeys = entries.length - MAX_API_LOG_OBJECT_ENTRIES;
+    }
+
+    return summarized;
+  }
+
+  return String(value);
+}
+
 export function isApiRequestLoggingEnabled(): boolean {
-  return process.env.NODE_ENV === "development";
+  return process.env.NODE_ENV === "development" && (
+    isEnabledFlag(process.env.NEXT_PUBLIC_ENABLE_API_REQUEST_LOGGING) ||
+    (typeof window === "undefined" && isEnabledFlag(process.env.ENABLE_API_REQUEST_LOGGING))
+  );
+}
+
+export function isServerApiRequestLoggingEnabled(): boolean {
+  return process.env.NODE_ENV === "development" && typeof window === "undefined" && (
+    isEnabledFlag(process.env.ENABLE_API_REQUEST_LOGGING) ||
+    isEnabledFlag(process.env.NEXT_PUBLIC_ENABLE_API_REQUEST_LOGGING)
+  );
 }
 
 function createLogId(): string {
@@ -117,6 +204,18 @@ export function getApiLogIngestUrl(): string {
   }
 
   return new URL(API_REQUEST_LOG_INGEST_PATH.replace(/^\//, ""), withTrailingSlash(resolveServerBaseUrl())).toString();
+}
+
+function normalizeUrlPathname(value: string): string | null {
+  try {
+    return new URL(value, "http://localhost").pathname;
+  } catch {
+    return null;
+  }
+}
+
+export function isApiLogIngestUrl(value: string): boolean {
+  return normalizeUrlPathname(value) === API_REQUEST_LOG_INGEST_PATH;
 }
 
 function looksLikeJson(value: string): boolean {
@@ -268,6 +367,7 @@ export function toApiLogError(error: unknown): ApiLogError {
 
 export function createApiLogEntry(input: ApiLogEntryInput): ApiLogEntry {
   const timestamp = input.timestamp ?? new Date();
+  const shouldPreserveFullBody = typeof window === "undefined";
 
   return {
     id: createLogId(),
@@ -281,7 +381,7 @@ export function createApiLogEntry(input: ApiLogEntryInput): ApiLogEntry {
       method: input.request.method || "GET",
       url: input.request.url,
       headers: normalizeHeaders(input.request.headers),
-      body: input.request.body,
+      body: shouldPreserveFullBody ? input.request.body : summarizeApiLogValue(input.request.body),
       credentials: input.request.credentials,
       cache: input.request.cache,
       mode: input.request.mode,
@@ -296,7 +396,7 @@ export function createApiLogEntry(input: ApiLogEntryInput): ApiLogEntry {
           status: input.response.status,
           statusText: input.response.statusText,
           headers: normalizeHeaders(input.response.headers),
-          body: input.response.body,
+          body: shouldPreserveFullBody ? input.response.body : summarizeApiLogValue(input.response.body),
         }
       : undefined,
     error: input.error,
@@ -313,21 +413,24 @@ export async function sendApiLogEntry(entry: ApiLogEntry): Promise<void> {
     return;
   }
 
+  if (typeof window === "undefined") {
+    const { writeApiLogEntryToFile } = await import("@/lib/api-request-log-server");
+    await writeApiLogEntryToFile(entry);
+    return;
+  }
+
+  if (isApiLogIngestUrl(entry.request.url)) {
+    return;
+  }
+
   const body = JSON.stringify(entry);
   const ingestUrl = getApiLogIngestUrl();
-
-  if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-    const payload = new Blob([body], { type: "application/json" });
-
-    if (navigator.sendBeacon(ingestUrl, payload)) {
-      return;
-    }
-  }
 
   await fetch(ingestUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      [API_REQUEST_LOG_INGEST_HEADER_NAME]: API_REQUEST_LOG_INGEST_HEADER_VALUE,
     },
     body,
     cache: "no-store",
@@ -340,21 +443,20 @@ export async function sendApiLogReset(): Promise<void> {
     return;
   }
 
+  if (typeof window === "undefined") {
+    const { resetApiLogEntriesFile } = await import("@/lib/api-request-log-server");
+    await resetApiLogEntriesFile();
+    return;
+  }
+
   const body = JSON.stringify(createApiLogResetPayload());
   const ingestUrl = getApiLogIngestUrl();
-
-  if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-    const payload = new Blob([body], { type: "application/json" });
-
-    if (navigator.sendBeacon(ingestUrl, payload)) {
-      return;
-    }
-  }
 
   await fetch(ingestUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      [API_REQUEST_LOG_INGEST_HEADER_NAME]: API_REQUEST_LOG_INGEST_HEADER_VALUE,
     },
     body,
     cache: "no-store",

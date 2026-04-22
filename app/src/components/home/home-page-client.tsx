@@ -12,25 +12,11 @@ import { useInfiniteProducts } from "@/hooks/useProducts";
 import { useListingVariantProducts } from "@/hooks/useListingVariantProducts";
 import { transformHomeData, type Locale } from "@/lib/transformers";
 import { CategoryCardSkeleton, ProductGridSkeleton, Skeleton } from "@/components/ui/skeleton";
-import type { HomeData, PaginatedResponse, Product as ApiProduct } from "@/types/api.types";
-
-interface HomePageClientProps {
-  initialHomeData?: HomeData | null;
-  initialFeaturedData?: PaginatedResponse<ApiProduct> | null;
-  initialNewData?: PaginatedResponse<ApiProduct> | null;
-}
-
-export function HomePageClient({
-  initialHomeData,
-  initialFeaturedData,
-  initialNewData,
-}: HomePageClientProps) {
+export function HomePageClient() {
   const locale = useLocale() as Locale;
   const t = useTranslations("home");
 
-  const { data: homeData, isLoading: homeLoading } = useHome({
-    initialData: initialHomeData ?? undefined,
-  });
+  const { data: homeData, isLoading: homeLoading } = useHome();
 
   const productsPerPage = 40;
 
@@ -48,15 +34,11 @@ export function HomePageClient({
       sortBy: "average_rating",
       sortOrder: "DESC",
     },
-    {
-      initialData: initialFeaturedData ?? undefined,
-      initialPage: initialFeaturedData?.meta.page,
-    },
   );
 
   const featuredData = useMemo(
-    () => featuredInfiniteData?.pages.flatMap((page) => page.data) ?? initialFeaturedData?.data ?? [],
-    [featuredInfiniteData, initialFeaturedData],
+    () => featuredInfiniteData?.pages.flatMap((page) => page.data) ?? [],
+    [featuredInfiniteData],
   );
 
   const {
@@ -73,15 +55,11 @@ export function HomePageClient({
       sortBy: "created_at",
       sortOrder: "DESC",
     },
-    {
-      initialData: initialNewData ?? undefined,
-      initialPage: initialNewData?.meta.page,
-    },
   );
 
   const newData = useMemo(
-    () => newInfiniteData?.pages.flatMap((page) => page.data) ?? initialNewData?.data ?? [],
-    [newInfiniteData, initialNewData],
+    () => newInfiniteData?.pages.flatMap((page) => page.data) ?? [],
+    [newInfiniteData],
   );
 
   const { categories, vendors, banners, brands } = homeData

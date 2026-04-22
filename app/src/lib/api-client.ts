@@ -1,6 +1,7 @@
 import { getCookie, setCookie, deleteCookie } from "@/lib/utils";
 import {
   createApiLogEntry,
+  isServerApiRequestLoggingEnabled,
   parseApiBodyText,
   type ParsedApiBody,
   sendApiLogEntry,
@@ -99,6 +100,10 @@ class ApiClient {
       notes?: string[];
     }
   ) {
+    if (!isServerApiRequestLoggingEnabled()) {
+      return;
+    }
+
     const entry = createApiLogEntry({
       timestamp: startedAt,
       source: "api-client",

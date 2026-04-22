@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Check } from "lucide-react";
-import { FilterState, ProductFilters, FloatingFilterSort } from "@/components/products";
+import { FilterState, ProductFilters, FloatingFilterSort, MobileContactActions } from "@/components/products";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Button, Card, Sheet, Select } from "@/components/ui";
 import { useLoading } from "@/components/ui/global-loader";
@@ -11,7 +11,7 @@ import { useListingVariantProducts } from "@/hooks/useListingVariantProducts";
 import { joinFilterValues, splitFilterValues } from "@/lib/search/filter-utils";
 import { useInfiniteSearchProducts } from "@/lib/search/use-search";
 import { useSearchFilters } from "@/lib/search/use-search-params";
-import type { SearchFilters, SortOption } from "@/lib/search/types";
+import type { SearchFilters, SearchResponse, SortOption } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 import type { Brand as ApiBrand, PaginationMeta } from "@/types/api.types";
 import { Category } from "@/types";
@@ -32,6 +32,32 @@ function toSortKey(sortBy?: string | SortOption): string {
   return entry ? entry[0] : 'popular';
 }
 
+function normalizeSearchFilterValue(value: string | number | boolean | undefined) {
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim();
+    return trimmedValue.length > 0 ? trimmedValue : undefined;
+  }
+
+  return value;
+}
+
+function serializeSearchFilterSnapshot(filters: Partial<Omit<SearchFilters, 'page'>>) {
+  return JSON.stringify({
+    q: normalizeSearchFilterValue(filters.q),
+    category_ids: normalizeSearchFilterValue(filters.category_ids),
+    brand_ids: normalizeSearchFilterValue(filters.brand_ids),
+    vendor_ids: normalizeSearchFilterValue(filters.vendor_ids),
+    attributes_values_ids: normalizeSearchFilterValue(filters.attributes_values_ids),
+    specifications_values_ids: normalizeSearchFilterValue(filters.specifications_values_ids),
+    min_price: filters.min_price,
+    max_price: filters.max_price,
+    is_out_of_stock: filters.is_out_of_stock,
+    average_rating_min: filters.average_rating_min,
+    sort_by: normalizeSearchFilterValue(filters.sort_by),
+    per_page: filters.per_page,
+  });
+}
+
 interface ProductListingPageProps {
   initialFilters?: Partial<SearchFilters>;
   title?: string;
@@ -42,6 +68,7 @@ interface ProductListingPageProps {
   preloadedProducts?: any[];
   preloadedBrands?: ApiBrand[];
   productsMeta?: PaginationMeta;
+  initialSearchData?: SearchResponse | null;
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
@@ -56,9 +83,10 @@ export function ProductListingPage({
   preloadedProducts,
   preloadedBrands,
   productsMeta,
+  initialSearchData,
   onLoadMore,
   hasMore,
-  isLoadingMore
+  isLoadingMore,
 }: ProductListingPageProps) {
   const locale = useLocale() as string;
   const t = useTranslations('product');
@@ -89,7 +117,7 @@ export function ProductListingPage({
 
     setIsLoading(true);
     setSortKey(key);
-    void setUrlSortBy(SORT_MAP[key] ?? 'popularity_score:desc');
+    void setUrlSortBy(key === 'popular' ? null : (SORT_MAP[key] ?? null));
     setShowSort(false);
   };
 
@@ -104,13 +132,49 @@ export function ProductListingPage({
         ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
         : null,
     rating: initialFilters.average_rating_min ?? null,
-    stockStatus:
-      initialFilters.is_out_of_stock === true
-        ? 'out'
-        : initialFilters.is_out_of_stock === false
-          ? 'in'
-          : null,
   });
+
+  const resolvedFilterState = useMemo<FilterState>(() => ({
+    categories: splitFilterValues(urlFilters.category_ids ?? initialFilters.category_ids),
+    brands: splitFilterValues(urlFilters.brand_ids ?? initialFilters.brand_ids),
+    vendors: splitFilterValues(urlFilters.vendor_ids ?? initialFilters.vendor_ids),
+    attributeValues: splitFilterValues(urlFilters.attributes_values_ids ?? initialFilters.attributes_values_ids),
+    specificationValues: splitFilterValues(urlFilters.specifications_values_ids ?? initialFilters.specifications_values_ids),
+    priceRange:
+      urlFilters.min_price != null || urlFilters.max_price != null
+        ? { min: urlFilters.min_price ?? 0, max: urlFilters.max_price ?? Infinity }
+        : initialFilters.min_price != null || initialFilters.max_price != null
+          ? { min: initialFilters.min_price ?? 0, max: initialFilters.max_price ?? Infinity }
+          : null,
+    rating: urlFilters.average_rating_min ?? initialFilters.average_rating_min ?? null,
+  }), [
+    urlFilters.category_ids,
+    urlFilters.brand_ids,
+    urlFilters.vendor_ids,
+    urlFilters.attributes_values_ids,
+    urlFilters.specifications_values_ids,
+    urlFilters.min_price,
+    urlFilters.max_price,
+    urlFilters.average_rating_min,
+    initialFilters.category_ids,
+    initialFilters.brand_ids,
+    initialFilters.vendor_ids,
+    initialFilters.attributes_values_ids,
+    initialFilters.specifications_values_ids,
+    initialFilters.min_price,
+    initialFilters.max_price,
+    initialFilters.average_rating_min,
+  ]);
+
+  useEffect(() => {
+    setFilters(resolvedFilterState);
+  }, [resolvedFilterState]);
+
+  useEffect(() => {
+    if (urlFilters.is_out_of_stock != null) {
+      void setIsOutOfStock(null);
+    }
+  }, [setIsOutOfStock, urlFilters.is_out_of_stock]);
 
   const handleFilterChange = (newState: FilterState) => {
     if (JSON.stringify(newState) !== JSON.stringify(filters)) {
@@ -126,11 +190,6 @@ export function ProductListingPage({
     void setMinPrice(newState.priceRange?.min ?? null);
     void setMaxPrice(newState.priceRange?.max === Infinity ? null : (newState.priceRange?.max ?? null));
     void setAverageRatingMin(newState.rating ?? null);
-    void setIsOutOfStock(
-      newState.stockStatus == null
-        ? null
-        : newState.stockStatus === 'out'
-    );
     void setPage(1);
   };
 
@@ -138,19 +197,44 @@ export function ProductListingPage({
   const searchFilters: Omit<SearchFilters, 'page'> = useMemo(() => {
     return {
       q: urlFilters.q?.trim() ? urlFilters.q : initialFilters.q,
-      category_ids: urlFilters.category_ids ?? initialFilters.category_ids,
-      brand_ids: urlFilters.brand_ids ?? initialFilters.brand_ids,
-      vendor_ids: urlFilters.vendor_ids ?? initialFilters.vendor_ids,
-      attributes_values_ids: urlFilters.attributes_values_ids ?? initialFilters.attributes_values_ids,
-      specifications_values_ids: urlFilters.specifications_values_ids ?? initialFilters.specifications_values_ids,
-      min_price: urlFilters.min_price ?? initialFilters.min_price,
-      max_price: urlFilters.max_price ?? initialFilters.max_price,
-      is_out_of_stock: urlFilters.is_out_of_stock ?? initialFilters.is_out_of_stock,
-      average_rating_min: urlFilters.average_rating_min ?? initialFilters.average_rating_min,
-      sort_by: SORT_MAP[sortKey] as SortOption,
+      category_ids: joinFilterValues(filters.categories) ?? undefined,
+      brand_ids: joinFilterValues(filters.brands) ?? undefined,
+      vendor_ids: joinFilterValues(filters.vendors) ?? undefined,
+      attributes_values_ids: joinFilterValues(filters.attributeValues) ?? undefined,
+      specifications_values_ids: joinFilterValues(filters.specificationValues) ?? undefined,
+      min_price: filters.priceRange?.min,
+      max_price: filters.priceRange?.max === Infinity ? undefined : filters.priceRange?.max,
+      is_out_of_stock: false,
+      average_rating_min: filters.rating ?? undefined,
+      sort_by: sortKey === 'popular' ? undefined : SORT_MAP[sortKey],
       per_page: initialFilters.per_page ?? 25,
     };
-  }, [sortKey, urlFilters, initialFilters]);
+  }, [sortKey, urlFilters.q, initialFilters.q, initialFilters.per_page, filters]);
+
+  const shouldUseInitialSearchData = useMemo(() => {
+    if (!initialSearchData) {
+      return false;
+    }
+
+    const initialSearchFilterSnapshot = serializeSearchFilterSnapshot({
+      q: initialFilters.q,
+      category_ids: initialFilters.category_ids,
+      brand_ids: initialFilters.brand_ids,
+      vendor_ids: initialFilters.vendor_ids,
+      attributes_values_ids: initialFilters.attributes_values_ids,
+      specifications_values_ids: initialFilters.specifications_values_ids,
+      min_price: initialFilters.min_price,
+      max_price: initialFilters.max_price,
+      is_out_of_stock: initialFilters.is_out_of_stock ?? false,
+      average_rating_min: initialFilters.average_rating_min,
+      sort_by: initialFilters.sort_by,
+      per_page: initialFilters.per_page ?? 25,
+    });
+
+    const currentSearchFilterSnapshot = serializeSearchFilterSnapshot(searchFilters);
+
+    return initialSearchFilterSnapshot === currentSearchFilterSnapshot;
+  }, [initialSearchData, initialFilters, searchFilters]);
 
   // Infinite query — resets automatically when searchFilters changes
     const useSearch = !onLoadMore; // Only use search API if we don't have custom load handlers
@@ -163,20 +247,27 @@ export function ProductListingPage({
     } = useInfiniteSearchProducts(searchFilters, { 
       enabled: useSearch,
       locale,
-      initialData: preloadedProducts && productsMeta && useSearch ? {
-        pages: [{
-          hits: preloadedProducts,
-          total: productsMeta.total,
-          total_pages: productsMeta.totalPages,
-          page: productsMeta.page,
-          per_page: productsMeta.limit || 25,
-          facets: [] // Or map facets if we pass them
-        }],
-        pageParams: [1]
-      } : undefined
+      initialData: shouldUseInitialSearchData && initialSearchData
+        ? {
+            pages: [initialSearchData],
+            pageParams: [initialSearchData.page ?? 1],
+          }
+        : preloadedProducts && productsMeta && useSearch
+          ? {
+              pages: [{
+                hits: preloadedProducts,
+                total: productsMeta.total,
+                total_pages: productsMeta.totalPages,
+                page: productsMeta.page,
+                per_page: productsMeta.limit || 25,
+                facets: []
+              }],
+              pageParams: [1]
+            }
+          : undefined
     });
 
-    const isLoading = (isSearchLoading && useSearch && !preloadedProducts) || (!useSearch && !preloadedProducts);
+    const isLoading = (isSearchLoading && useSearch && !preloadedProducts && !initialSearchData) || (!useSearch && !preloadedProducts);
 
     const actualFetchNextPage = onLoadMore || searchFetchNextPage;
     const actualHasNextPage = hasMore !== undefined ? hasMore : searchHasNextPage;
@@ -212,8 +303,7 @@ export function ProductListingPage({
     filters.attributeValues.length +
     filters.specificationValues.length +
     (filters.priceRange ? 1 : 0) +
-    (filters.rating ? 1 : 0) +
-    (filters.stockStatus ? 1 : 0);
+    (filters.rating ? 1 : 0);
 
   const filtersComponent = (
     <ProductFilters
@@ -226,7 +316,6 @@ export function ProductListingPage({
       selectedSpecificationValues={filters.specificationValues}
       priceRange={filters.priceRange || undefined}
       rating={filters.rating || undefined}
-      stockStatus={filters.stockStatus || undefined}
       onFilterChange={handleFilterChange}
       className="w-full"
     />
@@ -272,6 +361,8 @@ export function ProductListingPage({
         onFilterClick={() => setShowFilters(true)}
         activeFiltersCount={activeFiltersCount}
       />
+
+      <MobileContactActions />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}
@@ -360,7 +451,6 @@ export function ProductListingPage({
                     specificationValues: [],
                     priceRange: null,
                     rating: null,
-                    stockStatus: null,
                   })}
                 >
                   {tCommon('clearAll', { count: '' }).replace('()', '')}

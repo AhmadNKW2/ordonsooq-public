@@ -44,7 +44,7 @@
       "overnight": "شحن ليلي",
       "overnightDesc": "اليوم التالي",
       "free": "شحن مجاني",
-      "freeDesc": "7-10 أيام عمل"
+      "freeDesc": "7-10 أيام عمل (للطلبات فوق 50 د.أ)"
     }
   },
   "common": {
@@ -98,6 +98,7 @@
     "categories": "الفئات",
     "products": "المنتجات",
     "deals": "العروض",
+    "below50JOD": "أقل من 50 د.أ",
     "newArrivals": "وصل حديثاً",
     "brands": "العلامات التجارية",
     "stores": "المتاجر",
@@ -375,7 +376,7 @@
     "tags": "الوسوم",
     "features": {
       "freeShipping": "شحن مجاني",
-      "freeShippingDesc": "طلبات فوق 50$",
+      "freeShippingDesc": "طلبات فوق 50 د.أ",
       "returns": "إرجاع سهل",
       "returnsDesc": "سياسة 30 يوم",
       "secure": "آمن",
@@ -400,7 +401,7 @@
     "customerReviews": "تقييمات العملاء",
     "verifiedReviews": "{count} تقييم موثق",
     "freeShipping": "شحن مجاني",
-    "freeShippingDesc": "طلبات فوق 50$",
+    "freeShippingDesc": "طلبات فوق 50 د.أ",
     "easyReturns": "إرجاع سهل",
     "secure": "آمن",
     "safeCheckout": "دفع آمن",
@@ -444,6 +445,7 @@
     "subtotalWithCount": "المجموع الفرعي ({count} منتج)",
     "freeShippingUnlocked": "تم فتح الشحن المجاني!",
     "addAmountForFreeShipping": "أضف {amount} للحصول على شحن مجاني",
+    "addItemsForFreeShipping": "{count, plural, one {أضف منتجًا واحدًا للحصول على شحن مجاني} two {أضف منتجين للحصول على شحن مجاني} few {أضف # منتجات للحصول على شحن مجاني} many {أضف # منتجًا للحصول على شحن مجاني} other {أضف # منتج للحصول على شحن مجاني}}",
     "secureCheckoutNotice": "🔒 دفع آمن بواسطة Stripe",
     "free": "مجاني",
     "proceedToCheckout": "المتابعة إلى الدفع",
@@ -545,7 +547,7 @@
       "newArrivals": "وصل حديثاً"
     },
     "freeShipping": "شحن مجاني",
-    "freeShippingDesc": "للطلبات أكثر من 50$",
+    "freeShippingDesc": "للطلبات التي تزيد عن 50 د.أ",
     "securePayment": "دفع آمن",
     "securePaymentDesc": "محمي 100%",
     "support247": "دعم 24/7",
@@ -577,7 +579,7 @@
     "explore": "اكتشف"
   },
   "topBar": {
-    "announcement": "🎉 شحن مجاني للطلبات التي تزيد عن 50$! استخدم الكود: {code}"
+    "announcement": "🎉 شحن مجاني للطلبات التي تزيد عن {amount} د.أ!"
   },
   "categories": {
     "errorLoading": "خطأ في تحميل الفئات. حاول مرة أخرى.",

@@ -25,6 +25,7 @@ import { CURRENCY_CONFIG } from "@/lib/constants";
 import { transformProduct, type Locale } from "@/lib/transformers";
 import { calculateDiscount, cn, formatPrice } from "@/lib/utils";
 import { ProductGallery } from "@/components/products/product-gallery";
+import { ProductOptionChip } from "@/components/products/product-option-chip";
 import { ProductOptions } from "@/components/products/product-options";
 import { ProductsSection } from "@/components/home/featured-products";
 import { ProductReviews } from "@/components/products/product-reviews";
@@ -430,29 +431,131 @@ function LinkedProductChoices({ title, groupName, choices }: { title: string; gr
       )}
       <div className="flex flex-wrap gap-2">
         {choices.map((choice) => {
-          const sharedClassName = "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-all";
-
-          if (choice.isCurrent) {
-            return (
-              <span key={choice.id} title={choice.name} className={`${sharedClassName} border-secondary bg-secondary/8 text-secondary`}>
-                {choice.label}
-              </span>
-            );
-          }
-
           return (
-            <Link
+            <ProductOptionChip
               key={choice.id}
-              href={`/products/${choice.slug}`}
+              label={choice.label}
+              selected={choice.isCurrent}
+              href={choice.isCurrent ? undefined : `/products/${choice.slug}`}
               title={choice.name}
-              className={`${sharedClassName} border-gray-200 bg-white text-primary hover:border-secondary/60 hover:text-secondary`}
-            >
-              {choice.label}
-            </Link>
+            />
           );
         })}
       </div>
     </div>
+  );
+}
+
+function ProductSellerCard({
+  product,
+  vendorHref,
+  t,
+  className,
+}: {
+  product: any;
+  vendorHref?: string;
+  t: any;
+  className?: string;
+}) {
+  return (
+    <Card className={cn("p-4 flex flex-col gap-4", className)}>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          {product.vendor?.logo ? (
+            <Image
+              src={product.vendor.logo}
+              alt={product.vendor.name}
+              width={48}
+              height={48}
+              className="rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <Store className="w-6 h-6 text-third" />
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-third">{t("product.soldBy")}</p>
+            {vendorHref ? (
+              <Link
+                href={vendorHref}
+                className="font-semibold text-primary hover:text-secondary ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all flex items-center gap-1"
+              >
+                {product.vendor?.name || "OrdonSooq"}
+                <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+              </Link>
+            ) : (
+              <span className="font-semibold text-primary flex items-center gap-1">{product.vendor?.name || "OrdonSooq"}</span>
+            )}
+            {product.vendor ? (
+              <div className="flex items-center gap-1 mt-1">
+                <Star className="w-3 h-3 text-secondary" />
+                <span className="text-xs text-third">
+                  {product.vendor.rating} {t("product.reviewCount", { count: product.vendor.reviewCount })}
+                </span>
+                {(() => {
+                  const positivePercent = Math.round((product.vendor.rating / 5) * 100);
+                  if (!(positivePercent > 75)) return null;
+                  return (
+                    <span className="text-green-600 font-medium text-xs ml-1">
+                      {t("product.positiveFeedback", { percent: positivePercent })}
+                    </span>
+                  );
+                })()}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ProductMetaCard({
+  product,
+  currentSku,
+  categoryHref,
+  brandHref,
+  t,
+  className,
+}: {
+  product: any;
+  currentSku: string;
+  categoryHref?: string;
+  brandHref?: string;
+  t: any;
+  className?: string;
+}) {
+  return (
+    <Card className={cn("p-4", className)}>
+      <div className="text-sm text-third flex flex-col gap-2">
+        <p>
+          {t("product.sku")}: <span className="text-primary">{currentSku}</span>
+        </p>
+        <p>
+          {t("product.category")}: {categoryHref ? <Link href={categoryHref} className="text-primary hover:underline">{product.category.name}</Link> : <span className="text-primary">{product.category.name}</span>}
+        </p>
+        {product.tags.length > 0 ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{t("product.tags")}:</span>
+            {product.tags.map((tag: string) => (
+              <Link
+                key={tag}
+                href={`/products?tag=${encodeURIComponent(tag)}`}
+                className="text-primary hover:underline"
+              >
+                {tag}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+        {product.brand ? (
+          <p>
+            {t("product.brand")}: {brandHref ? <Link href={brandHref} className="text-primary hover:underline">{product.brand.name}</Link> : <span className="text-primary">{product.brand.name}</span>}
+          </p>
+        ) : null}
+      </div>
+    </Card>
   );
 }
 
@@ -517,29 +620,36 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    if (!product?.variants || product.variants.length === 0 || hasInitialized) return;
+    setSelectedOptions({});
+    setHasInitialized(false);
+  }, [product?.id, locale, requestedVariantId]);
+
+  useEffect(() => {
+    if (!product || hasInitialized) return;
 
     let targetOptions: Record<string, string> = {};
 
-    if (requestedVariantId) {
-      const matchingVariant = product.variants.find((variant) => String(variant.id) === requestedVariantId);
-      if (matchingVariant) {
-        targetOptions = { ...matchingVariant.attributes };
+    if (product.variants && product.variants.length > 0) {
+      if (requestedVariantId) {
+        const matchingVariant = product.variants.find((variant) => String(variant.id) === requestedVariantId);
+        if (matchingVariant) {
+          targetOptions = { ...matchingVariant.attributes };
+        }
+      }
+
+      if (Object.keys(targetOptions).length === 0) {
+        let defaultVariant = product.variants.find((variant) => variant.stock > 0);
+        if (!defaultVariant) {
+          defaultVariant = product.variants[0];
+        }
+        if (defaultVariant) {
+          targetOptions = { ...defaultVariant.attributes };
+        }
       }
     }
 
-    if (Object.keys(targetOptions).length === 0) {
-      let defaultVariant = product.variants.find((variant) => variant.stock > 0);
-      if (!defaultVariant) {
-        defaultVariant = product.variants[0];
-      }
-      if (defaultVariant) {
-        targetOptions = { ...defaultVariant.attributes };
-      }
-    }
-
-    if (variantAttributes.length > 0) {
-      variantAttributes.forEach((attribute) => {
+    if (selectableAttributes.length > 0) {
+      selectableAttributes.forEach((attribute) => {
         if (!targetOptions[attribute.name] && attribute.values.length === 1) {
           targetOptions[attribute.name] = attribute.values[0].value;
         }
@@ -550,7 +660,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
       setSelectedOptions(targetOptions);
     }
     setHasInitialized(true);
-  }, [product?.variants, requestedVariantId, hasInitialized, variantAttributes]);
+  }, [product, requestedVariantId, hasInitialized, selectableAttributes]);
 
   const selectedVariant = useMemo(() => {
     if (!product?.variants) return undefined;
@@ -781,6 +891,18 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
               isOptionDisabled={isOptionDisabled}
             />
           ) : null}
+
+          <ProductSellerCard product={product} vendorHref={vendorHref} t={t} />
+
+          <ProductMetaCard
+            product={product}
+            currentSku={currentSku}
+            categoryHref={categoryHref}
+            brandHref={brandHref}
+            t={t}
+          />
+
+          <ProductActions product={product} selectedVariant={selectedVariant} />
         </div>
       </div>
 
@@ -840,56 +962,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
         </div>
 
         <div className="lg:col-span-3 flex flex-col gap-5">
-          <Card className="p-4 flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                {product.vendor?.logo ? (
-                  <Image
-                    src={product.vendor.logo}
-                    alt={product.vendor.name}
-                    width={48}
-                    height={48}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Store className="w-6 h-6 text-third" />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-third">{t("product.soldBy")}</p>
-                  {vendorHref ? (
-                    <Link
-                      href={vendorHref}
-                      className="font-semibold text-primary hover:text-secondary ltr:hover:translate-x-1.5 rtl:hover:-translate-x-1.5 transition-all flex items-center gap-1"
-                    >
-                      {product.vendor?.name || "OrdonSooq"}
-                      <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-                    </Link>
-                  ) : (
-                    <span className="font-semibold text-primary flex items-center gap-1">{product.vendor?.name || "OrdonSooq"}</span>
-                  )}
-                  {product.vendor ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3 h-3 text-secondary" />
-                      <span className="text-xs text-third">
-                        {product.vendor.rating} {t("product.reviewCount", { count: product.vendor.reviewCount })}
-                      </span>
-                      {(() => {
-                        const positivePercent = Math.round((product.vendor.rating / 5) * 100);
-                        if (!(positivePercent > 75)) return null;
-                        return (
-                          <span className="text-green-600 font-medium text-xs ml-1">
-                            {t("product.positiveFeedback", { percent: positivePercent })}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </Card>
+          <ProductSellerCard product={product} vendorHref={vendorHref} t={t} />
 
           {product.otherSellers && product.otherSellers.length > 0 ? (
             <Card className="p-4">
@@ -917,35 +990,13 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
             </Card>
           ) : null}
 
-          <Card className="p-4">
-            <div className="text-sm text-third flex flex-col gap-2">
-              <p>
-                {t("product.sku")}: <span className="text-primary">{currentSku}</span>
-              </p>
-              <p>
-                {t("product.category")}: {categoryHref ? <Link href={categoryHref} className="text-primary hover:underline">{product.category.name}</Link> : <span className="text-primary">{product.category.name}</span>}
-              </p>
-              {product.tags.length > 0 ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span>{t("product.tags")}:</span>
-                  {product.tags.map((tag) => (
-                    <Link
-                      key={tag}
-                      href={`/products?tag=${encodeURIComponent(tag)}`}
-                      className="text-primary hover:underline"
-                    >
-                      {tag}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-              {product.brand ? (
-                <p>
-                  {t("product.brand")}: {brandHref ? <Link href={brandHref} className="text-primary hover:underline">{product.brand.name}</Link> : <span className="text-primary">{product.brand.name}</span>}
-                </p>
-              ) : null}
-            </div>
-          </Card>
+          <ProductMetaCard
+            product={product}
+            currentSku={currentSku}
+            categoryHref={categoryHref}
+            brandHref={brandHref}
+            t={t}
+          />
 
           <ProductActions product={product} selectedVariant={selectedVariant} />
         </div>

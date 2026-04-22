@@ -1,5 +1,6 @@
 export interface SearchHit {
   id: string;
+  slug?: string;
   name_en: string;
   name_ar: string;
   brand: string;
@@ -9,6 +10,8 @@ export interface SearchHit {
   is_available: boolean;
   images?: string[];
   rating?: number;
+  stock?: number;
+  createdAt?: string;
   popularity_score: number;
 }
 
@@ -37,6 +40,7 @@ export interface SearchResponse {
 
 export interface AutocompleteSuggestion {
   id: string;
+  slug?: string;
   name_en: string;
   name_ar: string;
   image?: string;

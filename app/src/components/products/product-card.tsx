@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Star, ShoppingCart, Check, Loader2, Minus, Plus, Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Star, ShoppingCart } from "lucide-react";
 import { Product } from "@/types";
 import { cn, formatPrice, calculateDiscount } from "@/lib/utils";
 import { Badge, IconButton } from "@/components/ui";
@@ -38,7 +37,7 @@ export function ProductCard({
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
-  const { addItem, items, openCart } = useCart();
+  const { items, openCart } = useCart();
   const { toggleItem, isInWishlist, isItemLoading } = useWishlist();
   const [cartButtonStatus, setCartButtonStatus] = useState<"idle" | "loading" | "success">("idle");
 
@@ -121,19 +120,14 @@ export function ProductCard({
     router.push(productHref);
   };
 
-  const handleAddToCart = (quantity: number) => {
-    addItem(product, quantity);
-  };
-
-  const handleAnimationEnd = () => {
-    // Only open cart sidebar on desktop — mobile doesn't use the sidebar
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      openCart();
-    }
-  };
-
   const handleCartButtonStatusChange = (status: "idle" | "loading" | "success") => {
     setCartButtonStatus(status);
+  };
+
+  const handleCartAnimationEnd = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      openCart();
+    }
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -306,6 +300,7 @@ export function ProductCard({
                 variantId={singleVariant?.id} 
                 color={cartButtonColor}
                 iconType={cartButtonIcon}
+                onAnimationEnd={handleCartAnimationEnd}
               />
             )}
           </div>
@@ -343,7 +338,7 @@ export function ProductCard({
                 } as any}
                 variant={singleVariant}
                 onStatusChange={handleCartButtonStatusChange}
-                onAnimationEnd={handleAnimationEnd}
+                onAnimationEnd={handleCartAnimationEnd}
               />
             )}
           </div>

@@ -5,7 +5,7 @@ import { useLocale } from "next-intl";
 import { Cart, CartItem, Product, ProductVariant } from "@/types";
 import { useAuth } from "./useAuth";
 import { cartService } from "@/services/cart.service";
-import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product.service";
 import { PRODUCT_QUERY_KEYS } from "@/hooks/useProducts";
 import { transformProduct, type Locale } from "@/lib/transformers";
@@ -39,6 +39,10 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 const GUEST_CART_KEY = "ordonsooq-cart";
 
+function getCartItemKey(productId: number | string, variantId?: number | string | null) {
+  return `${productId}:${variantId ?? "base"}`;
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -47,6 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const locale: Locale = activeLocale === "ar" ? "ar" : "en";
   const [guestItems, setGuestItems] = useState<CartItem[]>([]);
   const [loadingItems, setLoadingItems] = useState<Set<number>>(new Set());
+  const [lastAddedItemKey, setLastAddedItemKey] = useState<string | null>(null);
 
   // Load guest cart on mount
   useEffect(() => {
@@ -101,10 +106,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const cartItems = isAuthenticated
-    ? (cart?.items || []).map(normalizeCartItem)
-    : guestItems;
-
   const getVariantPrimaryImage = (product: Product, variant: ProductVariant): string | undefined => {
     const mainImage = product.images?.[0];
     const mediaAttribute = product.attributes?.find((a) => a.controlsMedia);
@@ -140,9 +141,171 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return variant ? pick(variant) : pick(product);
   };
 
+  const buildFallbackVariantAttributes = (variant: ProductVariant | undefined) => {
+    if (!variant?.attributes) return [];
+
+    return Object.entries(variant.attributes).map(([attributeName, value]) => ({
+      attribute_name_en: attributeName,
+      attribute_name_ar: attributeName,
+      value_en: value,
+      value_ar: value,
+    }));
+  };
+
+  const buildLocalizedVariantAttributes = (apiProduct: any, variantId?: number | string | null) => {
+    if (variantId == null) return [];
+
+    const variant = apiProduct?.variants?.find((candidate: any) => String(candidate?.id) === String(variantId));
+    if (!variant?.attribute_values || typeof variant.attribute_values !== "object") {
+      return [];
+    }
+
+    return Object.entries(variant.attribute_values).map(([attributeId, valueId]) => {
+      const attributeGroup = apiProduct?.attributes?.[attributeId] ?? apiProduct?.specifications?.[attributeId];
+      const valueGroup = attributeGroup?.values?.[String(valueId)];
+
+      const attributeNameEn = attributeGroup?.name_en?.trim() || attributeGroup?.name_ar?.trim() || attributeId;
+      const attributeNameAr = attributeGroup?.name_ar?.trim() || attributeGroup?.name_en?.trim() || attributeNameEn;
+      const valueEn = valueGroup?.name_en?.trim() || valueGroup?.name_ar?.trim() || String(valueId);
+      const valueAr = valueGroup?.name_ar?.trim() || valueGroup?.name_en?.trim() || valueEn;
+
+      return {
+        attribute_name_en: attributeNameEn,
+        attribute_name_ar: attributeNameAr,
+        value_en: valueEn,
+        value_ar: valueAr,
+        color_code: valueGroup?.color_code ?? undefined,
+      };
+    });
+  };
+
+  const buildGuestCartItem = useCallback(async (
+    sourceProduct: Product,
+    quantity: number,
+    variantId?: number | string | null,
+    existingId?: number,
+  ): Promise<CartItem> => {
+    const productId = parseInt(String(sourceProduct.id), 10);
+    const normalizedVariantId = variantId != null
+      ? typeof variantId === "string"
+        ? parseInt(variantId, 10)
+        : variantId
+      : null;
+
+    const apiProduct = await queryClient.ensureQueryData({
+      queryKey: PRODUCT_QUERY_KEYS.detail(productId),
+      queryFn: () => productService.getById(productId),
+    }).catch(() => undefined);
+
+    const transformedProduct = apiProduct ? transformProduct(apiProduct, locale) : sourceProduct;
+    const resolvedVariant = transformedProduct.variants?.find((candidate) => String(candidate.id) === String(normalizedVariantId));
+    const selectedImage = resolvedVariant
+      ? getVariantPrimaryImage(transformedProduct, resolvedVariant) || resolvedVariant.image || transformedProduct.images?.[0] || ""
+      : transformedProduct.images?.[0] || "";
+
+    return {
+      id: existingId ?? Date.now(),
+      product_id: productId,
+      variant_id: normalizedVariantId,
+      quantity,
+      product: {
+        id: productId,
+        name_en: apiProduct?.name_en?.trim() || sourceProduct.name || sourceProduct.nameAr || "",
+        name_ar: apiProduct?.name_ar?.trim() || sourceProduct.nameAr || sourceProduct.name || "",
+        price: transformedProduct.price,
+        sale_price: transformedProduct.compareAtPrice,
+        image: selectedImage,
+        slug: apiProduct?.slug?.trim() || sourceProduct.slug,
+        stock: transformedProduct.stock,
+      },
+      variant: resolvedVariant ? {
+        id: typeof resolvedVariant.id === "string" ? parseInt(resolvedVariant.id, 10) : resolvedVariant.id,
+        sku: resolvedVariant.sku,
+        price: resolvedVariant.price,
+        compareAtPrice: resolvedVariant.compareAtPrice,
+        sale_price: resolvedVariant.compareAtPrice,
+        stock: resolvedVariant.stock,
+        attributes: apiProduct
+          ? buildLocalizedVariantAttributes(apiProduct, normalizedVariantId)
+          : buildFallbackVariantAttributes(resolvedVariant),
+      } : null,
+    };
+  }, [locale, queryClient]);
+
+  const baseCartItems = isAuthenticated
+    ? (cart?.items || []).map(normalizeCartItem)
+    : guestItems;
+
+  const cartItems = useMemo(() => {
+    if (!lastAddedItemKey) {
+      return baseCartItems;
+    }
+
+    const promotedItem = baseCartItems.find((item) => getCartItemKey(item.product_id, item.variant_id) === lastAddedItemKey);
+    if (!promotedItem) {
+      return baseCartItems;
+    }
+
+    return [
+      promotedItem,
+      ...baseCartItems.filter((item) => item !== promotedItem),
+    ];
+  }, [baseCartItems, lastAddedItemKey]);
+
   const computedTotalAmount = cartItems.reduce((sum, item) => sum + getEffectiveUnitPrice(item) * item.quantity, 0);
   const totalAmount = cartItems.length > 0 ? computedTotalAmount : (cart?.total_amount || 0);
   const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  useEffect(() => {
+    if (isAuthenticated || guestItems.length === 0) {
+      return;
+    }
+
+    const itemsNeedingHydration = guestItems.filter((item) => {
+      const missingProductLocale = !item.product.name_ar || !item.product.slug;
+      const missingVariantLocale = item.variant?.attributes?.some((attribute) => !attribute.attribute_name_ar || !attribute.value_ar);
+      return missingProductLocale || missingVariantLocale;
+    });
+
+    if (itemsNeedingHydration.length === 0) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    void Promise.all(
+      guestItems.map(async (item) => {
+        const shouldHydrate = itemsNeedingHydration.some((candidate) => candidate.id === item.id);
+        if (!shouldHydrate) {
+          return item;
+        }
+
+        const sourceProduct = await queryClient.ensureQueryData({
+          queryKey: PRODUCT_QUERY_KEYS.detail(item.product_id),
+          queryFn: () => productService.getById(item.product_id),
+        }).then((apiProduct) => transformProduct(apiProduct, locale)).catch(() => undefined);
+
+        if (!sourceProduct) {
+          return item;
+        }
+
+        return buildGuestCartItem(sourceProduct, item.quantity, item.variant_id, item.id);
+      })
+    ).then((hydratedItems) => {
+      if (isCancelled) {
+        return;
+      }
+
+      const didChange = JSON.stringify(hydratedItems) !== JSON.stringify(guestItems);
+      if (didChange) {
+        saveGuestCart(hydratedItems);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [buildGuestCartItem, guestItems, isAuthenticated, locale, queryClient]);
 
   // Helpers
   const toggleCart = () => setIsOpen(prev => !prev);
@@ -192,72 +355,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity: newItems[existingItemIndex].quantity + data.quantity
           };
         } else {
-            // Construct CartItem
-            const variantObj = data.product.variants?.find(v => String(v.id) === String(vId));
-            
-            let selectedImage = data.product.images?.[0] || "";
-            const cartVariantAttributes: any[] = []; // CartVariantAttribute[]
-
-            if (variantObj) {
-                // 1. Check if variant has specific image
-                if (variantObj.image) {
-                    selectedImage = variantObj.image;
-                }
-
-                // 2. Resolve Attributes and check for controlled media
-                if (variantObj.attributes) {
-                    Object.entries(variantObj.attributes).forEach(([key, value]) => {
-                        const attrDef = data.product.attributes?.find(a => a.name === key);
-                        
-                        // Image Logic - if attribute controls media and we haven't already used variant.image (or maybe this overrides?)
-                        // Usually variant.image (if specific) is best. If not, look at attribute media.
-                        if (!variantObj.image && attrDef?.controlsMedia) {
-                            const valDef = attrDef.values.find(v => v.value === value);
-                            if (valDef?.image) {
-                                selectedImage = valDef.image;
-                            }
-                        }
-                        
-                        // Attribute List Logic
-                        let colorCode: string | undefined;
-                        // For color attributes, try to find meta (hex code)
-                        const valDef = attrDef?.values.find(v => v.value === value);
-                        if (valDef?.meta) {
-                            colorCode = valDef.meta;
-                        }
-
-                        cartVariantAttributes.push({
-                            attribute_name_en: key,
-                            value_en: value,
-                            color_code: colorCode 
-                        });
-                    });
-                }
-            }
-            
-            const newItem: CartItem = {
-                id: Date.now(), // Temp ID
-                product_id: productId,
-                variant_id:  vId ?? null,
-                quantity: data.quantity,
-                product: {
-                    id: productId,
-                    name_en: data.product.name,
-                    price: data.product.price,
-                    sale_price: data.product.compareAtPrice,
-                    image: selectedImage,
-                    slug: data.product.slug,
-                },
-                variant: variantObj ? {
-                    id: typeof variantObj.id === 'string' ? parseInt(variantObj.id) : variantObj.id,
-                    sku: variantObj.sku,
-                    price: variantObj.price,
-                    compareAtPrice: variantObj.compareAtPrice,
-                    sale_price: variantObj.compareAtPrice, 
-                    attributes: cartVariantAttributes,
-                } : null
-            };
-            newItems.push(newItem);
+          const newItem = await buildGuestCartItem(data.product, data.quantity, vId ?? null);
+          newItems = [newItem, ...newItems];
         }
         
         saveGuestCart(newItems);
@@ -271,6 +370,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     },
     onSuccess: (response, variables) => {
+      setLastAddedItemKey(getCartItemKey(variables.product.id, variables.variantId ?? null));
+
       if (!isAuthenticated) {
          // Guest handled in mutationFn
       } else if (response && (response as any).items) {
@@ -299,7 +400,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      if (variables.options?.openSidebar !== false) {
+      const shouldOpenSidebar =
+        variables.options?.openSidebar
+        ?? (typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
+
+      if (shouldOpenSidebar) {
         setIsOpen(true);
       }
       
@@ -462,6 +567,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [removeItemMutation]);
 
   const clearCart = useCallback(() => {
+      setLastAddedItemKey(null);
       clearCartMutation.mutate();
   }, [clearCartMutation]);
 

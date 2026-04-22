@@ -1,8 +1,57 @@
 import { useMemo } from "react";
 
 import { transformProducts, type Locale } from "@/lib/transformers";
+import type { SearchHit } from "@/lib/search/types";
 import type { Product, ProductVariant } from "@/types";
 import type { Product as ApiProduct } from "@/types/api.types";
+
+type ListingSourceProduct = ApiProduct | SearchHit;
+
+function isSearchHit(item: ListingSourceProduct): item is SearchHit {
+  return "is_available" in item && "popularity_score" in item;
+}
+
+function transformSearchHit(hit: SearchHit, locale: Locale): Product {
+  const localizedName = locale === "ar"
+    ? hit.name_ar || hit.name_en || hit.slug || hit.id
+    : hit.name_en || hit.name_ar || hit.slug || hit.id;
+  const salePrice = typeof hit.sale_price === "number" && hit.sale_price > 0 && hit.sale_price < hit.price
+    ? hit.sale_price
+    : undefined;
+
+  return {
+    id: hit.id,
+    name: localizedName,
+    nameAr: hit.name_ar || undefined,
+    slug: hit.slug || hit.id,
+    description: [hit.brand, hit.category].filter(Boolean).join(" • "),
+    descriptionAr: [hit.brand, hit.category].filter(Boolean).join(" • "),
+    price: salePrice ?? hit.price,
+    compareAtPrice: salePrice != null ? hit.price : undefined,
+    images: hit.images && hit.images.length > 0 ? hit.images : ["/placeholder.svg"],
+    category: {
+      id: "",
+      name: hit.category || "",
+      slug: "",
+    },
+    brand: hit.brand
+      ? {
+          id: "",
+          name: hit.brand,
+          slug: "",
+        }
+      : undefined,
+    tags: [],
+    stock: hit.stock ?? (hit.is_available ? 999 : 0),
+    sku: "",
+    rating: hit.rating ?? 0,
+    reviewCount: 0,
+    isFeatured: false,
+    isNew: false,
+    createdAt: hit.createdAt ?? "",
+    updatedAt: hit.createdAt ?? "",
+  };
+}
 
 function getVariantPrimaryImage(product: Product, variant: ProductVariant): string | undefined {
   if (variant.image) return variant.image;
@@ -45,9 +94,15 @@ function toVariantCardProduct(base: Product, variant: ProductVariant, listSepara
   };
 }
 
-export function useListingVariantProducts(apiProducts: ApiProduct[] | undefined, locale: Locale) {
+export function useListingVariantProducts(apiProducts: ListingSourceProduct[] | undefined, locale: Locale) {
   const baseProducts = useMemo(() => {
-    return apiProducts ? transformProducts(apiProducts, locale) : [];
+    if (!apiProducts) {
+      return [];
+    }
+
+    return apiProducts
+      .map((product) => isSearchHit(product) ? transformSearchHit(product, locale) : transformProducts([product], locale)[0])
+      .filter((product): product is Product => Boolean(product));
   }, [apiProducts, locale]);
 
   const expandedProducts = useMemo(() => {

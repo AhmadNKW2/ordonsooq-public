@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { CartSidebar } from "@/components/cart";
 import { IconButton } from "@/components/ui";
 import { SearchBox } from "@/components/search/SearchBox";
@@ -15,20 +14,43 @@ import {
 import { BottomNav } from "./bottom-nav";
 
 export function Header() {
-  const t = useTranslations('common');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mobileNavTop, setMobileNavTop] = useState(0);
+  const headerRef = useRef<HTMLElement>(null);
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
+  useEffect(() => {
+    const updateMobileNavTop = () => {
+      setMobileNavTop(headerRef.current?.getBoundingClientRect().bottom ?? 0);
+    };
+
+    updateMobileNavTop();
+
+    const observer = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(updateMobileNavTop)
+      : null;
+
+    if (observer && headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    window.addEventListener("resize", updateMobileNavTop);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateMobileNavTop);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-s1">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-white shadow-s1 relative">
       {/* Top Bar */}
       <TopBar />
 
       {/* Main Header - Logo, Search, Actions */}
       <div className="bg-primary lg:border-b border-gray-100">
-        <div className="container mx-auto flex flex-col gap-5 px-4 md:px-5">
+        <div className="container mx-auto px-4 md:px-5">
           <div className="flex items-center gap-2 md:gap-4 justify-between h-16 md:h-20">
             {/* Mobile Menu Button */}
             <IconButton
@@ -43,16 +65,19 @@ export function Header() {
             <Logo />
 
             {/* Search Box with Autocomplete */}
-            <div className="flex-1 max-w-2xl mx-auto">
+            <div className="hidden lg:block flex-1 max-w-2xl mx-auto">
               <SearchBox />
             </div>
 
             {/* Actions - Wishlist, Profile, Cart */}
-            <HeaderActions onSearchToggle={() => setIsSearchOpen(!isSearchOpen)} />
+            <HeaderActions />
           </div>
+        </div>
+      </div>
 
-          {/* Mobile Search - Removed as we use the main search bar now */}
-          {/* <SearchBar variant="mobile" isOpen={isSearchOpen} /> */}
+      <div className="bg-primary lg:hidden pb-3">
+        <div className="container mx-auto px-4 md:px-5">
+          <SearchBox />
         </div>
       </div>
 
@@ -60,7 +85,7 @@ export function Header() {
       <NavigationBar />
 
       {/* Mobile Navigation */}
-      <MobileNav isOpen={isMenuOpen} onClose={closeMenu} />
+      <MobileNav isOpen={isMenuOpen} onClose={closeMenu} topOffset={mobileNavTop} />
 
       {/* Cart Sidebar */}
       <CartSidebar />

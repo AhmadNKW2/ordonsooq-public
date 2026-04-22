@@ -2,7 +2,7 @@
 
 import { ProductAttribute } from "@/types";
 import { cn } from "@/lib/utils";
-import { Radio } from "@/components/ui/radio";
+import { ProductOptionChip } from "@/components/products/product-option-chip";
 
 interface ProductOptionsProps {
   attributes: ProductAttribute[];
@@ -26,36 +26,16 @@ export function ProductOptions({ attributes, selectedOptions, onChange, isOption
               const isSelected = selectedOptions[attribute.name] === item.value;
               // Selected options should never be disabled
               const isDisabled = isSelected ? false : (isOptionDisabled ? isOptionDisabled(attribute.name, item.value) : false);
-              
-              if (attribute.isColor && item.meta) {
-                return (
-                  <button
-                    key={item.value}
-                    onClick={() => !isDisabled && onChange(attribute.name, item.value)}
-                    disabled={isDisabled}
-                    className={cn(
-                      "w-8 h-8 rounded-full border  ring-2 transition-all relative",
-                      isSelected ? "border-white! ring-secondary scale-101" : "border-primary/25 ring-transparent hover:border-white/50 hover:ring-secondary/50 hover:scale-101",
-                      isDisabled && "opacity-50 cursor-not-allowed hover:scale-100"
-                    )}
-                    style={{ backgroundColor: item.meta }}
-                    title={item.value}
-                    aria-label={item.value}
-                  >
-                  </button>
-                );
-              }
 
               return (
-                <Radio
+                <ProductOptionChip
                   key={item.value}
-                  variant="tag"
-                  name={`attribute-${attribute.id}`}
-                  value={item.value}
                   label={item.value}
-                  checked={isSelected}
+                  selected={isSelected}
                   disabled={isDisabled}
-                  onChange={() => onChange(attribute.name, item.value)}
+                  color={attribute.isColor ? item.meta : undefined}
+                  title={item.value}
+                  onClick={() => onChange(attribute.name, item.value)}
                 />
               );
             })}

@@ -7,3 +7,4 @@ export { ProductGrid } from "./product-grid";
 export { ProductOptions } from "./product-options";
 export { ProductReviews } from "./product-reviews";
 export { FloatingFilterSort } from "./floating-filter-sort";
+export { MobileContactActions } from "./mobile-contact-actions";

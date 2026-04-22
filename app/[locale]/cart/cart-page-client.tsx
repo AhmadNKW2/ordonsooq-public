@@ -9,19 +9,21 @@ import {
   ChevronDown,
   ChevronUp,
   ShoppingBag,
-  Tag,
   Trash2,
   Truck,
 } from "lucide-react";
-import { Button, Card, QuantitySelector, Input, IconButton, Breadcrumb } from "@/components/ui";
+import { Button, Card, QuantitySelector, IconButton, Breadcrumb } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { FREE_SHIPPING_MIN_ORDER_AMOUNT, STANDARD_SHIPPING_FEE } from "@/lib/constants";
 import { formatPrice, calculateDiscount, cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export function CartPageClient() {
   const t = useTranslations("cart");
+  const locale = useLocale();
+  const isArabic = locale === "ar";
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalPrice, loadingItems } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
   const { handleCheckout } = useCheckout();
@@ -58,10 +60,6 @@ export function CartPageClient() {
     return { price: Number.isFinite(price) ? price : 0, compareAtPrice: normalizedCompareAt };
   };
 
-  const shipping = totalPrice > 50 ? 0 : 9.99;
-  const tax = totalPrice * 0.1;
-  const finalTotal = totalPrice + shipping + tax;
-
   const totalSavings = items.reduce((accumulator, item) => {
     const pricing = item.variant ? getEffectivePricing(item.variant) : getEffectivePricing(item.product);
     if (pricing.compareAtPrice && pricing.compareAtPrice > pricing.price) {
@@ -69,6 +67,21 @@ export function CartPageClient() {
     }
     return accumulator;
   }, 0);
+
+  const freeShippingUnlocked = totalPrice >= FREE_SHIPPING_MIN_ORDER_AMOUNT;
+  const remainingAmountForFreeShipping = Math.max(FREE_SHIPPING_MIN_ORDER_AMOUNT - totalPrice, 0);
+  const freeShippingProgress = Math.min((totalPrice / FREE_SHIPPING_MIN_ORDER_AMOUNT) * 100, 100);
+  const shipping = freeShippingUnlocked ? 0 : STANDARD_SHIPPING_FEE;
+  const finalTotal = totalPrice + shipping;
+  const getProductName = (item: typeof items[number]) =>
+    isArabic
+      ? item.product.name_ar || item.product.name_en || ""
+      : item.product.name_en || item.product.name_ar || "";
+
+  const getVariantValue = (attribute: NonNullable<typeof items[number]["variant"]>["attributes"][number]) =>
+    isArabic
+      ? attribute.value_ar || attribute.value_en
+      : attribute.value_en || attribute.value_ar;
 
   if (items.length === 0) {
     return (
@@ -132,7 +145,7 @@ export function CartPageClient() {
                   >
                     <Image
                       src={item.product.image || "/placeholder.svg"}
-                      alt={item.product.name_en}
+                      alt={getProductName(item)}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
@@ -142,8 +155,8 @@ export function CartPageClient() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 pr-2">
                         <Link href={productHref}>
-                          <h3 className="font-semibold text-primary truncate hover:text-secondary transition-colors text-base sm:text-lg leading-tight">
-                            {item.product.name_en}
+                          <h3 className="font-semibold text-primary line-clamp-2 hover:text-secondary transition-colors text-base sm:text-lg leading-tight">
+                            {getProductName(item)}
                           </h3>
                         </Link>
 
@@ -151,7 +164,7 @@ export function CartPageClient() {
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {item.variant.attributes.map((attribute, index) => (
                               <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100">
-                                {attribute.value_en}
+                                {getVariantValue(attribute)}
                               </span>
                             ))}
                           </div>
@@ -169,7 +182,7 @@ export function CartPageClient() {
                       </button>
                     </div>
 
-                    <div className="flex items-end justify-between mt-2">
+                    <div className="flex items-end justify-between gap-2">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2 mb-0.5">
                           {unitCompareAtPrice ? (
@@ -183,12 +196,12 @@ export function CartPageClient() {
                             </span>
                           ) : null}
                         </div>
-                        <span className="font-bold text-primary text-lg sm:text-xl tracking-tight">
+                        <span className="font-bold text-secondary text-lg sm:text-xl tracking-tight">
                           {formatPrice(unitPrice)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <IconButton
                           icon="heart"
                           onClick={() => toggleItem(item.product, item.variant_id ?? null)}
@@ -222,16 +235,6 @@ export function CartPageClient() {
             <div className="flex flex-col gap-5">
               <h2 className="text-xl font-bold text-primary">{t("orderSummary")}</h2>
 
-              <div className="flex gap-2">
-                <Input placeholder={t("couponCode")} icon={Tag} />
-                <Button
-                  variant="solid"
-                  className="bg-white hover:bg-white/90 shadow-gray-200/50 border border-gray-200 text-primary"
-                >
-                  {t("apply")}
-                </Button>
-              </div>
-
               <div className="flex flex-col gap-5 pb-5 border-b border-gray-100">
                 <div className="flex justify-between text-third">
                   <span>{t("subtotalWithCount", { count: totalItems })}</span>
@@ -242,10 +245,6 @@ export function CartPageClient() {
                   <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
                     {shipping === 0 ? t("free") : formatPrice(shipping)}
                   </span>
-                </div>
-                <div className="flex justify-between text-third">
-                  <span>{t("tax", { rate: 10 })}</span>
-                  <span>{formatPrice(tax)}</span>
                 </div>
               </div>
 
@@ -258,18 +257,18 @@ export function CartPageClient() {
                 <div className="flex items-center gap-2 mb-2">
                   <Truck className="w-4 h-4 text-secondary" />
                   <p className="text-sm font-medium text-primary flex-1">
-                    {totalPrice >= 50
+                    {freeShippingUnlocked
                       ? t("freeShippingUnlocked")
-                      : t("addAmountForFreeShipping", { amount: formatPrice(50 - totalPrice) })}
+                      : t("addAmountForFreeShipping", { amount: formatPrice(remainingAmountForFreeShipping, undefined, locale) })}
                   </p>
                   <span className="text-xs font-bold text-secondary">
-                    {Math.min(Math.round((totalPrice / 50) * 100), 100)}%
+                    {Math.round(freeShippingProgress)}%
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
-                    style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
+                    style={{ width: `${freeShippingProgress}%` }}
                   />
                 </div>
               </div>
@@ -278,8 +277,6 @@ export function CartPageClient() {
                 {t("proceedToCheckout")}
                 <ArrowRight className="w-5 h-5" />
               </Button>
-
-              <p className="text-center text-sm text-third">{t("secureCheckout")}</p>
             </div>
           </Card>
         </div>
@@ -301,17 +298,6 @@ export function CartPageClient() {
                   <span className="text-sm text-third">({totalItems} items)</span>
                 </div>
 
-                <div className="flex gap-2">
-                  <Input placeholder={t("couponCode")} icon={Tag} className="flex-1" />
-                  <Button
-                    variant="solid"
-                    size="sm"
-                    className="bg-white hover:bg-white/90 border border-gray-200 text-primary whitespace-nowrap"
-                  >
-                    {t("apply")}
-                  </Button>
-                </div>
-
                 <div className="space-y-3 pt-2">
                   <div className="flex justify-between text-sm text-third">
                     <span>{t("subtotal")}</span>
@@ -323,25 +309,21 @@ export function CartPageClient() {
                       {shipping === 0 ? t("free") : formatPrice(shipping)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm text-third">
-                    <span>{t("tax", { rate: 10 })}</span>
-                    <span>{formatPrice(tax)}</span>
-                  </div>
                 </div>
 
                 <div className="py-2">
                   <div className="flex items-center gap-2 mb-2">
                     <Truck className="w-3 h-3 text-secondary" />
                     <p className="text-xs font-medium text-primary flex-1">
-                      {totalPrice >= 50
+                      {freeShippingUnlocked
                         ? t("freeShippingUnlocked")
-                        : t("addAmountForFreeShipping", { amount: formatPrice(50 - totalPrice) })}
+                        : t("addAmountForFreeShipping", { amount: formatPrice(remainingAmountForFreeShipping, undefined, locale) })}
                     </p>
                   </div>
                   <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-secondary transition-all duration-500 ease-out rounded-full"
-                      style={{ width: `${Math.min((totalPrice / 50) * 100, 100)}%` }}
+                      style={{ width: `${freeShippingProgress}%` }}
                     />
                   </div>
                 </div>
@@ -351,7 +333,7 @@ export function CartPageClient() {
         </AnimatePresence>
 
         <div className="flex items-center justify-between p-4 gap-4 bg-white">
-          <div className="flex flex-col cursor-pointer min-w-[120px]" onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}>
+          <div className="flex flex-col cursor-pointer min-w-30" onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}>
             <div className="flex items-center gap-2 select-none">
               <span className="font-bold text-primary text-xl tracking-tight">{formatPrice(finalTotal)}</span>
               {isMobileSummaryOpen ? (
@@ -360,10 +342,8 @@ export function CartPageClient() {
                 <ChevronUp className="w-4 h-4 text-primary" />
               )}
             </div>
-            {totalSavings > 0 ? (
+            {totalSavings > 0 && (
               <span className="text-xs text-secondary font-semibold">Saving {formatPrice(totalSavings)}</span>
-            ) : (
-              <span className="text-[10px] text-third">Incl. VAT</span>
             )}
           </div>
 

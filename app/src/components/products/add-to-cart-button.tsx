@@ -61,9 +61,7 @@ export function AddToCartButton({ product, variant, onAddToCart, onStatusChange,
 
     updateStatus("loading");
 
-    // Add to cart, and only transition UI/open sidebar after SUCCESS response.
     addItem(product, 1, variant?.id, {
-      // Avoid opening sidebar before the server/cart cache updates.
       openSidebar: false,
       onSuccess: () => {
         const elapsed = Date.now() - startedAt;
