@@ -16,6 +16,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { formatPrice } from "@/lib/utils";
 import { CURRENCY_CONFIG } from "@/lib/constants";
 import { useLocale } from "next-intl";
+import { SellWithUsCta } from "./sell-with-us-cta";
 
 export function HeaderActions() {
   const t = useTranslations("auth");
@@ -57,32 +58,37 @@ export function HeaderActions() {
 
   return (
     <div className="flex items-center gap-3">
+
       {/* Language Switcher - Desktop Only */}
       <div className="hidden lg:block ">
         <LanguageSwitcher />
       </div>
+      <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
+
+      <SellWithUsCta />
+
 
       {isAuthenticated && wallet && (
         <>
-            <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
-            <Link href="/profile/wallet" className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 hover:bg-secondary/20 transition-all border border-white/10">
-                <Wallet className="w-4 h-4 text-secondary" />
-                <div className="flex flex-col leading-none">
-                    <span className="text-[10px] text-white/70 uppercase font-medium">{t('myWallet')}</span>
-                    <span className="text-sm font-bold text-white tabular-nums">
-                        {formatPrice(Number(wallet.balance) || 0, wallet.currency || CURRENCY_CONFIG.code, locale as any)}
-                    </span>
-                </div>
-            </Link>
+          <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
+          <Link href="/profile/wallet" className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 hover:bg-secondary/20 transition-all border border-white/10">
+            <Wallet className="w-4 h-4 text-secondary" />
+            <div className="flex flex-col leading-none">
+              <span className="text-[10px] text-white/70 uppercase font-medium">{t('myWallet')}</span>
+              <span className="text-sm font-bold text-white tabular-nums">
+                {formatPrice(Number(wallet.balance) || 0, wallet.currency || CURRENCY_CONFIG.code, locale as any)}
+              </span>
+            </div>
+          </Link>
         </>
       )}
 
       <div className="w-px h-8 bg-white/10 hidden lg:block"></div>
 
       {/* Wishlist - Always visible on mobile to replace language */}
-      <Link 
+      <Link
         prefetch={isAuthenticated}
-        href="/profile/wishlist" 
+        href="/profile/wishlist"
         className="flex"
         data-prevent-loader={!isAuthenticated ? "true" : undefined}
         onClick={(e) => {

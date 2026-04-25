@@ -293,6 +293,51 @@
     "flexiblePayment": "Flexible Payment",
     "flexiblePaymentDesc": "Multiple payment options"
   },
+  "sellWithUs": {
+    "button": "Sell with us",
+    "eyebrow": "Merchant onboarding",
+    "title": "Bring your store to shoppers across Jordan",
+    "description": "Tell us who you are and our team will contact you to launch your catalog, set up payments, and get your storefront live.",
+    "features": {
+      "fastTitle": "Fast onboarding",
+      "fastDescription": "Share your core details now and we will guide you through the next steps.",
+      "followUpTitle": "Real follow-up",
+      "followUpDescription": "A member of our merchant team will contact you to confirm your business info.",
+      "supportTitle": "Launch-ready support",
+      "supportDescription": "We help you prepare listings, pricing, and storefront visibility for launch."
+    },
+    "privacy": "Your details are only used to contact you about opening your store on ordonsooq.",
+    "formEyebrow": "Start now",
+    "formTitle": "Tell us about your business",
+    "formDescription": "Fill in these details and we will get back to you shortly.",
+    "fields": {
+      "fullName": {
+        "label": "Full name",
+        "placeholder": "Enter your full name"
+      },
+      "phone": {
+        "label": "Phone number",
+        "placeholder": "+962 7X XXX XXXX"
+      },
+      "companyName": {
+        "label": "Company name",
+        "placeholder": "Enter your company name"
+      }
+    },
+    "validation": {
+      "fullName": "Please enter your full name.",
+      "phone": "Please enter a valid phone number.",
+      "companyName": "Please enter your company name."
+    },
+    "submit": "Submit request",
+    "submitError": "We couldn't submit your request right now. Please try again.",
+    "footnote": "By submitting this form, you agree that our team may contact you by phone about store onboarding.",
+    "successTitle": "Your request is on its way",
+    "successDescription": "Thanks. Our merchant team will review your details and contact you soon.",
+    "done": "Close",
+    "contactPhoneLabel": "Call us",
+    "contactEmailLabel": "Email us"
+  },
   "newsletter": {
     "successTitle": "Thank You for Subscribing!",
     "successDesc": "You'll receive our latest updates and exclusive offers.",

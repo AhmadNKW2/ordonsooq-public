@@ -9,9 +9,10 @@ interface LogoProps {
   /** If true, renders as a Link, otherwise just the logo content */
   asLink?: boolean;
   className?: string;
+  imageClassName?: string;
 }
 
-export function Logo({ asLink = true, className }: LogoProps) {
+export function Logo({ asLink = true, className, imageClassName }: LogoProps) {
   const locale = useLocale();
   const isArabic = locale === "ar";
   const logoSrc = isArabic ? "/SVG/Logo%20AR.svg" : "/SVG/Logo%20EN.svg";
@@ -23,7 +24,7 @@ export function Logo({ asLink = true, className }: LogoProps) {
       width={isArabic ? 649 : 853}
       height={isArabic ? 238 : 176}
       priority
-      className="h-9 md:h-11                                                                                                                                                                                                                                                                                                                                                           w-auto"
+      className={cn("h-9 w-auto md:h-11", imageClassName)}
     />
   );
 

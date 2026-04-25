@@ -49,7 +49,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {variant === "search" && (
             <button
                 type="submit"
-                className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex w-12 md:w-18 items-center justify-center bg-[#F0BB1C] text-white ltr:rounded-r-full ltr:rounded-l-none rtl:rounded-l-full rtl:rounded-r-none hover:brightness-95 transition-[filter]"
+                className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex w-12 md:w-12 items-center justify-center bg-fourth text-white ltr:rounded-r-full ltr:rounded-l-none rtl:rounded-l-full rtl:rounded-r-none hover:brightness-95 transition-[filter]"
               >
                 <Search className="w-4 h-4 md:w-5 md:h-5" />
             </button>

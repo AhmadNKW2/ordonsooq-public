@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { motion, AnimatePresence, type Transition, type TargetAndTransition } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,11 @@ export function Modal({
   closeButtonClassName,
 }: ModalProps) {
   const variants = animationVariants[animation];
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Handle escape key
   React.useEffect(() => {
@@ -93,10 +99,14 @@ export function Modal({
     };
   }, [isOpen]);
 
-  return (
+  if (!isMounted) {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-70 flex items-center justify-center">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -137,6 +147,7 @@ export function Modal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

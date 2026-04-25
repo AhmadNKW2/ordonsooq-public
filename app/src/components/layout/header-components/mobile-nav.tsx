@@ -12,6 +12,7 @@ import { useHome } from "@/hooks/useHome";
 import { transformHomeCategory, type Locale } from "@/lib/transformers";
 import { Category } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
+import { SellWithUsCta } from "./sell-with-us-cta";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -169,7 +170,12 @@ export function MobileNav({ isOpen, onClose, topOffset = 0 }: MobileNavProps) {
       </div>
 
       <div className="p-4 border-t border-gray-100 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-center items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <SellWithUsCta
+            variant="compact"
+            onOpen={onClose}
+            className="justify-center"
+          />
           <LanguageSwitcher />
         </div>
       </div>

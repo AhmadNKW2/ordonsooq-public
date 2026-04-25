@@ -32,6 +32,7 @@ export const ROOT_MESSAGE_NAMESPACES = [
   "cart",
   "footer",
   "features",
+  "sellWithUs",
 ] satisfies readonly MessageNamespace[];
 
 export const HOME_MESSAGE_NAMESPACES = [
