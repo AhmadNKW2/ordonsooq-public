@@ -105,7 +105,7 @@ export function EntityCarousel(props: EntityCarouselProps) {
         <div
           ref={scrollerRef}
           className={cn(
-            "flex justify-center gap-5 overflow-x-auto scrollbar-hide -mx-4 p-4 scroll-smooth ",
+            "flex gap-5 overflow-x-auto scrollbar-hide -mx-4 p-4 scroll-smooth ",
             scrollerClassName
           )}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
