@@ -195,12 +195,6 @@ export type SearchRequestDebugResult<T> = {
   durationMs: number;
 };
 
-type DisjunctiveFacetRequest = {
-  fieldName: FacetCount['field_name'];
-  filters: SearchFilters;
-  groupKeys?: string[];
-};
-
 const FACET_CATALOG_TTL_MS = 5 * 60 * 1000;
 
 const EMPTY_FACET_CATALOGS: FacetCatalogs = {
@@ -473,14 +467,6 @@ function splitFilterValues(value?: string): string[] {
     .filter(Boolean) ?? [];
 }
 
-function buildFacetSearchFilters(filters: SearchFilters, overrides: Partial<SearchFilters>): SearchFilters {
-  return {
-    ...filters,
-    ...overrides,
-    page: 1,
-  };
-}
-
 function joinFilterValues(values: string[]): string | undefined {
   return values.length > 0 ? values.join(',') : undefined;
 }
@@ -620,107 +606,6 @@ function filterItemsByGroupedSelections(
     matchesGroupedSelections(item.attributeValues, selectedAttributeGroups)
     && matchesGroupedSelections(item.specificationValues, selectedSpecificationGroups)
   ));
-}
-
-function buildGroupedDisjunctiveFacetRequests(
-  filters: SearchFilters,
-  fieldName: 'attributes_values_ids' | 'specifications_values_ids',
-  selectedValueString: string | undefined,
-  facet: FacetCount | undefined
-): DisjunctiveFacetRequest[] {
-  const selectedValues = splitFilterValues(selectedValueString);
-
-  if (selectedValues.length === 0) {
-    return [];
-  }
-
-  const valueGroupLookup = buildFacetValueGroupLookup(facet);
-  const selectedGroupKeys = Array.from(new Set(
-    selectedValues
-      .map((value) => valueGroupLookup.get(value))
-      .filter((groupKey): groupKey is string => Boolean(groupKey))
-  ));
-
-  if (selectedGroupKeys.length === 0) {
-    return [
-      {
-        fieldName,
-        filters: buildFacetSearchFilters(filters, {
-          [fieldName]: undefined,
-        } as Partial<SearchFilters>),
-      },
-    ];
-  }
-
-  return selectedGroupKeys.map((groupKey) => {
-    const remainingValues = selectedValues.filter((value) => valueGroupLookup.get(value) !== groupKey);
-
-    return {
-      fieldName,
-      groupKeys: [groupKey],
-      filters: buildFacetSearchFilters(filters, {
-        [fieldName]: joinFilterValues(remainingValues),
-      } as Partial<SearchFilters>),
-    };
-  });
-}
-
-function buildCategoryFacetSearchFilters(filters: SearchFilters): SearchFilters {
-  return buildFacetSearchFilters(filters, { category_ids: undefined });
-}
-
-function buildDisjunctiveFacetRequests(filters: SearchFilters, facets: FacetCount[] | undefined): DisjunctiveFacetRequest[] {
-  const requests: DisjunctiveFacetRequest[] = [];
-  const attributeFacet = facets?.find((facet) => facet.field_name === 'attributes_values_ids');
-  const specificationFacet = facets?.find((facet) => facet.field_name === 'specifications_values_ids');
-
-  if (splitFilterValues(filters.category_ids).length > 0) {
-    requests.push({
-      fieldName: 'categories_ids',
-      filters: buildCategoryFacetSearchFilters(filters),
-    });
-  }
-
-  if (splitFilterValues(filters.brand_ids).length > 0) {
-    requests.push({
-      fieldName: 'brand_ids',
-      filters: buildFacetSearchFilters(filters, { brand_ids: undefined }),
-    });
-  }
-
-  if (splitFilterValues(filters.vendor_ids).length > 0) {
-    requests.push({
-      fieldName: 'vendor_ids',
-      filters: buildFacetSearchFilters(filters, { vendor_ids: undefined }),
-    });
-  }
-
-  requests.push(
-    ...buildGroupedDisjunctiveFacetRequests(
-      filters,
-      'attributes_values_ids',
-      filters.attributes_values_ids,
-      attributeFacet,
-    )
-  );
-
-  requests.push(
-    ...buildGroupedDisjunctiveFacetRequests(
-      filters,
-      'specifications_values_ids',
-      filters.specifications_values_ids,
-      specificationFacet,
-    )
-  );
-
-  if (filters.is_out_of_stock != null) {
-    requests.push({
-      fieldName: 'stock_status',
-      filters: buildFacetSearchFilters(filters, { is_out_of_stock: undefined }),
-    });
-  }
-
-  return requests;
 }
 
 function compareFacetCountValues(left: { count: number; label?: string; value: string }, right: { count: number; label?: string; value: string }): number {
@@ -1297,40 +1182,6 @@ function buildOrdonDbFacets(
   return facets;
 }
 
-function mergeFacetFields(
-  baseFacets: FacetCount[] | undefined,
-  overrides: Map<string, FacetCount>
-): FacetCount[] {
-  const mergedFacets = new Map((baseFacets ?? []).map((facet) => [facet.field_name, facet] as const));
-
-  overrides.forEach((facet, fieldName) => {
-    mergedFacets.set(fieldName, facet);
-  });
-
-  return Array.from(mergedFacets.values());
-}
-
-function mergeFacetGroups(
-  baseFacets: FacetCount[] | undefined,
-  fieldName: string,
-  overrideFacet: FacetCount,
-  groupKeys: string[]
-): FacetCount[] {
-  const groupKeySet = new Set(groupKeys);
-  const facetMap = new Map((baseFacets ?? []).map((facet) => [facet.field_name, facet] as const));
-  const existingFacet = facetMap.get(fieldName);
-  const retainedCounts = existingFacet?.counts.filter((item) => !groupKeySet.has(item.group_key ?? '')) ?? [];
-  const overrideCounts = overrideFacet.counts.filter((item) => groupKeySet.has(item.group_key ?? ''));
-  const mergedCounts = [...retainedCounts, ...overrideCounts].sort(compareFacetCountValues);
-
-  facetMap.set(fieldName, {
-    field_name: fieldName,
-    counts: mergedCounts,
-  });
-
-  return Array.from(facetMap.values());
-}
-
 function normalizeOrdonDbItems(
   payload: OrdonDbSearchResponse,
   locale: SearchLocale
@@ -1557,79 +1408,10 @@ async function requestOrdonDbSearch(
     signal,
     upstream,
   );
-  const disjunctiveFacetRequests = buildDisjunctiveFacetRequests(filters, primaryResult.data.facets);
-  let finalData = primaryResult.data;
-  let rawData: unknown = primaryResult.rawData;
-
-  if (disjunctiveFacetRequests.length > 0) {
-    const disjunctiveFacetResponses = await Promise.all(
-      disjunctiveFacetRequests.map(async (facetRequest) => {
-        try {
-          const facetPayload = buildOrdonDbSearchRequest(facetRequest.filters);
-          const facetResult = await buildSearchResponseForFilters(
-            facetRequest.filters,
-            filters,
-            normalizedLocale,
-            catalogs,
-            signal,
-          );
-
-          return {
-            fieldName: facetRequest.fieldName,
-            groupKeys: facetRequest.groupKeys,
-            payload: facetPayload,
-            rawData: facetResult.rawData,
-            data: facetResult.data,
-            status: facetResult.status,
-            durationMs: facetResult.durationMs,
-          };
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    let mergedFacets = primaryResult.data.facets;
-
-    disjunctiveFacetResponses.forEach((response) => {
-      if (!response) return;
-
-      const facet = response.data.facets?.find((item) => item.field_name === response.fieldName);
-      if (!facet) {
-        return;
-      }
-
-      if (response.groupKeys && response.groupKeys.length > 0) {
-        mergedFacets = mergeFacetGroups(mergedFacets, response.fieldName, facet, response.groupKeys);
-        return;
-      }
-
-      mergedFacets = mergeFacetFields(mergedFacets, new Map([[response.fieldName, facet]]));
-    });
-
-    finalData = {
-      ...primaryResult.data,
-      facets: mergedFacets,
-    };
-
-    rawData = {
-      primary: primaryResult.rawData,
-      disjunctiveFacets: disjunctiveFacetResponses
-        .filter((response): response is NonNullable<typeof response> => Boolean(response))
-        .map((response) => ({
-          fieldName: response.fieldName,
-          groupKeys: response.groupKeys,
-          payload: response.payload,
-          rawData: response.rawData,
-          status: response.status,
-          durationMs: response.durationMs,
-        })),
-    };
-  }
 
   const result: SearchRequestDebugResult<SearchResponse> = {
-    data: finalData,
-    rawData,
+    data: primaryResult.data,
+    rawData: primaryResult.rawData,
     source: 'ordondb',
     status: upstream.status,
     durationMs: Date.now() - startedAt,
@@ -1638,9 +1420,6 @@ async function requestOrdonDbSearch(
   logProcessedResult('ORDONDB SEARCH FINAL', result, {
     query: requestPayload.query,
     payload: requestPayload,
-    disjunctiveFacetFields: disjunctiveFacetRequests.map((request) => request.groupKeys?.length
-      ? `${request.fieldName}:${request.groupKeys.join('|')}`
-      : request.fieldName),
   });
 
   return result;

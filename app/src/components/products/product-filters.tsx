@@ -166,15 +166,7 @@ export function ProductFilters({
   onFilterChange,
   className,
 }: ProductFiltersProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>([
-    "categories",
-    "price",
-    "brands",
-    "vendors",
-    "attributes",
-    "specifications",
-    "rating",
-  ]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   const initialFilterState = useMemo<FilterState>(() => ({
     categories: selectedCategories,
@@ -581,8 +573,8 @@ export function ProductFilters({
         <FilterSection
           key={key}
           title={group.title}
-          isExpanded={!expandedSections.includes(`attr-collapse-${key}`)}
-          onToggle={() => toggleSection(`attr-collapse-${key}`)}
+          isExpanded={expandedSections.includes(`attr-${key}`)}
+          onToggle={() => toggleSection(`attr-${key}`)}
           bodyClassName="max-h-80"
         >
           <div className="flex flex-col gap-3">
@@ -613,8 +605,8 @@ export function ProductFilters({
         <FilterSection
           key={key}
           title={group.title}
-          isExpanded={!expandedSections.includes(`spec-collapse-${key}`)}
-          onToggle={() => toggleSection(`spec-collapse-${key}`)}
+          isExpanded={expandedSections.includes(`spec-${key}`)}
+          onToggle={() => toggleSection(`spec-${key}`)}
           bodyClassName="max-h-80"
         >
           <div className="flex flex-col gap-3">

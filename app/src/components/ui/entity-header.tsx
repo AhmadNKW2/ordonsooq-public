@@ -24,7 +24,7 @@ export function EntityHeader({
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl p-6 md:p-8 border border-gray-100 flex flex-col md:flex-row gap-8",
+        "bg-white rounded-2xl flex flex-col md:flex-row gap-8",
         className
       )}
     >
