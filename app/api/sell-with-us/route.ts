@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sellWithUsSchema } from "@/lib/sell-with-us";
-import { writeSellWithUsSubmission } from "@/lib/sell-with-us-server";
+import {
+  SellWithUsSubmissionError,
+  submitSellWithUsSubmission,
+} from "@/lib/sell-with-us-server";
 
 export const runtime = "nodejs";
 
@@ -14,15 +17,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid request payload." }, { status: 400 });
     }
 
-    await writeSellWithUsSubmission({
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      source: "header-cta",
-      ...parsedPayload.data,
+    await submitSellWithUsSubmission(parsedPayload.data, {
+      authorization: request.headers.get("authorization"),
+      cookie: request.headers.get("cookie"),
+      signal: request.signal,
     });
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch {
+  } catch (error) {
+    if (error instanceof SellWithUsSubmissionError) {
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.status >= 400 && error.status < 600 ? error.status : 500 },
+      );
+    }
+
     return NextResponse.json(
       { message: "Unable to submit sell with us request." },
       { status: 500 },

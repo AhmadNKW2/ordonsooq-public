@@ -5,14 +5,8 @@ export const sellWithUsSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[0-9][0-9\s()-]{7,19}$/, { message: "validation.phone" }),
+    .regex(/^(?:07\d{8}|7\d{8})$/, { message: "validation.phone" }),
   companyName: z.string().trim().min(2, { message: "validation.companyName" }).max(160, { message: "validation.companyName" }),
 });
 
 export type SellWithUsFormData = z.infer<typeof sellWithUsSchema>;
-
-export type SellWithUsSubmission = SellWithUsFormData & {
-  id: string;
-  createdAt: string;
-  source: "header-cta";
-};

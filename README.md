@@ -31,6 +31,12 @@ API request logging is disabled by default in development.
 - Set `API_LOG_MAX_BYTES` to cap the log file size before it is rotated.
 - Set `API_LOG_BASE_URL` if server-rendered requests cannot reach the local app with the default `http://127.0.0.1:3000` fallback.
 
+## Sell With Us Backend
+
+- The `app/api/sell-with-us` route now submits merchant leads to `${NEXT_PUBLIC_API_URL}/partners` by default.
+- Set `SELL_WITH_US_PARTNERS_API_URL` to override the full Partner create endpoint when needed.
+- Because the Partner create endpoint is admin-guarded, set `SELL_WITH_US_PARTNERS_API_TOKEN` on the Next.js server for public submissions, or rely on a forwarded authenticated admin session.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
