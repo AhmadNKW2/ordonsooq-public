@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useCallback, useMemo, useState, useEffect } from "react";
+import { createContext, useContext, ReactNode, useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import { Cart, CartItem, Product, ProductVariant } from "@/types";
 import { useAuth } from "./useAuth";
@@ -52,6 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [guestItems, setGuestItems] = useState<CartItem[]>([]);
   const [loadingItems, setLoadingItems] = useState<Set<number>>(new Set());
   const [lastAddedItemKey, setLastAddedItemKey] = useState<string | null>(null);
+  const guestCartSyncPromiseRef = useRef<Promise<void> | null>(null);
 
   // Load guest cart on mount
   useEffect(() => {
@@ -525,25 +526,58 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const syncGuestCart = useCallback(async () => {
     if (guestItems.length === 0) return;
-    
-    try {
-        for (const item of guestItems) {
-            try {
-                await cartService.addItem({
-                    product_id: item.product_id,
-                    quantity: item.quantity,
-                    variant_id: item.variant_id ?? undefined
-                });
-            } catch (e) {
-                console.error("Failed to sync item", item, e);
-            }
+
+    if (guestCartSyncPromiseRef.current) {
+      await guestCartSyncPromiseRef.current;
+      return;
+    }
+
+    const syncPromise = (async () => {
+      try {
+        const remainingItems: CartItem[] = [];
+
+        for (let index = 0; index < guestItems.length; index += 1) {
+          const item = guestItems[index];
+
+          try {
+            await cartService.addItem({
+              product_id: item.product_id,
+              quantity: item.quantity,
+              variant_id: item.variant_id ?? undefined,
+            });
+          } catch (error) {
+            console.error("Failed to sync item", item, error);
+            remainingItems.push(...guestItems.slice(index));
+            break;
+          }
         }
-        saveGuestCart([]);
-        queryClient.invalidateQueries({ queryKey: ['cart'] });
-    } catch (e) {
-        console.error("Sync failed", e);
+
+        saveGuestCart(remainingItems);
+
+        if (remainingItems.length !== guestItems.length) {
+          await queryClient.invalidateQueries({ queryKey: ["cart"] });
+        }
+      } catch (error) {
+        console.error("Sync failed", error);
+      }
+    })();
+
+    guestCartSyncPromiseRef.current = syncPromise;
+
+    try {
+      await syncPromise;
+    } finally {
+      guestCartSyncPromiseRef.current = null;
     }
   }, [guestItems, queryClient]);
+
+  useEffect(() => {
+    if (!isAuthenticated || guestItems.length === 0) {
+      return;
+    }
+
+    void syncGuestCart();
+  }, [guestItems.length, isAuthenticated, syncGuestCart]);
 
 
   const addItem = useCallback(

@@ -30,6 +30,7 @@ export function CheckoutPageClient() {
   const t = useTranslations("checkout");
   const tProfile = useTranslations("profile");
   const locale = useLocale();
+  const isArabic = locale === "ar";
   const { isLoading: isAuthLoading } = useAuth();
   const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
@@ -58,6 +59,51 @@ export function CheckoutPageClient() {
   const selectedShipping = SHIPPING_OPTIONS.find((shippingOption) => shippingOption.id === shippingMethod) ?? SHIPPING_OPTIONS[0];
   const shipping = totalPrice >= FREE_SHIPPING_MIN_ORDER_AMOUNT && selectedShipping.price > 0 ? 0 : selectedShipping.price;
   const finalTotal = totalPrice + shipping;
+  const getProductName = (item: typeof items[number]) =>
+    isArabic
+      ? item.product.name_ar || item.product.name_en || ""
+      : item.product.name_en || item.product.name_ar || "";
+  const getVariantSummary = (item: typeof items[number]) =>
+    item.variant?.attributes
+      ?.map((attribute) => (isArabic ? attribute.value_ar || attribute.value_en : attribute.value_en || attribute.value_ar))
+      .join(", ");
+
+  const transitionToStep = (step: CheckoutStep) => {
+    setCurrentStep(step);
+
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsMobileSummaryOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleAdvanceStep = () => {
+    if (currentStep === "shipping") {
+      if (validateShipping()) {
+        transitionToStep("payment");
+      }
+      return;
+    }
+
+    if (currentStep === "payment") {
+      transitionToStep("review");
+      return;
+    }
+
+    if (currentStep === "review") {
+      void handlePlaceOrder();
+    }
+  };
+
+  const handleBackStep = () => {
+    if (currentStep === "payment") {
+      transitionToStep("shipping");
+    }
+
+    if (currentStep === "review") {
+      transitionToStep("payment");
+    }
+  };
 
   const validateShipping = () => {
     const nextErrors: Record<string, string> = {};
@@ -171,7 +217,7 @@ export function CheckoutPageClient() {
           <h1 className="text-2xl font-bold text-primary mb-2">{t("orderConfirmed")}</h1>
           <p className="text-third mb-2">{t("orderConfirmedDesc")}</p>
           <p className="text-xl font-bold text-primary mb-6">#ORD-{createdOrderId || "PENDING"}</p>
-          <p className="text-third mb-8">We&apos;ve sent a confirmation email to {formData.email || "your email"}.</p>
+          <p className="text-third mb-8">{t("followUpCall")}</p>
           <div className="flex flex-col sm:flex-row gap-5 justify-center">
             <Link href="/products">
               <Button
@@ -191,7 +237,7 @@ export function CheckoutPageClient() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold text-primary">Checkout</h1>
+        <h1 className="text-3xl font-bold text-primary">{t("title")}</h1>
 
         <div className="flex items-center justify-center">
           <div className="flex items-center">
@@ -214,7 +260,7 @@ export function CheckoutPageClient() {
             return (
               <div key={step.id} className="flex items-center">
                 <Button
-                  onClick={() => setCurrentStep(step.id as CheckoutStep)}
+                  onClick={() => transitionToStep(step.id as CheckoutStep)}
                   disabled={!isCompleted && !isCurrent}
                   variant={isCurrent ? "solid" : undefined}
                   backgroundColor={
@@ -245,21 +291,25 @@ export function CheckoutPageClient() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {[
-                    { name: "firstName", label: t("firstName"), placeholder: "John", required: true },
-                    { name: "lastName", label: t("lastName"), placeholder: "Doe", required: true },
-                    { name: "email", label: t("email"), type: "email", placeholder: "john@example.com", required: true },
-                    { name: "phone", label: t("phone"), type: "tel", placeholder: "0791234567", required: true },
+                    { name: "firstName", label: t("firstName"), placeholder: "", required: true },
+                    { name: "lastName", label: t("lastName"), placeholder: "", required: true },
+                    { name: "email", label: t("email"), type: "email", placeholder: "", required: true },
+                    { name: "phone", label: t("phone"), type: "tel", placeholder: "07XXXXXXXX", required: true },
                   ].map((field) => (
                     <Input
                       key={field.name}
                       label={field.label}
                       name={field.name}
                       type={field.type}
+                      inputMode={field.name === "phone" ? "tel" : undefined}
+                      dir={field.name === "phone" ? "ltr" : undefined}
+                      lang={field.name === "phone" ? "en" : undefined}
                       value={formData[field.name as keyof typeof formData]}
                       onChange={handleInputChange}
                       placeholder={field.placeholder}
                       error={errors[field.name]}
                       required={field.required}
+                      className={field.name === "phone" && isArabic ? "text-right placeholder:text-right [direction:ltr] [unicode-bidi:plaintext]" : undefined}
                     />
                   ))}
                 </div>
@@ -300,14 +350,12 @@ export function CheckoutPageClient() {
                     name="building"
                     value={formData.building}
                     onChange={handleInputChange}
-                    placeholder="Building No."
                   />
                   <Input
                     label={t("floor")}
                     name="floor"
                     value={formData.floor}
                     onChange={handleInputChange}
-                    placeholder="Floor No."
                     error={errors.floor}
                     required
                   />
@@ -316,7 +364,6 @@ export function CheckoutPageClient() {
                     name="apartment"
                     value={formData.apartment}
                     onChange={handleInputChange}
-                    placeholder="Apt No."
                     error={errors.apartment}
                     required
                   />
@@ -377,7 +424,7 @@ export function CheckoutPageClient() {
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-primary">{t("shippingAddress")}</h3>
-                    <button onClick={() => setCurrentStep("shipping")} className="text-sm text-primary hover:underline">
+                    <button onClick={() => transitionToStep("shipping")} className="text-sm text-primary hover:underline">
                       {t("edit")}
                     </button>
                   </div>
@@ -395,7 +442,7 @@ export function CheckoutPageClient() {
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-primary">{t("paymentMethod")}</h3>
-                    <button onClick={() => setCurrentStep("payment")} className="text-sm text-primary hover:underline">
+                    <button onClick={() => transitionToStep("payment")} className="text-sm text-primary hover:underline">
                       {t("edit")}
                     </button>
                   </div>
@@ -410,16 +457,16 @@ export function CheckoutPageClient() {
                         <div className="relative w-16 h-16 shrink-0">
                           <Image
                             src={item.product.image || "/placeholder.svg"}
-                            alt={item.product.name_en}
+                              alt={getProductName(item)}
                             fill
                             className="object-cover rounded-lg"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-primary truncate">{item.product.name_en}</p>
-                          <p className="text-sm text-third">Qty: {item.quantity}</p>
-                          {item.variant && item.variant.attributes && item.variant.attributes.length > 0 ? (
-                            <p className="text-xs text-third mt-1">{item.variant.attributes.map((attribute) => attribute.value_en).join(", ")}</p>
+                          <p className="font-medium text-primary truncate">{getProductName(item)}</p>
+                          <p className="text-sm text-third">{t("quantity", { count: item.quantity })}</p>
+                          {getVariantSummary(item) ? (
+                            <p className="text-xs text-third mt-1">{getVariantSummary(item)}</p>
                           ) : null}
                         </div>
                         <p className="font-semibold text-primary">
@@ -444,7 +491,7 @@ export function CheckoutPageClient() {
                   <div className="relative w-12 h-12 shrink-0">
                     <Image
                       src={item.product.image || "/placeholder.svg"}
-                      alt={item.product.name_en}
+                      alt={getProductName(item)}
                       fill
                       className="object-cover rounded"
                     />
@@ -453,7 +500,7 @@ export function CheckoutPageClient() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-primary truncate">{item.product.name_en}</p>
+                    <p className="text-sm font-medium text-primary truncate">{getProductName(item)}</p>
                   </div>
                   <p className="text-sm font-semibold text-primary">
                     {formatPrice(item.product.price * item.quantity, undefined, locale)}
@@ -488,10 +535,7 @@ export function CheckoutPageClient() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => {
-                    if (currentStep === "payment") setCurrentStep("shipping");
-                    if (currentStep === "review") setCurrentStep("payment");
-                  }}
+                  onClick={handleBackStep}
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
@@ -499,15 +543,7 @@ export function CheckoutPageClient() {
               <Button
                 size="lg"
                 className="flex-1"
-                onClick={() => {
-                  if (currentStep === "shipping") {
-                    if (validateShipping()) setCurrentStep("payment");
-                  } else if (currentStep === "payment") {
-                    setCurrentStep("review");
-                  } else if (currentStep === "review") {
-                    void handlePlaceOrder();
-                  }
-                }}
+                onClick={handleAdvanceStep}
                 isLoading={isProcessing}
               >
                 {currentStep === "shipping" ? t("continueToPayment") : null}
@@ -558,10 +594,7 @@ export function CheckoutPageClient() {
               variant="outline"
               size="lg"
               className="px-3"
-              onClick={() => {
-                if (currentStep === "payment") setCurrentStep("shipping");
-                if (currentStep === "review") setCurrentStep("payment");
-              }}
+              onClick={handleBackStep}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -576,21 +609,13 @@ export function CheckoutPageClient() {
                 <ChevronUp className="w-4 h-4 text-primary" />
               )}
             </div>
-            <span className="text-[10px] text-third">Total</span>
+            <span className="text-[10px] text-third">{t("total")}</span>
           </div>
 
           <Button
             size="lg"
             className="flex-2 text-sm sm:text-base px-2 sm:px-4"
-            onClick={() => {
-              if (currentStep === "shipping") {
-                if (validateShipping()) setCurrentStep("payment");
-              } else if (currentStep === "payment") {
-                setCurrentStep("review");
-              } else if (currentStep === "review") {
-                void handlePlaceOrder();
-              }
-            }}
+            onClick={handleAdvanceStep}
             isLoading={isProcessing}
           >
             {currentStep === "shipping" ? t("continueToPayment") : null}

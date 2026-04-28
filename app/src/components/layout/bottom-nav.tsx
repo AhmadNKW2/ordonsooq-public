@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Home, LayoutGrid, Store, User, ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
@@ -10,6 +11,33 @@ export function BottomNav() {
   const pathname = usePathname();
   const { totalItems } = useCart();
   const t = useTranslations("common");
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const updateKeyboardState = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const keyboardHeight = window.innerHeight - viewportHeight;
+      setIsKeyboardOpen(window.innerWidth < 1024 && keyboardHeight > 150);
+    };
+
+    updateKeyboardState();
+
+    window.visualViewport?.addEventListener("resize", updateKeyboardState);
+    window.addEventListener("resize", updateKeyboardState);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateKeyboardState);
+      window.removeEventListener("resize", updateKeyboardState);
+    };
+  }, []);
+
+  if (isKeyboardOpen) {
+    return null;
+  }
 
   const navItems = [
     {

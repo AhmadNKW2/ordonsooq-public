@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
@@ -38,6 +38,8 @@ interface AddressFormData {
 export function AddressModal({ isOpen, onClose, addressToEdit }: AddressModalProps) {
     const t = useTranslations("profile");
     const tCommon = useTranslations("common");
+    const locale = useLocale();
+    const isArabic = locale === "ar";
     const queryClient = useQueryClient();
 
     const { register, handleSubmit, control, formState: { errors }, reset } = useForm<AddressFormData>({
@@ -153,6 +155,11 @@ export function AddressModal({ isOpen, onClose, addressToEdit }: AddressModalPro
                             {...register("phone", { required: "Phone is required" })}
                             error={errors.phone?.message}
                             placeholder="07xxxxxxxx"
+                            type="tel"
+                            inputMode="tel"
+                            dir="ltr"
+                            lang="en"
+                            className={isArabic ? "text-right placeholder:text-right [direction:ltr] [unicode-bidi:plaintext]" : undefined}
                         />
                     </div>
 

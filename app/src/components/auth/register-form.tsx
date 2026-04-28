@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -36,6 +36,8 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
   const t = useTranslations("auth");
+  const locale = useLocale();
+  const isArabic = locale === "ar";
   const { register: registerUser, isRegistering } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -127,12 +129,15 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             {t("phone")}
           </label>
           <div className="relative mt-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className={`absolute inset-y-0 flex items-center pointer-events-none ${isArabic ? "right-0 pr-3" : "left-0 pl-3"}`}>
               <Phone className="h-5 w-5 text-gray-400" />
             </div>
             <Input
-              type="text"
-              className={`pl-10 ${errors.phone ? "border-red-500" : ""}`}
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              lang="en"
+              className={`${isArabic ? "pr-10 text-right placeholder:text-right [direction:ltr] [unicode-bidi:plaintext]" : "pl-10"} ${errors.phone ? "border-red-500" : ""}`}
               {...register("phone")}
             />
           </div>

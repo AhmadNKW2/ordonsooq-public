@@ -208,7 +208,7 @@ export function CartPageClient() {
                           isActive={isInWishlist(item.product.id, item.variant_id ?? null)}
                           variant="wishlist"
                           className={cn(
-                            "border-none shadow-none hover:bg-gray-50",
+                            "hidden border-none shadow-none hover:bg-gray-50 sm:inline-flex",
                             isInWishlist(item.product.id, item.variant_id ?? null) ? "text-red-500" : "text-gray-400",
                           )}
                         />

@@ -547,7 +547,6 @@
     "floor": "الطابق",
     "apartment": "رقم الشقة",
     "notes": "ملاحظات الطلب",
-    "notesPlaceholder": "أي تعليمات خاصة (مثل: ترك عند الباب)",
     "steps": {
       "shipping": "الشحن",
       "payment": "الدفع",
@@ -555,6 +554,7 @@
     },
     "continueToPayment": "المتابعة للدفع",
     "reviewOrderAction": "مراجعة الطلب",
+    "quantity": "الكمية: {count}",
     "moreItems": "+{count} عناصر أخرى",
     "subtotalWithCount": "المجموع الفرعي ({count} منتج)",
     "shipping": "الشحن",
@@ -562,6 +562,7 @@
     "tax": "الضريبة (10%)",
     "total": "الإجمالي",
     "orderSummary": "ملخص الطلب",
+    "followUpCall": "سنتواصل معك قريباً.",
     "required": "هذا الحقل مطلوب",
     "invalidEmail": "البريد الإلكتروني غير صحيح"
   },
