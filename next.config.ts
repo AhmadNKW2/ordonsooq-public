@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import { fa } from "zod/v4/locales";
 
 const withNextIntl = createNextIntlPlugin('./app/src/i18n/request.ts');
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -8,10 +9,10 @@ const nextConfig: NextConfig = {
   ...(isDevelopment
     ? {}
     : {
-        experimental: {
-          optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
-        },
-      }),
+      experimental: {
+        optimizePackageImports: ['lucide-react', '@tanstack/react-query', 'framer-motion'],
+      },
+    }),
   images: {
     remotePatterns: [
       {
@@ -38,7 +39,8 @@ const nextConfig: NextConfig = {
     ],
     // Allow loading images from localhost (for development)
     dangerouslyAllowSVG: true,
-    unoptimized: process.env.NODE_ENV === 'development',
+    unoptimized: false,
+    // unoptimized: process.env.NODE_ENV === 'development',
   },
 };
 
