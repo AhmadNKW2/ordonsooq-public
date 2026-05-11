@@ -201,6 +201,7 @@
     "address1": "Street Name / Area",
     "buildingNumber": "Building Number",
     "floorNumber": "Floor Number",
+    "apartmentNumber": "Apartment Number",
     "city": "City",
     "country": "Country",
     "notes": "Notes",
@@ -543,10 +544,14 @@
     "state": "State",
     "postalCode": "Postal Code",
     "country": "Country",
+    "countryJordan": "Jordan",
     "building": "Building Number",
     "floor": "Floor",
     "apartment": "Apartment Number",
     "notes": "Order Notes",
+    "notesPlaceholder": "Any special instructions for delivery?",
+    "optional": "Optional",
+    "selectCity": "Select City",
     "steps": {
       "shipping": "Shipping",
       "payment": "Payment",
@@ -564,7 +569,10 @@
     "orderSummary": "Order Summary",
     "followUpCall": "We'll call you soon.",
     "required": "This field is required",
-    "invalidEmail": "Invalid email address"
+    "invalidEmail": "Invalid email address",
+    "invalidPhone": "Phone number must start with 07 and contain exactly 10 digits",
+    "numbersOnly": "Use Arabic or English digits only",
+    "orderPlacementFailed": "Failed to place order. Please try again."
   },
   "footer": {
     "description": "Your premier destination for online shopping - Quality products, great prices, fast delivery",

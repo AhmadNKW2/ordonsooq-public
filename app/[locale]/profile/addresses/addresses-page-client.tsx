@@ -98,6 +98,7 @@ export function AddressesPageClient() {
                 <p className="text-gray-600 text-sm">{address.address1}</p>
                 {address.buildingNumber && <p className="text-gray-600 text-sm">{t("buildingNumber")}: {address.buildingNumber}</p>}
                 {address.floorNumber && <p className="text-gray-600 text-sm">{t("floorNumber")}: {address.floorNumber}</p>}
+                {address.apartmentNumber && <p className="text-gray-600 text-sm">{t("apartmentNumber")}: {address.apartmentNumber}</p>}
                 {address.notes && <p className="text-gray-500 text-xs mt-1 italic">{address.notes}</p>}
                 <p className="text-gray-600 text-sm mt-2">{address.phone}</p>
               </div>

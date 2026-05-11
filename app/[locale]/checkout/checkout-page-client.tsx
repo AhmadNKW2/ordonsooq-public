@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
@@ -16,34 +17,58 @@ import {
   Truck,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Button, Input, Card, Radio, Textarea, Select, Checkbox } from "@/components/ui";
+import { Button, Input, Card, Radio, Textarea, Select } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/useAuth";
+import { ApiError } from "@/lib/api-client";
 import { formatPrice } from "@/lib/utils";
 import { FREE_SHIPPING_MIN_ORDER_AMOUNT, SHIPPING_OPTIONS, JORDAN_CITIES } from "@/lib/constants";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { addressService } from "@/services/address.service";
 import { orderService } from "@/services/order.service";
 
 type CheckoutStep = "shipping" | "payment" | "review";
 
-export function CheckoutPageClient() {
-  const t = useTranslations("checkout");
-  const tProfile = useTranslations("profile");
-  const locale = useLocale();
-  const isArabic = locale === "ar";
-  const { isLoading: isAuthLoading } = useAuth();
-  const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
-  const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
-  const [shippingMethod] = useState(SHIPPING_OPTIONS[0].id);
-  const [paymentMethod] = useState("cod");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [createdOrderId, setCreatedOrderId] = useState<string | number | undefined>(undefined);
-  const [bookingError, setBookingError] = useState<string | null>(null);
-  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
-  const [isDefaultAddress, setIsDefaultAddress] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState({
+type CheckoutFormData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  building: string;
+  floor: string;
+  apartment: string;
+  city: string;
+  notes: string;
+};
+
+const SUMMARY_COLLAPSED_ITEMS_COUNT = 3;
+const NUMBER_ONLY_PATTERN = /^[0-9\u0660-\u0669\u06F0-\u06F9]+$/;
+const ARABIC_DIGIT_MAP: Record<string, string> = {
+  "٠": "0",
+  "١": "1",
+  "٢": "2",
+  "٣": "3",
+  "٤": "4",
+  "٥": "5",
+  "٦": "6",
+  "٧": "7",
+  "٨": "8",
+  "٩": "9",
+  "۰": "0",
+  "۱": "1",
+  "۲": "2",
+  "۳": "3",
+  "۴": "4",
+  "۵": "5",
+  "۶": "6",
+  "۷": "7",
+  "۸": "8",
+  "۹": "9",
+};
+
+function createInitialFormData(): CheckoutFormData {
+  return {
     firstName: "",
     lastName: "",
     email: "",
@@ -54,11 +79,58 @@ export function CheckoutPageClient() {
     apartment: "",
     city: "",
     notes: "",
+  };
+}
+
+function normalizeDigits(value: string): string {
+  return value.replace(/[٠-٩۰-۹]/g, (digit) => ARABIC_DIGIT_MAP[digit] ?? digit);
+}
+
+function normalizePhoneNumber(value: string): string {
+  return normalizeDigits(value).replace(/\D/g, "");
+}
+
+function isArabicOrEnglishDigitsOnly(value: string): boolean {
+  return NUMBER_ONLY_PATTERN.test(value);
+}
+
+function getOptionalValue(value: string): string | undefined {
+  const normalizedValue = value.trim();
+  return normalizedValue ? normalizedValue : undefined;
+}
+
+export function CheckoutPageClient() {
+  const t = useTranslations("checkout");
+  const locale = useLocale();
+  const isArabic = locale === "ar";
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
+  const { data: savedAddresses = [] } = useQuery({
+    queryKey: ["addresses", user?.id],
+    queryFn: () => addressService.getAll(),
+    enabled: !!user?.id,
   });
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
+  const [shippingMethod] = useState(SHIPPING_OPTIONS[0].id);
+  const [paymentMethod] = useState("cod");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [orderComplete, setOrderComplete] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | number | undefined>(undefined);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<CheckoutFormData>(createInitialFormData);
 
   const selectedShipping = SHIPPING_OPTIONS.find((shippingOption) => shippingOption.id === shippingMethod) ?? SHIPPING_OPTIONS[0];
   const shipping = totalPrice >= FREE_SHIPPING_MIN_ORDER_AMOUNT && selectedShipping.price > 0 ? 0 : selectedShipping.price;
   const finalTotal = totalPrice + shipping;
+  const cityOptions = JORDAN_CITIES.map((city) => ({
+    value: city.value,
+    label: isArabic ? city.labelAr : city.label,
+  }));
+  const summaryItems = isSummaryExpanded ? items : items.slice(0, SUMMARY_COLLAPSED_ITEMS_COUNT);
+  const remainingSummaryItems = Math.max(items.length - SUMMARY_COLLAPSED_ITEMS_COUNT, 0);
   const getProductName = (item: typeof items[number]) =>
     isArabic
       ? item.product.name_ar || item.product.name_en || ""
@@ -67,12 +139,86 @@ export function CheckoutPageClient() {
     item.variant?.attributes
       ?.map((attribute) => (isArabic ? attribute.value_ar || attribute.value_en : attribute.value_en || attribute.value_ar))
       .join(", ");
+  const optionalLabel = t("optional");
+  const shippingAddressLine = [formData.building.trim(), formData.floor.trim(), formData.apartment.trim()]
+    .filter(Boolean)
+    .join(", ");
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    setFormData((current) => {
+      const next = { ...current };
+      let hasChanged = false;
+
+      if (!next.firstName.trim() && user.firstName) {
+        next.firstName = user.firstName;
+        hasChanged = true;
+      }
+
+      if (!next.lastName.trim() && user.lastName) {
+        next.lastName = user.lastName;
+        hasChanged = true;
+      }
+
+      if (!next.email.trim() && user.email) {
+        next.email = user.email;
+        hasChanged = true;
+      }
+
+      if (!next.phone.trim() && user.phone) {
+        next.phone = user.phone;
+        hasChanged = true;
+      }
+
+      return hasChanged ? next : current;
+    });
+  }, [user]);
+
+  useEffect(() => {
+    const defaultAddress = savedAddresses.find((address) => address.isDefault) ?? savedAddresses[0];
+
+    if (!defaultAddress) {
+      return;
+    }
+
+    setFormData((current) => {
+      const next = { ...current };
+      let hasChanged = false;
+
+      const defaults: Partial<CheckoutFormData> = {
+        phone: defaultAddress.phone,
+        city: defaultAddress.city,
+        address: defaultAddress.address1,
+        building: defaultAddress.buildingNumber,
+        floor: defaultAddress.floorNumber,
+        apartment: defaultAddress.apartmentNumber,
+        notes: defaultAddress.notes,
+      };
+
+      for (const [key, value] of Object.entries(defaults) as Array<[keyof CheckoutFormData, string | undefined]>) {
+        if (!value || next[key].trim()) {
+          continue;
+        }
+
+        next[key] = value;
+        hasChanged = true;
+      }
+
+      return hasChanged ? next : current;
+    });
+  }, [savedAddresses]);
 
   const transitionToStep = (step: CheckoutStep) => {
     setCurrentStep(step);
 
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setIsMobileSummaryOpen(false);
+    if (typeof window !== "undefined") {
+      if (window.innerWidth < 1024) {
+        setIsMobileSummaryOpen(false);
+      }
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -107,15 +253,23 @@ export function CheckoutPageClient() {
 
   const validateShipping = () => {
     const nextErrors: Record<string, string> = {};
-    if (!formData.firstName) nextErrors.firstName = t("required");
-    if (!formData.lastName) nextErrors.lastName = t("required");
-    if (!formData.email) nextErrors.email = t("required");
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) nextErrors.email = t("invalidEmail");
-    if (!formData.phone) nextErrors.phone = t("required");
-    if (!formData.city) nextErrors.city = t("required");
-    if (!formData.address) nextErrors.address = t("required");
-    if (!formData.floor) nextErrors.floor = t("required");
-    if (!formData.apartment) nextErrors.apartment = t("required");
+    const email = formData.email.trim();
+    const phone = normalizePhoneNumber(formData.phone);
+    const building = formData.building.trim();
+    const floor = formData.floor.trim();
+    const apartment = formData.apartment.trim();
+
+    if (!formData.firstName.trim()) nextErrors.firstName = t("required");
+    if (!formData.lastName.trim()) nextErrors.lastName = t("required");
+    if (!email) nextErrors.email = t("required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = t("invalidEmail");
+    if (!formData.phone.trim()) nextErrors.phone = t("required");
+    else if (!/^07\d{8}$/.test(phone)) nextErrors.phone = t("invalidPhone");
+    if (!formData.city.trim()) nextErrors.city = t("required");
+    if (!formData.address.trim()) nextErrors.address = t("required");
+    if (building && !isArabicOrEnglishDigitsOnly(building)) nextErrors.building = t("numbersOnly");
+    if (floor && !isArabicOrEnglishDigitsOnly(floor)) nextErrors.floor = t("numbersOnly");
+    if (apartment && !isArabicOrEnglishDigitsOnly(apartment)) nextErrors.apartment = t("numbersOnly");
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -130,10 +284,17 @@ export function CheckoutPageClient() {
 
   const handlePlaceOrder = async () => {
     try {
+      if (!validateShipping()) {
+        transitionToStep("shipping");
+        return;
+      }
+
       setIsProcessing(true);
       setBookingError(null);
 
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      const email = formData.email.trim();
+      const phone = normalizePhoneNumber(formData.phone);
       const payload = {
         items: items.map((item) => {
           let productId = typeof item.product_id === "number" ? item.product_id : parseInt(String(item.product_id), 10);
@@ -154,21 +315,24 @@ export function CheckoutPageClient() {
         }),
         shippingAddress: {
           fullName,
-          phone: formData.phone,
+          email,
+          phone,
           country: "Jordan",
-          city: formData.city,
-          street: formData.address,
-          building: formData.building,
-          notes: `Floor: ${formData.floor}, Apt: ${formData.apartment}. ${formData.notes || ""}`.trim(),
+          city: formData.city.trim(),
+          street: formData.address.trim(),
+          building: getOptionalValue(formData.building),
+          floor: getOptionalValue(formData.floor),
+          apartment: getOptionalValue(formData.apartment),
+          notes: getOptionalValue(formData.notes),
         },
         billingAddress: {
           fullName,
           country: "Jordan",
-          city: formData.city,
-          street: formData.address,
+          city: formData.city.trim(),
+          street: formData.address.trim(),
         },
         paymentMethod: paymentMethod === "cod" ? "cod" : "wallet",
-        notes: formData.notes,
+        notes: getOptionalValue(formData.notes),
       };
 
       const order = await orderService.create(payload);
@@ -177,7 +341,13 @@ export function CheckoutPageClient() {
       clearCart();
     } catch (error) {
       console.error("Failed to place order:", error);
-      setBookingError("Failed to place order. Please try again.");
+      if (error instanceof ApiError) {
+        setBookingError(error.message);
+      } else if (error instanceof Error && error.message) {
+        setBookingError(error.message);
+      } else {
+        setBookingError(t("orderPlacementFailed"));
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -314,73 +484,70 @@ export function CheckoutPageClient() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <Input label={t("country")} name="country" value="Jordan" readOnly disabled />
-
+                <div className="w-full">
                   <div className="w-full">
                     <label className="block text-sm font-medium text-primary mb-2">
                       {t("city") || "City"} <span className="text-red-500">*</span>
                     </label>
                     <Select
-                      options={JORDAN_CITIES}
+                      options={cityOptions}
                       value={formData.city}
                       onChange={(value) => {
                         setFormData((current) => ({ ...current, city: value }));
                         if (errors.city) setErrors((current) => ({ ...current, city: "" }));
                       }}
-                      placeholder={t("city") || "Select City"}
+                      placeholder={t("selectCity")}
                     />
                     {errors.city ? <p className="text-xs text-red-500 mt-1">{errors.city}</p> : null}
                   </div>
                 </div>
 
                 <Input
-                  label={tProfile("address1")}
+                  label={t("address")}
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  placeholder={tProfile("address1")}
+                  placeholder={t("address")}
                   error={errors.address}
                   required
                 />
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                   <Input
-                    label={`${t("building")} (Optional)`}
+                    label={`${t("building")} (${optionalLabel})`}
                     name="building"
                     value={formData.building}
                     onChange={handleInputChange}
+                    error={errors.building}
+                    inputMode="numeric"
+                    dir="ltr"
                   />
                   <Input
-                    label={t("floor")}
+                    label={`${t("floor")} (${optionalLabel})`}
                     name="floor"
                     value={formData.floor}
                     onChange={handleInputChange}
                     error={errors.floor}
-                    required
+                    inputMode="numeric"
+                    dir="ltr"
                   />
                   <Input
-                    label={t("apartment")}
+                    label={`${t("apartment")} (${optionalLabel})`}
                     name="apartment"
                     value={formData.apartment}
                     onChange={handleInputChange}
                     error={errors.apartment}
-                    required
+                    inputMode="numeric"
+                    dir="ltr"
                   />
                 </div>
 
                 <Textarea
-                  label={`${t("notes")} (Optional)`}
+                  label={`${t("notes")} (${optionalLabel})`}
                   name="notes"
                   value={formData.notes || ""}
                   onChange={handleInputChange}
-                  placeholder={t("notesPlaceholder") || "Any special instructions for delivery?"}
-                />
-
-                <Checkbox
-                  label={tProfile("setDefault")}
-                  checked={isDefaultAddress}
-                  onChange={(event) => setIsDefaultAddress(event.target.checked)}
+                  placeholder={t("notesPlaceholder")}
                 />
 
                 {bookingError ? (
@@ -432,8 +599,12 @@ export function CheckoutPageClient() {
                     {formData.firstName} {formData.lastName}
                     <br />
                     {formData.address}
-                    <br />
-                    {formData.building}, {formData.floor}, {formData.apartment}
+                    {shippingAddressLine ? (
+                      <>
+                        <br />
+                        {shippingAddressLine}
+                      </>
+                    ) : null}
                     <br />
                     {formData.city}
                   </p>
@@ -486,7 +657,7 @@ export function CheckoutPageClient() {
             <h2 className="text-xl font-bold text-primary">{t("orderSummary")}</h2>
 
             <div className="flex flex-col gap-3 pb-5 border-b border-gray-100">
-              {items.slice(0, 3).map((item) => (
+              {summaryItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
                   <div className="relative w-12 h-12 shrink-0">
                     <Image
@@ -507,8 +678,14 @@ export function CheckoutPageClient() {
                   </p>
                 </div>
               ))}
-              {items.length > 3 ? (
-                <p className="text-sm text-third text-center">{t("moreItems", { count: items.length - 3 })}</p>
+              {!isSummaryExpanded && remainingSummaryItems > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setIsSummaryExpanded(true)}
+                  className="text-sm text-third text-center hover:text-primary transition-colors"
+                >
+                  {t("moreItems", { count: remainingSummaryItems })}
+                </button>
               ) : null}
             </div>
 

@@ -117,11 +117,14 @@ export interface Brand {
 // Order Types
 export interface ShippingAddress {
   fullName: string;
+  email?: string;
   phone: string;
   street: string;
   city: string;
   country?: string; 
   building?: string;
+  floor?: string;
+  apartment?: string;
   notes?: string;
 }
 
@@ -129,6 +132,7 @@ export interface BillingAddress {
   fullName: string;
   city: string;
   street: string;
+  country?: string;
 }
 
 export interface ApiOrderItem {
@@ -324,6 +328,7 @@ export interface Address {
   address2?: string;
   buildingNumber?: string;
   floorNumber?: string;
+  apartmentNumber?: string;
   city: string;
   state: string;
   postalCode?: string;

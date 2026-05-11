@@ -201,6 +201,7 @@
     "address1": "اسم الشارع / المنطقة",
     "buildingNumber": "رقم البناء",
     "floorNumber": "رقم الطابق",
+    "apartmentNumber": "رقم الشقة",
     "city": "المدينة",
     "country": "الدولة",
     "notes": "ملاحظات",
@@ -543,10 +544,14 @@
     "state": "المحافظة",
     "postalCode": "الرمز البريدي",
     "country": "الدولة",
+    "countryJordan": "الأردن",
     "building": "رقم البناية",
     "floor": "الطابق",
     "apartment": "رقم الشقة",
     "notes": "ملاحظات الطلب",
+    "notesPlaceholder": "أي ملاحظات خاصة للتوصيل؟",
+    "optional": "اختياري",
+    "selectCity": "اختر المدينة",
     "steps": {
       "shipping": "الشحن",
       "payment": "الدفع",
@@ -564,7 +569,10 @@
     "orderSummary": "ملخص الطلب",
     "followUpCall": "سنتواصل معك قريباً.",
     "required": "هذا الحقل مطلوب",
-    "invalidEmail": "البريد الإلكتروني غير صحيح"
+    "invalidEmail": "البريد الإلكتروني غير صحيح",
+    "invalidPhone": "يجب أن يبدأ رقم الهاتف بـ 07 وأن يتكون من 10 أرقام بالضبط",
+    "numbersOnly": "استخدم أرقاماً عربية أو إنجليزية فقط",
+    "orderPlacementFailed": "تعذر إتمام الطلب. حاول مرة أخرى."
   },
   "footer": {
     "description": "وجهتك الأولى للتسوق عبر الإنترنت - منتجات عالية الجودة، أسعار رائعة، وتوصيل سريع",

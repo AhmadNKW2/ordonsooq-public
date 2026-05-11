@@ -41,6 +41,10 @@ export function AddressModal({ isOpen, onClose, addressToEdit }: AddressModalPro
     const locale = useLocale();
     const isArabic = locale === "ar";
     const queryClient = useQueryClient();
+    const cityOptions = JORDAN_CITIES.map((city) => ({
+        value: city.value,
+        label: isArabic ? city.labelAr : city.label,
+    }));
 
     const { register, handleSubmit, control, formState: { errors }, reset } = useForm<AddressFormData>({
         defaultValues: addressToEdit ? {
@@ -108,10 +112,10 @@ export function AddressModal({ isOpen, onClose, addressToEdit }: AddressModalPro
                             rules={{ required: "City is required" }}
                             render={({ field }) => (
                                 <Select
-                                    options={JORDAN_CITIES}
+                                    options={cityOptions}
                                     value={field.value}
                                     onChange={field.onChange}
-                                    placeholder="Select a city"
+                                    placeholder={t('city')}
                                 />
                             )}
                         />
