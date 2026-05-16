@@ -221,7 +221,7 @@ export function ProductCard({
           src={product.images?.[0] || "/placeholder.svg"}
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-102 transition-transform duration-500"
+          className="object-contain group-hover:scale-102 transition-transform duration-500"
         />
 
         {/* Badges */}
