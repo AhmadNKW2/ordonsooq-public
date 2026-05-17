@@ -286,7 +286,7 @@ export function ProductGallery({
                       src={image}
                       alt={`${productName} - Thumbnail ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </button>
                 ))}
@@ -346,7 +346,7 @@ export function ProductGallery({
                   src={image}
                   alt={`${productName} - Image ${index + 1}`}
                   fill
-                  className="object-cover object-top"
+                  className="object-contain object-top"
                   priority={index === 0}
                 />
               </div>
@@ -484,7 +484,7 @@ export function ProductGallery({
                       src={image}
                       alt="Thumbnail"
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </button>
                 ))}

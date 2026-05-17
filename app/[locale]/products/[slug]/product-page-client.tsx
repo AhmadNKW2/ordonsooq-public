@@ -558,54 +558,6 @@ function ProductSellerCard({
   );
 }
 
-function ProductMetaCard({
-  product,
-  currentSku,
-  categoryHref,
-  brandHref,
-  t,
-  className,
-}: {
-  product: any;
-  currentSku: string;
-  categoryHref?: string;
-  brandHref?: string;
-  t: any;
-  className?: string;
-}) {
-  return (
-    <Card className={cn("p-4", className)}>
-      <div className="text-sm text-third flex flex-col gap-2">
-        <p>
-          {t("product.sku")}: <span className="text-primary">{currentSku}</span>
-        </p>
-        <p>
-          {t("product.category")}: {categoryHref ? <Link href={categoryHref} className="text-primary hover:underline">{product.category.name}</Link> : <span className="text-primary">{product.category.name}</span>}
-        </p>
-        {product.tags.length > 0 ? (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span>{t("product.tags")}:</span>
-            {product.tags.map((tag: string) => (
-              <Link
-                key={tag}
-                href={`/products?tag=${encodeURIComponent(tag)}`}
-                className="text-primary hover:underline"
-              >
-                {tag}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-        {product.brand ? (
-          <p>
-            {t("product.brand")}: {brandHref ? <Link href={brandHref} className="text-primary hover:underline">{product.brand.name}</Link> : <span className="text-primary">{product.brand.name}</span>}
-          </p>
-        ) : null}
-      </div>
-    </Card>
-  );
-}
-
 export function ProductPageClient({ slug, initialProductData, initialRelatedData, initialLinkedProductData }: ProductPageClientProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations();
@@ -871,7 +823,6 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
   const currentCompareAtPrice = selectedVariant?.compareAtPrice ? selectedVariant.compareAtPrice : product.compareAtPrice;
   const currentDimensions = selectedVariant?.dimensions || product.dimensions;
   const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
-  const currentSku = product.sku;
   const discount = currentCompareAtPrice ? calculateDiscount(currentCompareAtPrice, currentPrice) : 0;
 
   const galleryProps = {
@@ -895,7 +846,6 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
 
   const categoryHref = product.category.slug ? `/categories/${product.category.slug}` : undefined;
   const vendorHref = product.vendor?.slug ? `/vendors/${product.vendor.slug}` : undefined;
-  const brandHref = product.brand?.slug ? `/brands/${product.brand.slug}` : undefined;
 
   return (
     <>
@@ -948,15 +898,6 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
           ) : null}
 
           <ProductSellerCard product={product} vendorHref={vendorHref} t={t} />
-
-          <ProductMetaCard
-            product={product}
-            currentSku={currentSku}
-            categoryHref={categoryHref}
-            brandHref={brandHref}
-            t={t}
-          />
-
           <ProductActions product={product} selectedVariant={selectedVariant} />
         </div>
       </div>
@@ -1044,15 +985,6 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
               </div>
             </Card>
           ) : null}
-
-          <ProductMetaCard
-            product={product}
-            currentSku={currentSku}
-            categoryHref={categoryHref}
-            brandHref={brandHref}
-            t={t}
-          />
-
           <ProductActions product={product} selectedVariant={selectedVariant} />
         </div>
       </div>
