@@ -34,25 +34,46 @@ export function NavigationBar() {
   const isAr = locale === "ar";
   const { data: homeData } = useHome();
   const categories = homeData?.categories || [];
+  const maxMegaMenuColumns = 9;
+  const maxMegaMenuRows = 2;
+  const maxMegaMenuSections = maxMegaMenuColumns * maxMegaMenuRows;
+  const maxMegaMenuChildren = 8;
 
   const navigationLinks = useMemo<NavigationLink[]>(() => {
-    const getCategoryLabel = (category: Pick<HomeCategory | Category, "name_ar" | "name_en" | "slug">) => (
+    type CategoryMenuItem = {
+      name_ar?: string;
+      name_en?: string;
+      slug: string;
+      level?: number;
+    };
+
+    const getCategoryLabel = (category: CategoryMenuItem) => (
       (isAr ? category.name_ar : category.name_en)
       || (isAr ? category.name_en : category.name_ar)
       || category.slug
     );
 
-    const categoryLinks = categories
-      .filter((category) => Boolean(category.slug))
+    const rootCategories = categories.filter(
+      (category) => Boolean(category.slug) && category.level === 0
+    );
+
+    const getChildLinks = (children: CategoryMenuItem[] = []) => (
+      children
+        .filter(
+          (child) => Boolean(child.slug) && (child.level === undefined || child.level === 1)
+        )
+        .slice(0, maxMegaMenuChildren)
+        .map((child) => ({
+          label: getCategoryLabel(child),
+          href: `/categories/${child.slug}`,
+        }))
+    );
+
+    const categoryLinks = rootCategories
       .map((category: HomeCategory | Category) => {
         const categoryHref = `/categories/${category.slug}`;
         const label = getCategoryLabel(category);
-        const childLinks = (category.children || [])
-          .filter((child) => Boolean(child.slug))
-          .map((child) => ({
-            label: getCategoryLabel(child as HomeCategory | Category),
-            href: `/categories/${child.slug}`,
-          }));
+        const childLinks = getChildLinks(category.children || []);
 
         return {
           key: `category-${category.slug}`,
@@ -68,17 +89,12 @@ export function NavigationBar() {
         };
       });
 
-    const categoriesMenu = categories
-      .filter((category) => Boolean(category.slug))
+    const categoriesMenu = rootCategories
+      .slice(0, maxMegaMenuSections)
       .map((category: HomeCategory | Category) => {
         const categoryHref = `/categories/${category.slug}`;
         const label = getCategoryLabel(category);
-        const childLinks = (category.children || [])
-          .filter((child) => Boolean(child.slug))
-          .map((child) => ({
-            label: getCategoryLabel(child as HomeCategory | Category),
-            href: `/categories/${child.slug}`,
-          }));
+        const childLinks = getChildLinks(category.children || []);
 
         return {
           title: label,
@@ -108,7 +124,7 @@ export function NavigationBar() {
       },
       ...categoryLinks,
     ];
-  }, [categories, isAr, navT]);
+  }, [categories, isAr, maxMegaMenuChildren, maxMegaMenuSections, navT]);
 
   const megaMenuContent = useMemo(
     () => Object.fromEntries(
@@ -340,8 +356,8 @@ export function NavigationBar() {
             transform: isDropdownOpen ? "translateY(0) scaleY(1)" : "translateY(-4px) scaleY(0.98)",
             transformOrigin: "top center",
             transition: isDropdownOpen 
-              ? "opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s"
-              : "opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.25s",
+              ? "opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s"
+              : "opacity 0.14s cubic-bezier(0.4, 0, 0.2, 1), transform 0.14s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.14s",
             pointerEvents: isDropdownOpen ? "auto" : "none",
           }}
           onMouseEnter={handleDropdownMouseEnter}
@@ -350,11 +366,12 @@ export function NavigationBar() {
           <div className="relative overflow-hidden bg-white border border-t-0 border-gray-200 shadow-xl shadow-gray-900/4">
             {menuKeys.map((menuKey) => {
               const sectionCount = megaMenuContent[menuKey].length;
+              const isCategoriesMenu = menuKey === "/categories";
 
               return (
                 <div
                   key={menuKey}
-                  className="transition-all duration-400 ease-out px-6 py-7 xl:px-8"
+                  className="transition-all duration-200 ease-out px-5 py-10 xl:px-6"
                   style={{
                     opacity: activeDropdown === menuKey ? 1 : 0,
                     transform: activeDropdown === menuKey ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
@@ -363,13 +380,15 @@ export function NavigationBar() {
                     left: activeDropdown === menuKey ? "auto" : 0,
                     right: activeDropdown === menuKey ? "auto" : 0,
                     visibility: activeDropdown === menuKey ? "visible" : "hidden",
-                    transition: "opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s",
+                    transition: "opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s",
                   }}
                 >
                   <div
                     className={cn(
-                      "grid gap-x-10 gap-y-8",
-                      sectionCount === 1
+                      "grid gap-x-6 gap-y-6",
+                      isCategoriesMenu
+                        ? "grid-cols-9"
+                        : sectionCount === 1
                         ? "grid-cols-1"
                         : sectionCount === 2
                           ? "grid-cols-2"
@@ -381,36 +400,36 @@ export function NavigationBar() {
                     {megaMenuContent[menuKey].map((section, idx) => (
                       <div
                         key={idx}
-                        className="min-w-0 transition-all duration-300 ease-out"
+                        className="min-w-0 transition-all duration-150 ease-out"
                         style={{
-                          transitionDelay: activeDropdown === menuKey ? `${idx * 40}ms` : "0ms",
+                          transitionDelay: activeDropdown === menuKey ? `${idx * 12}ms` : "0ms",
                           opacity: activeDropdown === menuKey ? 1 : 0,
                           transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(12px)",
                         }}
                       >
                         {section.href ? (
                           <Link href={section.href} onClick={handleLinkClick}>
-                            <h3 className="mb-3 text-base font-bold leading-6 text-gray-950 hover:text-primary transition-colors cursor-pointer">
+                            <h3 className="mb-2 text-[14px] font-bold leading-5 text-gray-950 hover:text-primary transition-colors cursor-pointer">
                               {section.title}
                             </h3>
                           </Link>
                         ) : (
-                          <h3 className="mb-3 text-base font-bold leading-6 text-gray-950">
+                          <h3 className="mb-1.5 text-[14px] font-bold leading-5 text-gray-950">
                             {section.title}
                           </h3>
                         )}
 
-                        <ul className="flex flex-col gap-1.5">
+                        <ul className="flex flex-col gap-2">
                           {section.links.map((link, linkIdx) => (
                             <li key={linkIdx}>
                               <Link
                                 href={link.href}
-                                className="group block py-0.5 text-[15px] leading-7 text-gray-600 transition-colors duration-200 hover:text-primary"
+                                className="group block py-0 text-[14px] leading-5 text-gray-600 transition-colors duration-200 hover:text-primary"
                                 onClick={handleLinkClick}
                               >
                                 <span className="block truncate">{link.label}</span>
                                 {link.description ? (
-                                  <span className="mt-0.5 block text-sm leading-5 text-gray-500">
+                                  <span className="mt-0.5 block text-[12px] leading-4 text-gray-500">
                                     {link.description}
                                   </span>
                                 ) : null}
