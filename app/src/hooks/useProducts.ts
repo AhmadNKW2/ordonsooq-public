@@ -75,12 +75,14 @@ export function useProductsByCategory(
  */
 export function useProductsByVendor(
   vendorId: number,
-  filters: Omit<ProductFilters, 'vendorId'> = {}
+  filters: Omit<ProductFilters, 'vendorId'> = {},
+  options?: { enabled?: boolean; initialData?: PaginatedResponse<Product> },
 ) {
   return useQuery({
     queryKey: PRODUCT_QUERY_KEYS.byVendor(vendorId, filters),
     queryFn: () => productService.getByVendor(vendorId, filters),
-    enabled: !!vendorId && vendorId > 0,
+    enabled: options?.enabled ?? (!!vendorId && vendorId > 0),
+    initialData: options?.initialData,
   });
 }
 
@@ -89,12 +91,14 @@ export function useProductsByVendor(
  */
 export function useProductsByBrand(
   brandId: number,
-  filters: Omit<ProductFilters, 'brandId'> = {}
+  filters: Omit<ProductFilters, 'brandId'> = {},
+  options?: { enabled?: boolean; initialData?: PaginatedResponse<Product> },
 ) {
   return useQuery({
     queryKey: PRODUCT_QUERY_KEYS.byBrand(brandId, filters),
     queryFn: () => productService.getByBrand(brandId, filters),
-    enabled: !!brandId && brandId > 0,
+    enabled: options?.enabled ?? (!!brandId && brandId > 0),
+    initialData: options?.initialData,
   });
 }
 

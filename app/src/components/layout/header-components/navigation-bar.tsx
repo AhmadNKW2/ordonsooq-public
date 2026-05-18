@@ -142,9 +142,24 @@ export function NavigationBar() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const navItemsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getDropdownWidth = useCallback((columnCount: number, containerWidth: number) => {
+    if (columnCount >= maxMegaMenuColumns) {
+      return containerWidth;
+    }
+
+    const compactWidth = 260;
+    const columnGrowth = 120;
+
+    return Math.min(
+      containerWidth,
+      compactWidth + Math.max(columnCount - 1, 0) * columnGrowth,
+    );
+  }, [maxMegaMenuColumns]);
 
   const clearTimeouts = () => {
     if (closeTimeoutRef.current) {
@@ -161,15 +176,20 @@ export function NavigationBar() {
 
     const navItem = navItemsRef.current.get(linkKey);
     if (navItem) {
-      const navRect = navRef.current.getBoundingClientRect();
-      const itemRect = navItem.getBoundingClientRect();
       setIndicatorStyle({
-        left: itemRect.left - navRect.left,
-        width: itemRect.width,
+        left: navItem.offsetLeft,
+        width: navItem.offsetWidth,
         opacity: 1,
       });
     }
   }, []);
+
+  const handleScrollControlMouseEnter = useCallback(() => {
+    clearTimeouts();
+    setActiveDropdown(null);
+    setHoveredLinkKey(null);
+    updateIndicator(null);
+  }, [updateIndicator]);
 
   const handleMouseEnter = useCallback((link: NavigationLink) => {
     clearTimeouts();
@@ -263,6 +283,55 @@ export function NavigationBar() {
 
   const isDropdownOpen = Boolean(activeDropdown && megaMenuContent[activeDropdown]?.length);
 
+  const activeDropdownLayout = useMemo(() => {
+    if (!activeDropdown) {
+      return null;
+    }
+
+    const sections = megaMenuContent[activeDropdown];
+
+    if (!sections?.length) {
+      return null;
+    }
+
+    const sectionCount = sections.length;
+    const columnCount = Math.min(sectionCount, maxMegaMenuColumns);
+    const wrapperElement = wrapperRef.current;
+    const activeLink = navigationLinks.find((link) => link.href === activeDropdown);
+    const triggerElement = activeLink
+      ? navItemsRef.current.get(activeLink.key)
+      : null;
+
+    if (!wrapperElement || !triggerElement) {
+      return {
+        sectionCount,
+        columnCount,
+        width: undefined as number | undefined,
+        left: 0,
+      };
+    }
+
+    const wrapperRect = wrapperElement.getBoundingClientRect();
+    const triggerRect = triggerElement.getBoundingClientRect();
+    const dropdownWidth = getDropdownWidth(columnCount, wrapperRect.width);
+    const triggerStart = triggerRect.left - wrapperRect.left;
+    const triggerCenter = triggerStart + triggerRect.width / 2;
+    const preferredLeft = columnCount === 1
+      ? triggerStart
+      : triggerCenter - dropdownWidth / 2;
+    const left = Math.min(
+      Math.max(preferredLeft, 0),
+      Math.max(wrapperRect.width - dropdownWidth, 0),
+    );
+
+    return {
+      sectionCount,
+      columnCount,
+      width: dropdownWidth,
+      left,
+    };
+  }, [activeDropdown, getDropdownWidth, maxMegaMenuColumns, megaMenuContent, navigationLinks]);
+
   const handleWrapperMouseEnter = useCallback(() => {
     clearTimeouts();
   }, []);
@@ -270,6 +339,7 @@ export function NavigationBar() {
   return (
     <div className="hidden lg:block bg-gray-50/80 backdrop-blur-sm border-b border-gray-200/50 relative">
       <div 
+        ref={wrapperRef}
         className="container mx-auto px-4 md:px-5 relative"
         onMouseEnter={handleWrapperMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -279,6 +349,7 @@ export function NavigationBar() {
             <button
               type="button"
               onClick={() => scrollNav("backward")}
+              onMouseEnter={handleScrollControlMouseEnter}
               className="absolute inset-y-0 start-0 z-20 my-3 flex w-10 items-center justify-center rounded-full bg-white/95 text-primary shadow-s1 border border-gray-200/70"
               aria-label="Scroll navigation backward"
             >
@@ -290,6 +361,7 @@ export function NavigationBar() {
             <button
               type="button"
               onClick={() => scrollNav("forward")}
+              onMouseEnter={handleScrollControlMouseEnter}
               className="absolute inset-y-0 end-0 z-20 my-3 flex w-10 items-center justify-center rounded-full bg-white/95 text-primary shadow-s1 border border-gray-200/70"
               aria-label="Scroll navigation forward"
             >
@@ -348,13 +420,21 @@ export function NavigationBar() {
 
         <div
           className={cn(
-            "absolute left-0 right-0 top-full z-50",
+            "absolute top-full z-50",
+            activeDropdownLayout?.width == null && "left-0 right-0",
             isDropdownOpen ? "visible" : "invisible"
           )}
           style={{
+            left: activeDropdownLayout?.left ?? 0,
+            width: activeDropdownLayout?.width,
             opacity: isDropdownOpen ? 1 : 0,
-            transform: isDropdownOpen ? "translateY(0) scaleY(1)" : "translateY(-4px) scaleY(0.98)",
-            transformOrigin: "top center",
+            transform: isDropdownOpen ? "translateY(0)" : "translateY(-8px)",
+            transformOrigin:
+              activeDropdownLayout?.columnCount === 1
+                ? isAr
+                  ? "top right"
+                  : "top left"
+                : "top center",
             transition: isDropdownOpen 
               ? "opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s"
               : "opacity 0.14s cubic-bezier(0.4, 0, 0.2, 1), transform 0.14s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.14s",
@@ -371,10 +451,15 @@ export function NavigationBar() {
               return (
                 <div
                   key={menuKey}
-                  className="transition-all duration-200 ease-out px-5 py-10 xl:px-6"
+                  className={cn(
+                    "transition-all duration-200 ease-out",
+                    activeDropdownLayout?.columnCount === 1
+                      ? "px-4 py-5"
+                      : "px-5 py-10 xl:px-6"
+                  )}
                   style={{
                     opacity: activeDropdown === menuKey ? 1 : 0,
-                    transform: activeDropdown === menuKey ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
+                    transform: activeDropdown === menuKey ? "translateY(0)" : "translateY(10px)",
                     position: activeDropdown === menuKey ? "relative" : "absolute",
                     top: activeDropdown === menuKey ? "auto" : 0,
                     left: activeDropdown === menuKey ? "auto" : 0,
@@ -385,17 +470,12 @@ export function NavigationBar() {
                 >
                   <div
                     className={cn(
-                      "grid gap-x-6 gap-y-6",
-                      isCategoriesMenu
-                        ? "grid-cols-9"
-                        : sectionCount === 1
-                        ? "grid-cols-1"
-                        : sectionCount === 2
-                          ? "grid-cols-2"
-                          : sectionCount <= 4
-                            ? "grid-cols-4"
-                            : "grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+                      "grid gap-y-6",
+                      activeDropdownLayout?.columnCount === 1 ? "gap-x-0" : "gap-x-6"
                     )}
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.min(sectionCount, maxMegaMenuColumns)}, minmax(0, 1fr))`,
+                    }}
                   >
                     {megaMenuContent[menuKey].map((section, idx) => (
                       <div

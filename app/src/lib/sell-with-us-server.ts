@@ -115,7 +115,7 @@ export async function submitSellWithUsSubmission(
     headers,
     body: JSON.stringify({
       full_name: values.fullName,
-      company_name: values.companyName,
+      company_name: values.companyName || undefined,
       phone_number: values.phone,
     }),
     cache: "no-store",

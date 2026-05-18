@@ -27,7 +27,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const categoryId = productData.categories?.[0]?.id;
   const relatedData = categoryId
-    ? await productService.getByCategory(categoryId, { limit: 4, status: "active" }).catch(() => null)
+    ? await productService.getByCategory(categoryId, { limit: 10, in_stock: true }).catch(() => null)
     : null;
 
   return (

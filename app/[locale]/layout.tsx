@@ -14,6 +14,7 @@ import { routing } from "@/i18n/routing";
 import { ROOT_MESSAGE_NAMESPACES } from "@/i18n/scoped-messages";
 import { homeKeys } from "@/hooks/useHome";
 import { homeService } from "@/services/home.service";
+import { settingsService } from "@/services/settings.service";
 import { Analytics } from "@vercel/analytics/next";
 import "./../globals.css";
 
@@ -34,42 +35,99 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export const metadata: Metadata = {
-  title: {
-    default: SITE_CONFIG.name,
-    template: `%s | ${SITE_CONFIG.name}`,
-  },
-  description: SITE_CONFIG.description,
-  keywords: ["e-commerce", "online shopping", "ordonsooq", "shop", "buy"],
-  authors: [{ name: "ordonsooq Team" }],
-  creator: "ordonsooq",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: SITE_CONFIG.url,
-    title: SITE_CONFIG.name,
-    description: SITE_CONFIG.description,
-    siteName: SITE_CONFIG.name,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_CONFIG.name,
-    description: SITE_CONFIG.description,
-    creator: "@ordonsooq",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  verification: {
-    google: "VRP8dQHgN5TtLK__ogKu2905Gg6Jz01H0xANRkuzkVw",
-  },
-};
-
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 };
+
+function resolveLocalizedValue(
+  locale: string,
+  englishValue: string | null | undefined,
+  arabicValue: string | null | undefined,
+  fallbackValue: string,
+) {
+  const normalizedEnglishValue = englishValue?.trim();
+  const normalizedArabicValue = arabicValue?.trim();
+
+  if (locale === "ar") {
+    return normalizedArabicValue || normalizedEnglishValue || fallbackValue;
+  }
+
+  return normalizedEnglishValue || normalizedArabicValue || fallbackValue;
+}
+
+function normalizeTwitterHandle(twitterHandle?: string | null) {
+  const trimmedHandle = twitterHandle?.trim();
+
+  if (!trimmedHandle) {
+    return "@ordonsooq";
+  }
+
+  return trimmedHandle.startsWith("@") ? trimmedHandle : `@${trimmedHandle}`;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const seoSettings = await settingsService.getSeoSettings().catch(() => null);
+
+  const siteName = resolveLocalizedValue(
+    locale,
+    seoSettings?.site_name_en,
+    seoSettings?.site_name_ar,
+    SITE_CONFIG.name,
+  );
+  const defaultTitle = resolveLocalizedValue(
+    locale,
+    seoSettings?.default_meta_title_en,
+    seoSettings?.default_meta_title_ar,
+    siteName,
+  );
+  const defaultDescription = resolveLocalizedValue(
+    locale,
+    seoSettings?.default_meta_description_en,
+    seoSettings?.default_meta_description_ar,
+    SITE_CONFIG.description,
+  );
+  const openGraphImage = seoSettings?.default_og_image || SITE_CONFIG.ogImage;
+  const twitterHandle = normalizeTwitterHandle(seoSettings?.twitter_handle);
+
+  return {
+    metadataBase: new URL(SITE_CONFIG.url),
+    title: {
+      default: defaultTitle,
+      template: `%s | ${siteName}`,
+    },
+    description: defaultDescription,
+    keywords: ["e-commerce", "online shopping", "ordonsooq", "shop", "buy"],
+    authors: [{ name: "ordonsooq Team" }],
+    creator: siteName,
+    openGraph: {
+      type: "website",
+      locale: locale === "ar" ? "ar_JO" : "en_US",
+      url: SITE_CONFIG.url,
+      title: defaultTitle,
+      description: defaultDescription,
+      siteName,
+      images: openGraphImage ? [openGraphImage] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: defaultTitle,
+      description: defaultDescription,
+      creator: twitterHandle,
+      images: openGraphImage ? [openGraphImage] : undefined,
+    },
+    robots: {
+      index: seoSettings?.robots_index ?? true,
+      follow: seoSettings?.robots_follow ?? true,
+    },
+    verification: {
+      google:
+        seoSettings?.google_verification?.trim() ||
+        "VRP8dQHgN5TtLK__ogKu2905Gg6Jz01H0xANRkuzkVw",
+    },
+  };
+}
 
 export default async function RootLayout({ children, params }: Props) {
   const { locale } = await params;

@@ -455,4 +455,4 @@ export interface PaginatedResponse<T> {
 }
 
 // Re-export API types that are also used in frontend
-export type { HomeData, HomeCategory, HomeVendor, HomeBanner } from './api.types';
+export type { HomeData, HomeCategory, HomeVendor, HomeBanner, SeoSettings } from './api.types';

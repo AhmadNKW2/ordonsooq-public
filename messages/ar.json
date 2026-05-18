@@ -367,7 +367,7 @@
     "subscribe": "اشترك"
   },
   "product": {
-    "doYouHaveNotes": "هل لديك ملاحظات عن هذا المنتج أو السعر؟",
+    "doYouHaveNotes": "هل لديك ملاحظات عن السعر؟",
     "addNotesHere": "أضف ملاحظاتك هنا...",
     "submitNotes": "إرسال الملاحظات",
     "inquiries": "هل لديك استفسارات حول هذا المنتج؟",
@@ -388,6 +388,7 @@
     "specifications": "المواصفات",
     "reviews": "التقييمات",
     "relatedProducts": "منتجات ذات صلة",
+    "recommendedProducts": "منتجات موصى بها",
     "itemsLeft": "{count} قطعة متبقية",
     "sku": "رقم المنتج",
     "category": "الفئة",
@@ -435,6 +436,7 @@
       "height": "الارتفاع"
     },
     "relatedProductsSubtitle": "قد يعجبك أيضاً",
+    "recommendedProductsSubtitle": "مختارة لك بناءً على هذا المنتج",
     "allProductsTitle": "جميع المنتجات",
     "allProductsSubtitle": "اكتشف مجموعتنا الواسعة من المنتجات عالية الجودة",
     "filtersTitle": "الفلاتر",

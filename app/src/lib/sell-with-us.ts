@@ -6,7 +6,13 @@ export const sellWithUsSchema = z.object({
     .string()
     .trim()
     .regex(/^(?:07\d{8}|7\d{8})$/, { message: "validation.phone" }),
-  companyName: z.string().trim().min(2, { message: "validation.companyName" }).max(160, { message: "validation.companyName" }),
+  companyName: z
+    .string()
+    .trim()
+    .max(160, { message: "validation.companyName" })
+    .refine((value) => value.length === 0 || value.length >= 2, {
+      message: "validation.companyName",
+    }),
 });
 
 export type SellWithUsFormData = z.infer<typeof sellWithUsSchema>;

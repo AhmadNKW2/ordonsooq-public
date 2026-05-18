@@ -138,7 +138,7 @@ export function useListingVariantProducts(apiProducts: ListingSourceProduct[] | 
       }
 
       return [p];
-    });
+    }).filter((product) => (product.stock ?? 0) > 0);
   }, [baseProducts]);
 
   return {

@@ -367,7 +367,7 @@
     "subscribe": "Subscribe"
   },
   "product": {
-    "doYouHaveNotes": "Do you have notes for this product or price?",
+    "doYouHaveNotes": "Do you have notes about the price?",
     "addNotesHere": "Add your notes here...",
     "submitNotes": "Submit Notes",
     "inquiries": "Do you have inquiries about this product?",
@@ -388,6 +388,7 @@
     "specifications": "Specifications",
     "reviews": "Reviews",
     "relatedProducts": "Related Products",
+    "recommendedProducts": "Recommended Products",
     "itemsLeft": "{count} items left",
     "sku": "SKU",
     "category": "Category",
@@ -432,6 +433,7 @@
       "height": "Height"
     },
     "relatedProductsSubtitle": "You might also like these",
+    "recommendedProductsSubtitle": "Picked for you based on this product",
     "allProductsTitle": "All Products",
     "allProductsSubtitle": "Discover our wide selection of quality products",
     "filtersTitle": "Filters",

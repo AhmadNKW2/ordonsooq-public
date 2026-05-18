@@ -58,7 +58,7 @@ export function ProductReviews({ rating, reviewCount, reviews: initialReviews }:
 
     return (
         <div>
-            <h2 className="text-2xl font-bold text-primary mb-1">{t('customerReviews')}</h2>
+            <h2 className="text-2xl font-bold text-primary mb-2">{t('customerReviews')}</h2>
 
             <Card className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Rating Summary */}

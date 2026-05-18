@@ -577,7 +577,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
   const categoryId = productData?.categories?.[0]?.id ?? initialProductData?.categories?.[0]?.id;
   const { data: relatedData } = useProductsByCategory(
     categoryId || 0,
-    { limit: 4, status: "active" },
+    { limit: 10, in_stock: true },
     {
       enabled: !!categoryId,
       initialData: initialRelatedData ?? undefined,
@@ -592,7 +592,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
   const { products: relatedProductsRaw } = useListingVariantProducts(relatedData?.data, locale);
   const relatedProducts = useMemo(() => {
     if (!product) return [];
-    return relatedProductsRaw.filter((candidate) => candidate.id !== product.id).slice(0, 4);
+    return relatedProductsRaw.filter((candidate) => candidate.id !== product.id).slice(0, 10);
   }, [relatedProductsRaw, product]);
 
   const variantAttributes = useMemo(
@@ -902,7 +902,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
         </div>
       </div>
 
-      <div className="hidden lg:grid lg:grid-cols-12 gap-8 mb-16">
+      <div className="hidden lg:grid lg:grid-cols-12 gap-8">
         <div className="lg:col-span-5">
           <ProductGallery
             {...galleryProps}
@@ -989,7 +989,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
+      {/* <div className="grid grid-cols-3 gap-5 pt-6 border-t border-gray-100">
         <div className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg gap-1">
           <Truck className="w-6 h-6 text-primary" />
           <span className="text-sm font-medium">{t("product.features.freeShipping")}</span>
@@ -1005,11 +1005,11 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
           <span className="text-sm font-medium">{t("product.features.secure")}</span>
           <span className="text-xs text-third">{t("product.features.secureDesc")}</span>
         </div>
-      </div>
+      </div> */}
 
       {product.longDescription ? (
         <section>
-          <h2 className="text-2xl font-bold text-primary mb-1">{t("product.description")}</h2>
+          <h2 className="text-2xl font-bold text-primary mb-2">{t("product.description")}</h2>
           <Card className="p-8">
             <div
               className="prose max-w-none leading-8 [&_h1]:text-primary [&_h2]:text-primary [&_h3]:text-primary [&_p]:text-third [&_p]:leading-8 [&_a]:text-primary [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:leading-8 [&_li]:marker:text-third"
@@ -1038,7 +1038,7 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
         return specificationAttributes.length > 0 || hasDimensions;
       })() ? (
         <section>
-          <h2 className="text-2xl font-bold text-primary mb-1">{t("product.specifications")}</h2>
+          <h2 className="text-2xl font-bold text-primary mb-2">{t("product.specifications")}</h2>
           <Card className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
               {specificationAttributes.map((attribute) => (
