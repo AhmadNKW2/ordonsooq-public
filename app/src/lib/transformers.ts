@@ -52,12 +52,21 @@ function toFiniteNumber(value: unknown): number | undefined {
   return Number.isFinite(numericValue) ? numericValue : undefined;
 }
 
-function buildDimensions(weight: unknown, length: unknown, width: unknown, height: unknown): ProductDimensions | undefined {
+function buildDimensions(
+  weight: unknown,
+  length: unknown,
+  width: unknown,
+  height: unknown,
+  weightUnit: ApiProduct['weight_unit'],
+  dimensionUnit: ApiProduct['dimension_unit'],
+): ProductDimensions | undefined {
   const dimensions: ProductDimensions = {
     weight: toFiniteNumber(weight) != null ? String(toFiniteNumber(weight)) : undefined,
     length: toFiniteNumber(length) != null ? String(toFiniteNumber(length)) : undefined,
     width: toFiniteNumber(width) != null ? String(toFiniteNumber(width)) : undefined,
     height: toFiniteNumber(height) != null ? String(toFiniteNumber(height)) : undefined,
+    weightUnit: weightUnit ?? 'kg',
+    dimensionUnit: dimensionUnit ?? 'cm',
   };
 
   return dimensions.weight || dimensions.length || dimensions.width || dimensions.height
@@ -179,6 +188,8 @@ function getProductDimensions(product: ApiProduct, weightGroupId?: string): Prod
         weightGroup.dimensions?.length,
         weightGroup.dimensions?.width,
         weightGroup.dimensions?.height,
+        product.weight_unit,
+        product.dimension_unit,
       );
 
       if (groupDimensions) {
@@ -187,7 +198,14 @@ function getProductDimensions(product: ApiProduct, weightGroupId?: string): Prod
     }
   }
 
-  return buildDimensions(product.weight, product.length, product.width, product.height);
+  return buildDimensions(
+    product.weight,
+    product.length,
+    product.width,
+    product.height,
+    product.weight_unit,
+    product.dimension_unit,
+  );
 }
 
 /**

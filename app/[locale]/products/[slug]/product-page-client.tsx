@@ -1056,25 +1056,33 @@ export function ProductPageClient({ slug, initialProductData, initialRelatedData
                   {currentDimensions.weight ? (
                     <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t("product.dims.weight")}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.weight} kg</span>
+                      <span className="text-primary font-semibold">
+                        {currentDimensions.weight} {currentDimensions.weightUnit ?? "kg"}
+                      </span>
                     </div>
                   ) : null}
                   {currentDimensions.length ? (
                     <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t("product.dims.length")}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.length} cm</span>
+                      <span className="text-primary font-semibold">
+                        {currentDimensions.length} {currentDimensions.dimensionUnit ?? "cm"}
+                      </span>
                     </div>
                   ) : null}
                   {currentDimensions.width ? (
                     <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t("product.dims.width")}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.width} cm</span>
+                      <span className="text-primary font-semibold">
+                        {currentDimensions.width} {currentDimensions.dimensionUnit ?? "cm"}
+                      </span>
                     </div>
                   ) : null}
                   {currentDimensions.height ? (
                     <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-100">
                       <span className="text-third font-medium">{t("product.dims.height")}</span>
-                      <span className="text-primary font-semibold">{currentDimensions.height} cm</span>
+                      <span className="text-primary font-semibold">
+                        {currentDimensions.height} {currentDimensions.dimensionUnit ?? "cm"}
+                      </span>
                     </div>
                   ) : null}
                 </>

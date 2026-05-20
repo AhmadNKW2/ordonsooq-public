@@ -44,7 +44,7 @@
       "overnight": "شحن ليلي",
       "overnightDesc": "اليوم التالي",
       "free": "شحن مجاني",
-      "freeDesc": "7-10 أيام عمل (للطلبات فوق 50 د.أ)"
+      "freeDesc": "7-10 أيام عمل (للطلبات فوق 50 دينار)"
     }
   },
   "common": {
@@ -67,7 +67,7 @@
     "next": "التالي",
     "previous": "السابق",
     "home": "الرئيسية",
-    "currency": "د.أ",
+    "currency": "دينار",
     "filters": "الفلاتر",
     "clearAll": "مسح الكل ({count})",
     "continueShopping": "متابعة التسوق",
@@ -98,7 +98,7 @@
     "categories": "الفئات",
     "products": "المنتجات",
     "deals": "العروض",
-    "below50JOD": "أقل من 50 د.أ",
+    "below50JOD": "أقل من 50 دينار",
     "newArrivals": "وصل حديثاً",
     "brands": "العلامات التجارية",
     "stores": "المتاجر",
@@ -169,13 +169,13 @@
     "topRated": "الأعلى تقييماً",
     "topRatedDesc": "مفضلات العملاء",
     "priceRange": "نطاق السعر",
-    "under25": "أقل من 25 د.أ",
+    "under25": "أقل من 25 دينار",
     "budgetFriendly": "صديق للميزانية",
-    "range25to50": "25 - 50 د.أ",
+    "range25to50": "25 - 50 دينار",
     "midRange": "متوسط السعر",
-    "range50to100": "50 - 100 د.أ",
+    "range50to100": "50 - 100 دينار",
     "premiumPicks": "خيارات مميزة",
-    "over100": "أكثر من 100 د.أ",
+    "over100": "أكثر من 100 دينار",
     "luxuryItems": "عناصر فاخرة"
   },
   "profile": {
@@ -423,7 +423,7 @@
     "tags": "الوسوم",
     "features": {
       "freeShipping": "شحن مجاني",
-      "freeShippingDesc": "طلبات فوق 50 د.أ",
+      "freeShippingDesc": "طلبات فوق 50 دينار",
       "returns": "إرجاع سهل",
       "returnsDesc": "سياسة 30 يوم",
       "secure": "آمن",
@@ -449,7 +449,7 @@
     "customerReviews": "تقييمات العملاء",
     "verifiedReviews": "{count} تقييم موثق",
     "freeShipping": "شحن مجاني",
-    "freeShippingDesc": "طلبات فوق 50 د.أ",
+    "freeShippingDesc": "طلبات فوق 50 دينار",
     "easyReturns": "إرجاع سهل",
     "secure": "آمن",
     "safeCheckout": "دفع آمن",
@@ -527,6 +527,15 @@
     "shippingInfo": "معلومات الشحن",
     "paymentInfo": "معلومات الدفع",
     "cod": "الدفع عند الاستلام",
+    "walletBalance": "رصيد المحفظة",
+    "useWalletBalance": "استخدم رصيد المحفظة",
+    "walletBalanceDesc": "استخدم رصيد محفظتك المتاح قبل احتساب المبلغ المتبقي للدفع عند الاستلام.",
+    "walletWillApply": "سيتم خصم من المحفظة",
+    "walletApplied": "المبلغ المخصوم من المحفظة",
+    "cashOnDeliveryAmount": "الدفع عند الاستلام",
+    "noWalletBalance": "لا يوجد رصيد متاح في المحفظة",
+    "walletCoversOrder": "رصيد محفظتك يغطي إجمالي الطلب بالكامل.",
+    "walletFullyCoversOrder": "مغطى بالكامل من المحفظة",
     "reviewOrder": "مراجعة طلبك",
     "shippingAddress": "عنوان الشحن",
     "edit": "تعديل",
@@ -603,7 +612,7 @@
       "newArrivals": "وصل حديثاً"
     },
     "freeShipping": "شحن مجاني",
-    "freeShippingDesc": "للطلبات التي تزيد عن 50 د.أ",
+    "freeShippingDesc": "للطلبات التي تزيد عن 50 دينار",
     "securePayment": "دفع آمن",
     "securePaymentDesc": "محمي 100%",
     "support247": "دعم 24/7",
@@ -635,7 +644,7 @@
     "explore": "اكتشف"
   },
   "topBar": {
-    "announcement": "🎉 شحن مجاني للطلبات التي تزيد عن {amount} د.أ!"
+    "announcement": "🎉 شحن مجاني للطلبات التي تزيد عن {amount} دينار!"
   },
   "categories": {
     "errorLoading": "خطأ في تحميل الفئات. حاول مرة أخرى.",

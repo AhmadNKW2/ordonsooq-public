@@ -207,9 +207,11 @@ export type Product = {
   price?: number | string | null;
   sale_price?: number | string | null;
   weight?: number | string | null;
+  weight_unit?: 'g' | 'kg' | null;
   length?: number | string | null;
   width?: number | string | null;
   height?: number | string | null;
+  dimension_unit?: 'mm' | 'cm' | 'm' | null;
   
   quantity?: number;
   is_out_of_stock?: boolean;
@@ -455,6 +457,7 @@ export type SeoSettings = {
   google_verification: string | null;
   robots_index: boolean;
   robots_follow: boolean;
+  show_sale_pricing: boolean;
   created_at?: string;
   updated_at?: string;
 };

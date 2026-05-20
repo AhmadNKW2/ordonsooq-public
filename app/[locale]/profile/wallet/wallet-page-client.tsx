@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useWallet, useWalletTransactions } from "@/hooks/useWallet";
 import { formatPrice } from "@/lib/utils";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Wallet } from "lucide-react";
@@ -13,6 +14,32 @@ export function WalletPageClient() {
 
   const { data: wallet, isLoading: walletLoading } = useWallet({ enabled: !!user?.id });
   const { data: transactions, isLoading: historyLoading } = useWalletTransactions({ enabled: !!user?.id });
+
+  const { totalCredited, totalSpent } = useMemo(() => {
+    const summarizedTransactions = (transactions ?? []).reduce(
+      (summary, transaction) => {
+        if (transaction.type === "credit") {
+          summary.totalCredited += Number(transaction.amount) || 0;
+        } else {
+          summary.totalSpent += Number(transaction.amount) || 0;
+        }
+
+        return summary;
+      },
+      {
+        totalCredited: 0,
+        totalSpent: 0,
+      },
+    );
+
+    return {
+      totalCredited: Math.max(
+        Number(wallet?.totalCashback) || 0,
+        summarizedTransactions.totalCredited,
+      ),
+      totalSpent: summarizedTransactions.totalSpent,
+    };
+  }, [transactions, wallet?.totalCashback]);
 
   return (
     <div className="space-y-6">
@@ -39,7 +66,7 @@ export function WalletPageClient() {
             </div>
             <div>
               <p className="text-sm text-green-600 font-medium">{t("totalCredited")}</p>
-              <p className="font-bold text-lg">{formatPrice(0)}</p>
+              <p className="font-bold text-lg">{formatPrice(totalCredited, undefined, locale)}</p>
             </div>
           </div>
 
@@ -49,7 +76,7 @@ export function WalletPageClient() {
             </div>
             <div>
               <p className="text-sm text-red-600 font-medium">{t("totalSpent")}</p>
-              <p className="font-bold text-lg">{formatPrice(0)}</p>
+              <p className="font-bold text-lg">{formatPrice(totalSpent, undefined, locale)}</p>
             </div>
           </div>
         </div>

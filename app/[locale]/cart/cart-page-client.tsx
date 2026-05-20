@@ -138,10 +138,10 @@ export function CartPageClient() {
 
             return (
               <Card key={item.id} className="group overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="flex gap-4">
+                <div className="flex gap-4 md:gap-3 lg:gap-3">
                   <Link
                     href={productHref}
-                    className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 bg-gray-50 rounded-xl overflow-hidden border border-gray-100"
+                    className="relative w-24 h-24 md:w-20 md:h-20 lg:w-24 lg:h-24 shrink-0 bg-gray-50 rounded-xl overflow-hidden border border-gray-100"
                   >
                     <Image
                       src={item.product.image || "/placeholder.svg"}
@@ -155,7 +155,7 @@ export function CartPageClient() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 pr-2">
                         <Link href={productHref}>
-                          <h3 className="font-semibold text-primary line-clamp-2 hover:text-secondary transition-colors text-base sm:text-lg leading-tight">
+                          <h3 className="font-semibold text-primary line-clamp-2 hover:text-secondary transition-colors text-base md:text-sm lg:text-base leading-tight">
                             {getProductName(item)}
                           </h3>
                         </Link>
@@ -163,7 +163,7 @@ export function CartPageClient() {
                         {item.variant && item.variant.attributes ? (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {item.variant.attributes.map((attribute, index) => (
-                              <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100">
+                              <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] md:text-[10px] lg:text-[11px] font-medium bg-gray-50 text-gray-500 border border-gray-100">
                                 {getVariantValue(attribute)}
                               </span>
                             ))}
@@ -196,7 +196,7 @@ export function CartPageClient() {
                             </span>
                           ) : null}
                         </div>
-                        <span className="font-bold text-secondary text-lg sm:text-xl tracking-tight">
+                        <span className="font-bold text-secondary text-lg md:text-base lg:text-lg tracking-tight">
                           {formatPrice(unitPrice)}
                         </span>
                       </div>
@@ -213,7 +213,7 @@ export function CartPageClient() {
                           )}
                         />
 
-                        <div className="scale-90 sm:scale-100 origin-right">
+                        <div className="scale-90 md:scale-75 lg:scale-90 origin-right">
                           <QuantitySelector
                             value={item.quantity}
                             onChange={(value) => updateQuantity(item.id, value)}

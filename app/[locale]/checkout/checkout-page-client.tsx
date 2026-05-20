@@ -17,9 +17,10 @@ import {
   Truck,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Button, Input, Card, Radio, Textarea, Select } from "@/components/ui";
+import { Button, Input, Card, Radio, Textarea, Select, Checkbox } from "@/components/ui";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet } from "@/hooks/useWallet";
 import { ApiError } from "@/lib/api-client";
 import { formatPrice } from "@/lib/utils";
 import { FREE_SHIPPING_MIN_ORDER_AMOUNT, SHIPPING_OPTIONS, JORDAN_CITIES } from "@/lib/constants";
@@ -105,6 +106,7 @@ export function CheckoutPageClient() {
   const isArabic = locale === "ar";
   const { user, isLoading: isAuthLoading } = useAuth();
   const { items, totalItems, totalPrice, clearCart, isLoading: isCartLoading } = useCart();
+  const { data: wallet } = useWallet({ enabled: !!user?.id });
   const { data: savedAddresses = [] } = useQuery({
     queryKey: ["addresses", user?.id],
     queryFn: () => addressService.getAll(),
@@ -113,6 +115,7 @@ export function CheckoutPageClient() {
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("shipping");
   const [shippingMethod] = useState(SHIPPING_OPTIONS[0].id);
   const [paymentMethod] = useState("cod");
+  const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | number | undefined>(undefined);
@@ -125,6 +128,12 @@ export function CheckoutPageClient() {
   const selectedShipping = SHIPPING_OPTIONS.find((shippingOption) => shippingOption.id === shippingMethod) ?? SHIPPING_OPTIONS[0];
   const shipping = totalPrice >= FREE_SHIPPING_MIN_ORDER_AMOUNT && selectedShipping.price > 0 ? 0 : selectedShipping.price;
   const finalTotal = totalPrice + shipping;
+  const availableWalletBalance = Number(wallet?.balance ?? 0);
+  const canUseWallet = availableWalletBalance > 0;
+  const walletAppliedAmount = useWalletBalance ? Math.min(availableWalletBalance, finalTotal) : 0;
+  const remainingPaymentAmount = Math.max(finalTotal - walletAppliedAmount, 0);
+  const payableSummaryAmount = walletAppliedAmount > 0 ? remainingPaymentAmount : finalTotal;
+  const payableSummaryLabel = walletAppliedAmount > 0 ? t("cashOnDeliveryAmount") : t("total");
   const cityOptions = JORDAN_CITIES.map((city) => ({
     value: city.value,
     label: isArabic ? city.labelAr : city.label,
@@ -143,6 +152,14 @@ export function CheckoutPageClient() {
   const shippingAddressLine = [formData.building.trim(), formData.floor.trim(), formData.apartment.trim()]
     .filter(Boolean)
     .join(", ");
+
+  useEffect(() => {
+    if (canUseWallet || !useWalletBalance) {
+      return;
+    }
+
+    setUseWalletBalance(false);
+  }, [canUseWallet, useWalletBalance]);
 
   useEffect(() => {
     if (!user) {
@@ -331,7 +348,13 @@ export function CheckoutPageClient() {
           city: formData.city.trim(),
           street: formData.address.trim(),
         },
-        paymentMethod: paymentMethod === "cod" ? "cod" : "wallet",
+        paymentMethod:
+          walletAppliedAmount > 0 && remainingPaymentAmount === 0
+            ? "wallet"
+            : paymentMethod === "cod"
+              ? "cod"
+              : "wallet",
+        walletAppliedAmount: walletAppliedAmount > 0 ? walletAppliedAmount : undefined,
         notes: getOptionalValue(formData.notes),
       };
 
@@ -577,6 +600,47 @@ export function CheckoutPageClient() {
                       </span>
                     }
                   />
+
+                  <div className={`rounded-xl border p-4 ${canUseWallet ? "border-secondary/20 bg-secondary/5" : "border-gray-200 bg-gray-50"}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-primary">{t("useWalletBalance")}</p>
+                        <p className="text-sm text-third">{t("walletBalanceDesc")}</p>
+                        <p className="text-sm font-medium text-primary">
+                          {t("walletBalance")}: {formatPrice(availableWalletBalance, undefined, locale)}
+                        </p>
+                      </div>
+
+                      <Checkbox
+                        checked={useWalletBalance}
+                        onChange={(event) => setUseWalletBalance(event.target.checked)}
+                        disabled={!canUseWallet || isProcessing}
+                        aria-label={t("useWalletBalance")}
+                      />
+                    </div>
+
+                    {!canUseWallet ? <p className="mt-3 text-sm text-third">{t("noWalletBalance")}</p> : null}
+
+                    {useWalletBalance && walletAppliedAmount > 0 ? (
+                      <div className="mt-4 space-y-2 rounded-lg border border-secondary/15 bg-white/80 p-3 text-sm">
+                        <div className="flex justify-between gap-3 text-third">
+                          <span>{t("walletWillApply")}</span>
+                          <span className="font-semibold text-secondary">
+                            {formatPrice(walletAppliedAmount, undefined, locale)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-3 text-primary">
+                          <span>{t("cashOnDeliveryAmount")}</span>
+                          <span className="font-semibold">
+                            {formatPrice(remainingPaymentAmount, undefined, locale)}
+                          </span>
+                        </div>
+                        {remainingPaymentAmount === 0 ? (
+                          <p className="text-secondary">{t("walletCoversOrder")}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -617,7 +681,19 @@ export function CheckoutPageClient() {
                       {t("edit")}
                     </button>
                   </div>
-                  <p className="text-third">{t("cod")}</p>
+                  <div className="mt-2 space-y-1 text-third">
+                    <p>{remainingPaymentAmount > 0 ? t("cod") : t("walletFullyCoversOrder")}</p>
+                    {walletAppliedAmount > 0 ? (
+                      <>
+                        <p>
+                          {t("walletApplied")}: {formatPrice(walletAppliedAmount, undefined, locale)}
+                        </p>
+                        <p>
+                          {t("cashOnDeliveryAmount")}: {formatPrice(remainingPaymentAmount, undefined, locale)}
+                        </p>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div>
@@ -692,19 +768,25 @@ export function CheckoutPageClient() {
             <div className="flex flex-col gap-3 pb-5 border-b border-gray-100">
               <div className="flex justify-between text-third">
                 <span>{t("subtotalWithCount", { count: totalItems })}</span>
-                <span>{formatPrice(totalPrice)}</span>
+                <span>{formatPrice(totalPrice, undefined, locale)}</span>
               </div>
               <div className="flex justify-between text-third">
                 <span>{t("shipping")}</span>
                 <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
-                  {shipping === 0 ? t("free") : formatPrice(shipping)}
+                  {shipping === 0 ? t("free") : formatPrice(shipping, undefined, locale)}
                 </span>
               </div>
+              {walletAppliedAmount > 0 ? (
+                <div className="flex justify-between text-secondary">
+                  <span>{t("walletApplied")}</span>
+                  <span>-{formatPrice(walletAppliedAmount, undefined, locale)}</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex justify-between text-lg font-bold text-primary">
-              <span>{t("total")}</span>
-              <span className="text-primary">{formatPrice(finalTotal)}</span>
+              <span>{payableSummaryLabel}</span>
+              <span className="text-primary">{formatPrice(payableSummaryAmount, undefined, locale)}</span>
             </div>
 
             <div className="flex gap-5">
@@ -752,14 +834,20 @@ export function CheckoutPageClient() {
               <div className="p-4 space-y-3">
                 <div className="flex justify-between text-sm text-third">
                   <span>{t("subtotalWithCount", { count: totalItems })}</span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <span>{formatPrice(totalPrice, undefined, locale)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-third">
                   <span>{t("shipping")}</span>
                   <span className={shipping === 0 ? "text-secondary font-medium" : ""}>
-                    {shipping === 0 ? t("free") : formatPrice(shipping)}
+                    {shipping === 0 ? t("free") : formatPrice(shipping, undefined, locale)}
                   </span>
                 </div>
+                {walletAppliedAmount > 0 ? (
+                  <div className="flex justify-between text-sm text-secondary">
+                    <span>{t("walletApplied")}</span>
+                    <span>-{formatPrice(walletAppliedAmount, undefined, locale)}</span>
+                  </div>
+                ) : null}
               </div>
             </motion.div>
           ) : null}
@@ -779,14 +867,16 @@ export function CheckoutPageClient() {
 
           <div className="flex-1 flex flex-col justify-center cursor-pointer" onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}>
             <div className="flex items-center gap-2 select-none">
-              <span className="font-bold text-primary text-xl tracking-tight">{formatPrice(finalTotal)}</span>
+              <span className="font-bold text-primary text-xl tracking-tight">
+                {formatPrice(payableSummaryAmount, undefined, locale)}
+              </span>
               {isMobileSummaryOpen ? (
                 <ChevronDown className="w-4 h-4 text-primary" />
               ) : (
                 <ChevronUp className="w-4 h-4 text-primary" />
               )}
             </div>
-            <span className="text-[10px] text-third">{t("total")}</span>
+            <span className="text-[10px] text-third">{payableSummaryLabel}</span>
           </div>
 
           <Button

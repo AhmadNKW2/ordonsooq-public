@@ -1,9 +1,14 @@
 // Product Types
+export type ProductWeightUnit = "g" | "kg";
+export type ProductDimensionUnit = "mm" | "cm" | "m";
+
 export interface ProductDimensions {
   weight?: string;
   length?: string;
   width?: string;
   height?: string;
+  weightUnit?: ProductWeightUnit;
+  dimensionUnit?: ProductDimensionUnit;
 }
 
 export interface ProductAttributeValue {
@@ -148,6 +153,7 @@ export interface ApiOrder {
   id: string | number;
   items: ApiOrderItem[];
   paymentMethod: string;
+  walletAppliedAmount?: number;
   shippingAddress: ShippingAddress;
   totalAmount: number;
   status: string;
@@ -164,6 +170,7 @@ export interface CreateOrderPayload {
   shippingAddress: ShippingAddress;
   billingAddress: BillingAddress;
   paymentMethod: string;
+  walletAppliedAmount?: number;
   couponCode?: string;
   notes?: string;
 }
@@ -182,16 +189,21 @@ export interface OrderResponse {
 export interface Wallet {
   id: string | number;
   balance: number;
-  currency: string;
+  totalCashback?: number;
+  currency?: string;
   userId: string | number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface WalletTransaction {
   id: string | number;
   amount: number;
   type: 'credit' | 'debit';
+  source?: string;
   description: string;
   createdAt: string;
+  balanceAfter?: number;
   referenceId?: string;
 }
 

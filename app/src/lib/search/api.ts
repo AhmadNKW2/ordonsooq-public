@@ -14,6 +14,37 @@ const LOCAL_SEARCH_API_PATH = '/api/search';
 const LOCAL_AUTOCOMPLETE_API_PATH = '/api/search/autocomplete';
 const DEFAULT_PER_PAGE = 20;
 
+async function shouldShowSalePricing(): Promise<boolean> {
+  if (!API_BASE) {
+    return true;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/settings/seo`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return true;
+    }
+
+    const payload = await response.json();
+    const settings =
+      payload && typeof payload === 'object' && 'data' in payload
+        ? (payload as { data?: unknown }).data
+        : payload;
+
+    return !(
+      settings &&
+      typeof settings === 'object' &&
+      'show_sale_pricing' in settings &&
+      (settings as { show_sale_pricing?: boolean }).show_sale_pricing === false
+    );
+  } catch {
+    return true;
+  }
+}
+
 type OrdonDbAttributeValue = {
   name_en?: string | null;
   name_ar?: string | null;
@@ -460,6 +491,35 @@ function toFiniteNumber(value: unknown): number | undefined {
   return Number.isFinite(numericValue) ? numericValue : undefined;
 }
 
+function resolveVisibleSearchPricing(
+  priceValue: unknown,
+  salePriceValue: unknown,
+  showSalePricing: boolean,
+): { price: number; salePrice?: number } {
+  const price = toFiniteNumber(priceValue) ?? 0;
+  const salePrice = toFiniteNumber(salePriceValue);
+  const hasDiscount = salePrice != null && salePrice > 0 && salePrice < price;
+
+  if (!hasDiscount) {
+    return {
+      price,
+      salePrice: undefined,
+    };
+  }
+
+  if (!showSalePricing) {
+    return {
+      price: salePrice,
+      salePrice: undefined,
+    };
+  }
+
+  return {
+    price,
+    salePrice,
+  };
+}
+
 function splitFilterValues(value?: string): string[] {
   return value
     ?.split(',')
@@ -829,6 +889,7 @@ async function buildSearchResponseForFilters(
   selectionFilters: SearchFilters,
   locale: SearchLocale,
   catalogs: FacetCatalogs,
+  showSalePricing: boolean,
   signal?: AbortSignal,
   initialUpstream?: UpstreamSearchPayload,
 ): Promise<{
@@ -838,7 +899,13 @@ async function buildSearchResponseForFilters(
   durationMs: number;
 }> {
   const upstream = initialUpstream ?? await fetchOrdonDbSearchPayloadWithSignal(buildOrdonDbSearchRequest(requestFilters), signal);
-  const primaryData = createOrdonDbSearchResponse(upstream.rawData, selectionFilters, locale, catalogs);
+  const primaryData = createOrdonDbSearchResponse(
+    upstream.rawData,
+    selectionFilters,
+    locale,
+    catalogs,
+    showSalePricing,
+  );
 
   if (!shouldApplyGroupedAndFiltering(requestFilters, primaryData.facets, catalogs)) {
     return {
@@ -851,7 +918,9 @@ async function buildSearchResponseForFilters(
 
   const allPayloads = await fetchAllOrdonDbSearchPayloads(requestFilters, signal, upstream);
   const allItems = dedupeNormalizedItems(
-    allPayloads.flatMap((payload) => normalizeOrdonDbItems(payload.rawData, locale))
+    allPayloads.flatMap((payload) =>
+      normalizeOrdonDbItems(payload.rawData, locale, showSalePricing),
+    )
   );
   const filteredItems = filterItemsByGroupedSelections(allItems, requestFilters, primaryData.facets, catalogs);
 
@@ -974,13 +1043,19 @@ function buildFacetEntriesFromGroups(
   return dedupeFacetEntries(entries);
 }
 
-function normalizeOrdonDbItem(result: OrdonDbSearchResult, locale: SearchLocale): NormalizedOrdonDbItem | null {
+function normalizeOrdonDbItem(
+  result: OrdonDbSearchResult,
+  locale: SearchLocale,
+  showSalePricing: boolean,
+): NormalizedOrdonDbItem | null {
   const product = result.product;
   if (!product?.id) return null;
 
-  const price = toFiniteNumber(product.price) ?? 0;
-  const salePrice = toFiniteNumber(product.sale_price);
-  const effectivePrice = salePrice != null && salePrice < price ? salePrice : price;
+  const pricing = resolveVisibleSearchPricing(
+    product.price,
+    product.sale_price,
+    showSalePricing,
+  );
   const categories = buildFacetEntriesFromCategories(product, locale);
   const brand = buildFacetEntry(
     product.brand?.id,
@@ -1007,8 +1082,8 @@ function normalizeOrdonDbItem(result: OrdonDbSearchResult, locale: SearchLocale)
       name_ar: product.name_ar?.trim() || result.name_ar?.trim() || product.name_en?.trim() || result.name?.trim() || String(product.id),
       brand: brand?.label || '',
       category: categories[0]?.label || '',
-      price,
-      sale_price: salePrice,
+      price: pricing.price,
+      sale_price: pricing.salePrice,
       is_available: !isOutOfStock,
       images: extractImages(product),
       rating,
@@ -1184,14 +1259,15 @@ function buildOrdonDbFacets(
 
 function normalizeOrdonDbItems(
   payload: OrdonDbSearchResponse,
-  locale: SearchLocale
+  locale: SearchLocale,
+  showSalePricing = true,
 ): NormalizedOrdonDbItem[] {
   if (!Array.isArray(payload?.results)) {
     throw new Error('Invalid SearchOrdonDBProduct response');
   }
 
   return payload.results
-    .map((result) => normalizeOrdonDbItem(result, locale))
+    .map((result) => normalizeOrdonDbItem(result, locale, showSalePricing))
     .filter((item): item is NormalizedOrdonDbItem => Boolean(item));
 }
 
@@ -1199,9 +1275,14 @@ function createOrdonDbSearchResponse(
   payload: OrdonDbSearchResponse,
   filters: SearchFilters,
   locale: SearchLocale,
-  catalogs: FacetCatalogs
+  catalogs: FacetCatalogs,
+  showSalePricing: boolean,
 ): SearchResponse {
-  const normalizedItems = normalizeOrdonDbItems(payload, locale);
+  const normalizedItems = normalizeOrdonDbItems(
+    payload,
+    locale,
+    showSalePricing,
+  );
 
   const page = payload.pagination?.page ?? (filters.page && filters.page > 0 ? filters.page : 1);
   const perPage = payload.pagination?.page_size ?? (filters.per_page && filters.per_page > 0 ? filters.per_page : DEFAULT_PER_PAGE);
@@ -1225,7 +1306,7 @@ async function normalizeOrdonDbSearchResponse(
 ): Promise<SearchResponse> {
   const catalogs = await loadFacetCatalogs(locale);
 
-  return createOrdonDbSearchResponse(payload, filters, locale, catalogs);
+  return createOrdonDbSearchResponse(payload, filters, locale, catalogs, true);
 }
 
 function normalizeOrdonDbAutocompleteResponse(
@@ -1396,6 +1477,7 @@ async function requestOrdonDbSearch(
 ): Promise<SearchRequestDebugResult<SearchResponse>> {
   const normalizedLocale = normalizeSearchLocale(locale);
   const startedAt = Date.now();
+  const showSalePricing = await shouldShowSalePricing();
   const catalogsPromise = loadFacetCatalogs(normalizedLocale);
   const requestPayload = buildOrdonDbSearchRequest(filters);
   const upstream = await fetchOrdonDbSearchPayloadWithSignal(requestPayload, signal);
@@ -1405,6 +1487,7 @@ async function requestOrdonDbSearch(
     filters,
     normalizedLocale,
     catalogs,
+    showSalePricing,
     signal,
     upstream,
   );
